@@ -11,6 +11,8 @@
     <artifactId>totalschema-release</artifactId>
     <packaging>pom</packaging>
 
+    <name>totalschema release</name>
+
     <description>
         Release module for creating distributable archives containing totalschema-cli
         and all optional extensions and database integrations.
