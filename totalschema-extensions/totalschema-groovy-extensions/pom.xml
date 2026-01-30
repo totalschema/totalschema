@@ -9,7 +9,6 @@
     </parent>
 
     <artifactId>totalschema-groovy-extensions</artifactId>
-    <version>1.0.0</version>
 
     <name>totalschema groovy extensions</name>
 

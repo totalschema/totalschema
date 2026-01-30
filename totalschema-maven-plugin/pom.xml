@@ -9,7 +9,6 @@
     </parent>
 
     <artifactId>totalschema-maven-plugin</artifactId>
-    <version>1.0.0</version>
     <packaging>maven-plugin</packaging>
 
     <name>totalschema maven plugin</name>

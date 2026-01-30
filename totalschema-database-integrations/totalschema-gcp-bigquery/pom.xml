@@ -9,7 +9,6 @@
     </parent>
 
     <artifactId>totalschema-gcp-bigquery</artifactId>
-    <version>1.0.0</version>
 
     <name>totalschema gcp bigquery</name>
 

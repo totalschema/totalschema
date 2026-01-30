@@ -9,7 +9,6 @@
     </parent>
 
     <artifactId>totalschema-cli</artifactId>
-    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>totalschema cli</name>
