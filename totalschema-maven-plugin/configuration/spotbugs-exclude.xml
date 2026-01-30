@@ -1,0 +1,9 @@
+<FindBugsFilter>
+
+    <Match>
+        <Class name="io.github.totalschema.totalschema_maven_plugin.HelpMojo" />
+        <Bug pattern="UI_INHERITANCE_UNSAFE_GETRESOURCE" />
+        <!-- Framework generated code: the generated class will not be extended -->
+    </Match>
+
+</FindBugsFilter>

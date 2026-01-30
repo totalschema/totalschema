@@ -1,0 +1,155 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.totalschema</groupId>
+        <artifactId>totalschema-database-integrations</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>totalschema-gcp-bigquery</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+
+        <xml-maven-plugin.version>1.0.2</xml-maven-plugin.version>
+
+
+        <spotbugs.version>4.9.8</spotbugs.version>
+
+
+        <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-core</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-cli</artifactId>
+            <version>1.0.0</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs-maven-plugin.version}</version>
+                <executions>
+                    <!-- Ensures that SpotBugs inspects source code when project is compiled. -->
+                    <execution>
+                        <id>analyze-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- Enables analysis which takes more memory but finds more bugs.
+                        If you run out of memory, changes the value of the effort element to 'Low'. -->
+                    <effort>Max</effort>
+
+                    <!-- Location of SpotBugs exclude filter file -->
+                    <excludeFilterFile>configuration/spotbugs-exclude.xml</excludeFilterFile>
+
+                    <!-- Build shall fail if problems are found -->
+                    <failOnError>false</failOnError>
+
+                    <!-- Reports all bugs (other values are medium and max) -->
+                    <threshold>Low</threshold>
+
+                    <!-- Produces XML report -->
+                    <xmlOutput>true</xmlOutput>
+
+                    <!-- Configures the directory in which the XML report is created -->
+                    <spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>xml-maven-plugin</artifactId>
+                <version>${xml-maven-plugin.version}</version>
+                <executions>
+                    <!-- Ensures that the XSLT transformation is run when the project is compiled. -->
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>transform</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <transformationSets>
+                        <transformationSet>
+                            <!-- Configures the source directory of XML files. -->
+                            <dir>${project.build.directory}/spotbugs</dir>
+                            <includes>
+                                <!-- only transform spotbugsXml.xml to generate SpotBugs HTML report -->
+                                <include>spotbugsXml.xml</include>
+                            </includes>
+
+                            <!-- Configures the directory in which the SpotBugs report is written. -->
+                            <outputDir>${project.build.directory}/spotbugs</outputDir>
+
+                            <!-- Selects the used stylesheet. -->
+                            <!-- <stylesheet>fancy-hist.xsl</stylesheet> -->
+                            <!--<stylesheet>default.xsl</stylesheet> -->
+                            <!--<stylesheet>plain.xsl</stylesheet> -->
+                            <stylesheet>fancy.xsl</stylesheet>
+                            <!--<stylesheet>summary.xsl</stylesheet> -->
+                            <fileMappers>
+                                <!-- Configures the file extension of the output files. -->
+                                <fileMapper
+                                        implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                    <targetExtension>.html</targetExtension>
+                                </fileMapper>
+                            </fileMappers>
+                        </transformationSet>
+                    </transformationSets>
+                </configuration>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs</artifactId>
+                        <version>${spotbugs.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+</project>

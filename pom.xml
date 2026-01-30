@@ -1,0 +1,519 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.totalschema</groupId>
+    <artifactId>totalschema-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <description>
+        totalschema is a streamlined SQL change tool designed for
+        managing database versioning and schema changes with ease.
+        It offers a straightforward approach for handling change
+        files, enabling developers to efficiently apply, track and
+        rollback database changes.
+    </description>
+
+    <licenses>
+        <license>
+            <name>AGPL-3.0-only</name>
+            <url>https://opensource.org/license/agpl-v3</url>
+            <distribution>repo</distribution>
+            <comments>GNU Affero General Public License version 3</comments>
+        </license>
+    </licenses>
+
+    <url>https://github.com/totalschema/totalschema</url>
+
+    <scm>
+        <connection>
+            scm:git:https://github.com/totalschema/totalschema.git
+        </connection>
+        <developerConnection>
+            scm:git:https://github.com/totalschema/totalschema.git
+        </developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/totalschema/totalschema</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>totalschema</id>
+            <name>totalschema</name>
+            <roles>
+                <role>developer</role>
+            </roles>
+            <timezone>Europe/Vienna</timezone>
+        </developer>
+    </developers>
+
+    <issueManagement>
+        <system>GitHub issue tracker of totalschema project</system>
+        <url>https://github.com/totalschema/totalschema/issues</url>
+    </issueManagement>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+
+        <xml-maven-plugin.version>1.0.2</xml-maven-plugin.version>
+
+
+        <spotbugs.version>4.9.8</spotbugs.version>
+
+        <maven-core.version>3.9.9</maven-core.version>
+
+        <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+
+        <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
+        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+        <spotless-maven-plugin.version>2.43.0</spotless-maven-plugin.version>
+
+        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+
+        <testng.version>7.10.2</testng.version>
+    </properties>
+
+    <modules>
+        <module>totalschema-core</module>
+        <module>totalschema-cli</module>
+        <module>totalschema-database-integrations</module>
+        <module>totalschema-extensions</module>
+        <module>totalschema-maven-plugin</module>
+        <module>totalschema-release</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+
+            <dependency>
+                <groupId>io.github.totalschema</groupId>
+                <artifactId>totalschema-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>4.7.6</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-csv</artifactId>
+                <version>1.13.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>5.1.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-core</artifactId>
+                <version>2.12.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-common</artifactId>
+                <version>2.12.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-scp</artifactId>
+                <version>2.12.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-all</artifactId>
+                <version>3.0.23</version>
+                <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>2.3.232</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-core</artifactId>
+                <version>${maven-core.version}</version>
+            </dependency>
+
+
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-plugin-api</artifactId>
+                <version>${maven-core.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.maven.plugin-tools</groupId>
+                <artifactId>maven-plugin-annotations</artifactId>
+                <version>${maven-core.version}</version>
+            </dependency>
+
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-text</artifactId>
+                <version>1.15.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>2.0.16</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>2.0.16</version>
+            </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.5.15</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>2.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>${testng.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>5.15.2</version>
+                <scope>test</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs-maven-plugin.version}</version>
+                <executions>
+                    <!-- Ensures that SpotBugs inspects source code when project is compiled. -->
+                    <execution>
+                        <id>analyze-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- Enables analysis which takes more memory but finds more bugs.
+                        If you run out of memory, changes the value of the effort element to 'Low'. -->
+                    <effort>Max</effort>
+
+                    <!-- Location of SpotBugs exclude filter file -->
+                    <excludeFilterFile>${project.basedir}/configuration/spotbugs-exclude.xml</excludeFilterFile>
+
+                    <!-- Build shall fail if problems are found -->
+                    <failOnError>true</failOnError>
+
+                    <!-- Reports all bugs (other values are medium and max) -->
+                    <threshold>Low</threshold>
+
+                    <!-- Produces XML report -->
+                    <xmlOutput>true</xmlOutput>
+
+                    <!-- Configures the directory in which the XML report is created -->
+                    <spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>xml-maven-plugin</artifactId>
+                <version>${xml-maven-plugin.version}</version>
+                <executions>
+                    <!-- Ensures that the XSLT transformation is run when the project is compiled. -->
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>transform</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <transformationSets>
+                        <transformationSet>
+                            <!-- Configures the source directory of XML files. -->
+                            <dir>${project.build.directory}/spotbugs</dir>
+                            <includes>
+                                <!-- only transform spotbugsXml.xml to generate SpotBugs HTML report -->
+                                <include>spotbugsXml.xml</include>
+                            </includes>
+
+                            <!-- Configures the directory in which the SpotBugs report is written. -->
+                            <outputDir>${project.build.directory}/spotbugs</outputDir>
+
+                            <!-- Selects the used stylesheet. -->
+                            <!-- <stylesheet>fancy-hist.xsl</stylesheet> -->
+                            <!--<stylesheet>default.xsl</stylesheet> -->
+                            <!--<stylesheet>plain.xsl</stylesheet> -->
+                            <stylesheet>fancy.xsl</stylesheet>
+                            <!--<stylesheet>summary.xsl</stylesheet> -->
+                            <fileMappers>
+                                <!-- Configures the file extension of the output files. -->
+                                <fileMapper
+                                        implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                    <targetExtension>.html</targetExtension>
+                                </fileMapper>
+                            </fileMappers>
+                        </transformationSet>
+                    </transformationSets>
+                </configuration>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs</artifactId>
+                        <version>${spotbugs.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+            </plugin>
+
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>apply</goal>
+                        </goals>
+                        <phase>compile</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <java>
+                        <googleJavaFormat>
+                            <version>1.26.0</version>
+                            <style>AOSP</style>
+                        </googleJavaFormat>
+                        <removeUnusedImports/>
+                        <trimTrailingWhitespace/>
+                        <endWithNewline/>
+                    </java>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven-source-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven-javadoc-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>11</source>
+                    <doclint>all</doclint>
+                    <failOnWarnings>false</failOnWarnings>
+                </configuration>
+            </plugin>
+
+
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Profile for standard build (activated by default) -->
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- All standard build plugins are already defined in the main build section -->
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for Clover code coverage analysis -->
+        <profile>
+            <id>clover</id>
+            <properties>
+                <openclover.version>4.5.2</openclover.version>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openclover</groupId>
+                        <artifactId>clover-maven-plugin</artifactId>
+                        <version>${openclover.version}</version>
+                        <executions>
+                            <execution>
+                                <id>clover-setup</id>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>setup</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>clover-report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>aggregate</goal>
+                                    <goal>clover</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <generateHtml>true</generateHtml>
+                            <generateXml>true</generateXml>
+                            <generatePdf>false</generatePdf>
+                            <generateJson>true</generateJson>
+                            <historyDir>${project.build.directory}/clover/history</historyDir>
+                            <includesTestSourceRoots>true</includesTestSourceRoots>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+            <reporting>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openclover</groupId>
+                        <artifactId>clover-maven-plugin</artifactId>
+                        <version>${openclover.version}</version>
+                        <configuration>
+                            <generateHtml>true</generateHtml>
+                            <generateXml>true</generateXml>
+                            <generateHistorical>true</generateHistorical>
+                            <historyDir>${project.build.directory}/clover/history</historyDir>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </reporting>
+        </profile>
+
+        <!-- Profile for Maven Central deployment -->
+        <profile>
+            <id>maven-central-release</id>
+            <properties>
+                <gpg.executable>gpg</gpg.executable>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>${maven-source-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven-javadoc-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+
+                    <!-- GPG Signing Plugin -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.7.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+</project>

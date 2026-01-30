@@ -1,0 +1,91 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.totalschema</groupId>
+        <artifactId>totalschema-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>totalschema-release</artifactId>
+    <packaging>pom</packaging>
+
+    <description>
+        Release module for creating distributable archives containing totalschema-cli
+        and all optional extensions and database integrations.
+    </description>
+
+    <dependencies>
+        <!-- Core CLI dependency -->
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-cli</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <!-- Exclude provided-scope dependencies from CLI -->
+                <exclusion>
+                    <groupId>com.h2database</groupId>
+                    <artifactId>h2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.github.totalschema</groupId>
+                    <artifactId>totalschema-groovy-extensions</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-all</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Extensions -->
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-groovy-extensions</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <!-- groovy-all should be provided by the user -->
+                <exclusion>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-all</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Database Integrations -->
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-gcp-bigquery</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Maven Assembly Plugin for creating distributable archives -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.7.1</version>
+                <executions>
+                    <execution>
+                        <id>create-distribution</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/distribution.xml</descriptor>
+                            </descriptors>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <finalName>totalschema-${project.version}</finalName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+

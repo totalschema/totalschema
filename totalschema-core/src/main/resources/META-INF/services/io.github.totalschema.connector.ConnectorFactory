@@ -1,0 +1,6 @@
+io.github.totalschema.connector.jdbc.JdbcConnectorFactory
+io.github.totalschema.connector.ssh.SshScriptConnectorFactory
+io.github.totalschema.connector.ssh.SshCommandListConnectorFactory
+io.github.totalschema.connector.shell.ShellScriptConnectorFactory
+
+

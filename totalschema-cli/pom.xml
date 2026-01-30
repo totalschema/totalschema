@@ -1,0 +1,141 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.totalschema</groupId>
+        <artifactId>totalschema-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>totalschema-cli</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <xml-maven-plugin.version>1.0.2</xml-maven-plugin.version>
+        <spotbugs.version>4.9.8</spotbugs.version>
+        <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
+    </properties>
+
+    <dependencies>
+        <!-- Core dependency -->
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-core</artifactId>
+        </dependency>
+
+        <!-- PicoCLI for command-line interface -->
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+        </dependency>
+
+        <!-- SLF4J API (inherited from core) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- Logback Classic (for CLI logging with logback.xml configuration) -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <!-- H2 dependency (for manual testing, not exposed to consumers due to 'provided' scope) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- groovy-extensions dependency (for manual testing, not exposed to consumers due to 'provided' scope) -->
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-groovy-extensions</artifactId>
+            <version>1.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+
+        <!-- Groovy dependency (for manual testing, not exposed to consumers due to 'provided' scope) -->
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- SnakeYAML for configuration -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>analyze-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <effort>Max</effort>
+                    <excludeFilterFile>configuration/spotbugs-exclude.xml</excludeFilterFile>
+                    <failOnError>false</failOnError>
+                    <threshold>Low</threshold>
+                    <xmlOutput>true</xmlOutput>
+                    <spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>xml-maven-plugin</artifactId>
+                <version>${xml-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>transform</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <transformationSets>
+                        <transformationSet>
+                            <dir>${project.build.directory}/spotbugs</dir>
+                            <includes>
+                                <include>spotbugsXml.xml</include>
+                            </includes>
+                            <outputDir>${project.build.directory}/spotbugs</outputDir>
+                            <stylesheet>fancy.xsl</stylesheet>
+                            <fileMappers>
+                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                    <targetExtension>.html</targetExtension>
+                                </fileMapper>
+                            </fileMappers>
+                        </transformationSet>
+                    </transformationSets>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+

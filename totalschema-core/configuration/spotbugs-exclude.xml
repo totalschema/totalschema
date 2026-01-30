@@ -1,0 +1,53 @@
+<FindBugsFilter>
+    <Match>
+        <Class name="~io.github.totalschema.jdbc.DefaultJdbcDatabase.*" />
+        <Or>
+            <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE" />
+            <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING" />
+        </Or>
+        <!-- Utility class to execute arbitrary SQL statements -->
+    </Match>
+
+    <Match>
+        <Class name="io.github.totalschema.engine.internal.secrets.SecretPayload" />
+        <Method name="nullSafeCopyOf" />
+        <Bug pattern="PZLA_PREFER_ZERO_LENGTH_ARRAYS" />
+        <!-- Use nulls instead of changing to zero length arrays for crypt calls -->
+    </Match>
+
+    <Match>
+        <Class name="io.github.totalschema.engine.internal.changefile.ChangeFileFactory" />
+        <Method name="getParentDirectory" />
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
+        <!-- Seems to be an invalid detection issue -->
+    </Match>
+
+    <Match>
+        <Class name="io.github.totalschema.engine.internal.secrets.DefaultSecretManager" />
+        <Method name="decodedFilePath" />
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
+        <!-- Seems to be an invalid detection issue -->
+    </Match>
+
+
+    <Match>
+        <Class name="io.github.totalschema.engine.internal.state.csv.CsvFileStateRecordRepository" />
+        <Method name="&lt;init&gt;"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
+        <!-- Seems to be an invalid detection issue -->
+    </Match>
+
+
+    <Match>
+        <Class name="~io.github.totalschema.concurrent.LockTemplate.*" />
+        <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON" />
+        <!-- Code clarity over that tiny bit of theoretical performance gain -->
+    </Match>
+
+    <Match>
+        <Class name="io.github.totalschema.jdbc.TypeConversions" />
+        <Bug pattern="SING_SINGLETON_HAS_NONPRIVATE_CONSTRUCTOR" />
+        <!-- package protected constructor for testing purposes only -->
+    </Match>
+
+</FindBugsFilter>
