@@ -12,6 +12,8 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
+    <name>totalschema database integrations</name>
+
     <properties>
 
         <xml-maven-plugin.version>1.0</xml-maven-plugin.version>

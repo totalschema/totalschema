@@ -11,6 +11,8 @@
     <artifactId>totalschema-groovy-extensions</artifactId>
     <version>1.0.0</version>
 
+    <name>totalschema groovy extensions</name>
+
     <properties>
 
         <xml-maven-plugin.version>1.0.2</xml-maven-plugin.version>

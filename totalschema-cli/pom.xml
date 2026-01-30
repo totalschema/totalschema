@@ -12,6 +12,8 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
+    <name>totalschema cli</name>
+
     <properties>
         <xml-maven-plugin.version>1.0.2</xml-maven-plugin.version>
         <spotbugs.version>4.9.8</spotbugs.version>

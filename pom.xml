@@ -7,6 +7,8 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
+    <name>totalschema</name>
+
     <description>
         totalschema is a streamlined SQL change tool designed for
         managing database versioning and schema changes with ease.

@@ -12,6 +12,8 @@
     <version>1.0.0</version>
     <packaging>maven-plugin</packaging>
 
+    <name>totalschema maven plugin</name>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.maven</groupId>
