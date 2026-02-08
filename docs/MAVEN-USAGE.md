@@ -454,7 +454,7 @@ Use the plugin in specific modules:
     <parent>
         <groupId>com.example</groupId>
         <artifactId>my-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.1.0-SNAPSHOT</version>
     </parent>
     
     <artifactId>database-module</artifactId>
@@ -763,8 +763,8 @@ mvn clean install -Denvironment=PROD -Dtotalschema.password.file=/secure/prod.ke
 ### Example 4: Filter Specific Changes
 
 ```bash
-# Apply only version 1.0.0 changes
-mvn totalschema:run -Darguments="execute,apply,-e,DEV,-f,1.X/1.0.0/*"
+# Apply only version 1.1.0-SNAPSHOT changes
+mvn totalschema:run -Darguments="execute,apply,-e,DEV,-f,1.X/1.1.0-SNAPSHOT/*"
 ```
 
 ### Example 5: Multi-Module Project
