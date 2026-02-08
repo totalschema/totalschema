@@ -18,9 +18,9 @@
 
 package io.github.totalschema.spi.lookup;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.internal.lookup.DefaultLookupFactory;
 import io.github.totalschema.spi.ServiceLoaderFactory;
+import io.github.totalschema.spi.secrets.SecretsManager;
 import java.util.List;
 
 public interface LookupFactory {
@@ -30,5 +30,5 @@ public interface LookupFactory {
                 .orElseGet(DefaultLookupFactory::new);
     }
 
-    List<ExpressionLookup> getLookups(CommandContext context);
+    List<ExpressionLookup> getLookups(SecretsManager secretsManager);
 }

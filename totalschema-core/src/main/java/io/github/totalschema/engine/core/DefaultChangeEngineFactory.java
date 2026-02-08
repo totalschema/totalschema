@@ -23,13 +23,15 @@ import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeEngineFactory;
 import io.github.totalschema.engine.core.command.api.CommandExecutor;
 import io.github.totalschema.engine.core.command.api.CommandInvoker;
-import io.github.totalschema.engine.core.command.interceptor.*;
+import io.github.totalschema.engine.core.command.interceptor.LockInterceptor;
+import io.github.totalschema.engine.core.command.interceptor.ServiceInitializerInterceptor;
 import io.github.totalschema.spi.config.ConfigurationSupplier;
+import io.github.totalschema.spi.secrets.SecretManagerFactory;
 import io.github.totalschema.spi.secrets.SecretsManager;
 
 /**
  * Default implementation of ChangeEngineFactory. Creates ChangeEngine instances with a chain of
- * interceptors for configuration, secrets, environment, services, and locking.
+ * interceptors for executing commands inside the engine.
  */
 public class DefaultChangeEngineFactory implements ChangeEngineFactory {
 
@@ -53,19 +55,14 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
 
         commandExecutor = new ServiceInitializerInterceptor(commandExecutor);
 
-        commandExecutor =
-                new ConfigurationInitializerInterceptor(commandExecutor, configurationSupplier);
+        Environment environment = environmentName != null ? new Environment(environmentName) : null;
 
-        commandExecutor = new ExpressionEvaluatorInitializerInterceptor(commandExecutor);
-
-        commandExecutor = new SecretsManagerInitializerInterceptor(commandExecutor, secretsManager);
-
-        if (environmentName != null) {
-            commandExecutor =
-                    new EnvironmentInitializerInterceptor(
-                            commandExecutor, new Environment(environmentName));
+        if (secretsManager == null) {
+            SecretManagerFactory secretManagerFactory = SecretManagerFactory.getInstance();
+            secretsManager = secretManagerFactory.getSecretsManager(null, null);
         }
 
-        return new DefaultChangeEngine(commandExecutor);
+        return new DefaultChangeEngine(
+                commandExecutor, configurationSupplier, environment, secretsManager);
     }
 }

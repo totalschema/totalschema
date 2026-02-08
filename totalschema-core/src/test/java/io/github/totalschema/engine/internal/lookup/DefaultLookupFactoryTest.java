@@ -21,7 +21,6 @@ package io.github.totalschema.engine.internal.lookup;
 import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.lookup.ExpressionLookup;
 import io.github.totalschema.spi.secrets.SecretsManager;
 import java.util.List;
@@ -34,19 +33,15 @@ public class DefaultLookupFactoryTest {
 
     private SecretsManager secretsManager;
 
-    private CommandContext context;
-
     @BeforeMethod
     public void setUp() {
         secretsManager = createMock(SecretsManager.class);
         lookupFactory = new DefaultLookupFactory();
-        context = new CommandContext();
-        context.setValue(SecretsManager.class, secretsManager);
     }
 
     @Test
     public void testGetLookupsReturnsBuiltInLookups() {
-        List<ExpressionLookup> lookups = lookupFactory.getLookups(context);
+        List<ExpressionLookup> lookups = lookupFactory.getLookups(secretsManager);
 
         assertNotNull(lookups);
         assertTrue(lookups.size() >= 3, "Should have at least 3 built-in lookups");
@@ -76,7 +71,7 @@ public class DefaultLookupFactoryTest {
         expect(secretsManager.decode("encrypted-value")).andReturn("decrypted-value");
         replay(secretsManager);
 
-        List<ExpressionLookup> lookups = lookupFactory.getLookups(context);
+        List<ExpressionLookup> lookups = lookupFactory.getLookups(secretsManager);
         ExpressionLookup secretLookup =
                 lookups.stream()
                         .filter(lookup -> "secret".equals(lookup.getKey()))
@@ -94,7 +89,7 @@ public class DefaultLookupFactoryTest {
         expect(secretsManager.decodedFileContent("file-path")).andReturn("file-content");
         replay(secretsManager);
 
-        List<ExpressionLookup> lookups = lookupFactory.getLookups(context);
+        List<ExpressionLookup> lookups = lookupFactory.getLookups(secretsManager);
         ExpressionLookup secretFileContentLookup =
                 lookups.stream()
                         .filter(lookup -> "secretFileContent".equals(lookup.getKey()))
@@ -112,7 +107,7 @@ public class DefaultLookupFactoryTest {
         expect(secretsManager.decodedFilePath("encrypted-path")).andReturn("/decoded/path");
         replay(secretsManager);
 
-        List<ExpressionLookup> lookups = lookupFactory.getLookups(context);
+        List<ExpressionLookup> lookups = lookupFactory.getLookups(secretsManager);
         ExpressionLookup decodedFilePathLookup =
                 lookups.stream()
                         .filter(lookup -> "decodedFilePath".equals(lookup.getKey()))
@@ -127,7 +122,7 @@ public class DefaultLookupFactoryTest {
 
     @Test
     public void testGetLookupsReturnsImmutableList() {
-        List<ExpressionLookup> lookups = lookupFactory.getLookups(context);
+        List<ExpressionLookup> lookups = lookupFactory.getLookups(secretsManager);
 
         assertNotNull(lookups);
         // Should not throw when we try to access it multiple times

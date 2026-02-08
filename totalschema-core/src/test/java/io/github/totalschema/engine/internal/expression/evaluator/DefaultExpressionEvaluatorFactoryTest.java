@@ -21,7 +21,6 @@ package io.github.totalschema.engine.internal.expression.evaluator;
 import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.secrets.SecretsManager;
 import org.testng.annotations.BeforeMethod;
@@ -30,34 +29,31 @@ import org.testng.annotations.Test;
 public class DefaultExpressionEvaluatorFactoryTest {
 
     private DefaultExpressionEvaluatorFactory factory;
-    private CommandContext context;
     private SecretsManager secretsManager;
 
     @BeforeMethod
     public void setUp() {
         factory = new DefaultExpressionEvaluatorFactory();
-        context = new CommandContext();
         secretsManager = createMock(SecretsManager.class);
-        context.setValue(SecretsManager.class, secretsManager);
     }
 
     @Test
     public void testGetExpressionEvaluator() {
-        ExpressionEvaluator evaluator = factory.getExpressionEvaluator(context);
+        ExpressionEvaluator evaluator = factory.getExpressionEvaluator(secretsManager);
 
         assertNotNull(evaluator);
     }
 
     @Test
     public void testGetExpressionEvaluatorReturnsDefaultExpressionEvaluator() {
-        ExpressionEvaluator evaluator = factory.getExpressionEvaluator(context);
+        ExpressionEvaluator evaluator = factory.getExpressionEvaluator(secretsManager);
 
         assertTrue(evaluator instanceof DefaultExpressionEvaluator);
     }
 
     @Test
     public void testGetExpressionEvaluatorCanEvaluateSimpleExpression() {
-        ExpressionEvaluator evaluator = factory.getExpressionEvaluator(context);
+        ExpressionEvaluator evaluator = factory.getExpressionEvaluator(secretsManager);
 
         String result = evaluator.evaluate("Hello ${name}", java.util.Map.of("name", "World"));
 

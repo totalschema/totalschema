@@ -18,9 +18,9 @@
 
 package io.github.totalschema.spi.expression.evaluator;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.internal.expression.evaluator.DefaultExpressionEvaluatorFactory;
 import io.github.totalschema.spi.ServiceLoaderFactory;
+import io.github.totalschema.spi.secrets.SecretsManager;
 
 /**
  * Service Provider Interface for creating ExpressionEvaluator instances.
@@ -42,8 +42,8 @@ public interface ExpressionEvaluatorFactory {
     /**
      * Creates an ExpressionEvaluator for the given context.
      *
-     * @param context the command context
+     * @param secretsManager the SecretsManager
      * @return an ExpressionEvaluator instance
      */
-    ExpressionEvaluator getExpressionEvaluator(CommandContext context);
+    ExpressionEvaluator getExpressionEvaluator(SecretsManager secretsManager);
 }

@@ -151,7 +151,7 @@ public class ListVariablesCommandTest {
         ExpressionEvaluatorFactory defaultExpressionEvaluatorFactory =
                 new DefaultExpressionEvaluatorFactory();
         ExpressionEvaluator expressionEvaluator =
-                defaultExpressionEvaluatorFactory.getExpressionEvaluator(context);
+                defaultExpressionEvaluatorFactory.getExpressionEvaluator(secretsManager);
         context.setValue(ExpressionEvaluator.class, expressionEvaluator);
 
         VariableServiceFactory factory = new DefaultVariableServiceFactory();

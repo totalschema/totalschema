@@ -18,6 +18,9 @@
 
 package io.github.totalschema.engine.core;
 
+import static java.util.Objects.requireNonNull;
+
+import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeManager;
 import io.github.totalschema.engine.api.EnvironmentManager;
@@ -29,6 +32,8 @@ import io.github.totalschema.engine.core.command.api.CommandExecutor;
 import io.github.totalschema.engine.core.command.api.CommandInvoker;
 import io.github.totalschema.engine.core.event.ChangeEngineCloseEvent;
 import io.github.totalschema.engine.core.event.EventDispatcher;
+import io.github.totalschema.spi.config.ConfigurationSupplier;
+import io.github.totalschema.spi.secrets.SecretsManager;
 
 /**
  * Default implementation of ChangeEngine using the Command pattern. All operations are executed as
@@ -43,15 +48,30 @@ public class DefaultChangeEngine implements ChangeEngine {
 
     private final CommandInvoker directCommandInvoker = new CommandInvoker();
 
+    private final EngineContext engineContext;
+
     private final EnvironmentManager environmentManager;
     private final ChangeManager changeManager;
     private final StateManager stateManager;
     private final ValidationManager validationManager;
 
-    private final ThreadLocal<CommandContext> contextHolder = new ThreadLocal<>();
+    private final ThreadLocal<CommandContext> commandContextHolder = new ThreadLocal<>();
 
-    public DefaultChangeEngine(CommandExecutor commandExecutor) {
+    public DefaultChangeEngine(
+            CommandExecutor commandExecutor,
+            ConfigurationSupplier configurationSupplier,
+            Environment environment,
+            SecretsManager secretsManager) {
+
+        requireNonNull(commandExecutor, "commandExecutor must not be null");
+        requireNonNull(configurationSupplier, "configurationSupplier must not be null");
+        requireNonNull(secretsManager, "secretsManager must not be null");
+
         this.commandExecutor = commandExecutor;
+
+        this.engineContext =
+                EngineContext.create(configurationSupplier, environment, secretsManager);
+
         this.environmentManager = new EnvironmentManagerImpl(this);
         this.changeManager = new ChangeManagerImpl(this);
         this.stateManager = new StateManagerImpl(this);
@@ -83,19 +103,19 @@ public class DefaultChangeEngine implements ChangeEngine {
         try {
             R result;
 
-            CommandContext commandContext = contextHolder.get();
+            CommandContext commandContext = commandContextHolder.get();
 
             if (commandContext == null) {
-                commandContext = new CommandContext();
+                commandContext = new CommandContext(engineContext.asMap());
                 commandContext.setValue(ChangeEngine.class, this);
                 commandContext.setValue(EventDispatcher.class, eventDispatcher);
 
-                contextHolder.set(commandContext);
+                commandContextHolder.set(commandContext);
 
                 try {
                     result = commandExecutor.execute(commandContext, command);
                 } finally {
-                    contextHolder.remove();
+                    commandContextHolder.remove();
                 }
 
             } else {

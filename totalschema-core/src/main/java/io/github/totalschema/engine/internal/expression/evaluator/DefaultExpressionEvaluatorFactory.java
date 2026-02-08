@@ -18,20 +18,20 @@
 
 package io.github.totalschema.engine.internal.expression.evaluator;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluatorFactory;
 import io.github.totalschema.spi.lookup.ExpressionLookup;
 import io.github.totalschema.spi.lookup.LookupFactory;
+import io.github.totalschema.spi.secrets.SecretsManager;
 import java.util.List;
 
 public class DefaultExpressionEvaluatorFactory implements ExpressionEvaluatorFactory {
 
     @Override
-    public ExpressionEvaluator getExpressionEvaluator(CommandContext context) {
+    public ExpressionEvaluator getExpressionEvaluator(SecretsManager secretsManager) {
 
         LookupFactory lookupFactory = LookupFactory.getInstance();
-        List<ExpressionLookup> lookups = lookupFactory.getLookups(context);
+        List<ExpressionLookup> lookups = lookupFactory.getLookups(secretsManager);
 
         return new DefaultExpressionEvaluator(lookups);
     }

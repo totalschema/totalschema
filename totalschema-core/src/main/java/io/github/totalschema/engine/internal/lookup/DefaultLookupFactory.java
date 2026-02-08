@@ -18,7 +18,6 @@
 
 package io.github.totalschema.engine.internal.lookup;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.ServiceLoaderFactory;
 import io.github.totalschema.spi.lookup.ExpressionLookup;
 import io.github.totalschema.spi.lookup.LookupFactory;
@@ -30,9 +29,7 @@ import java.util.Map;
 public final class DefaultLookupFactory implements LookupFactory {
 
     @Override
-    public List<ExpressionLookup> getLookups(CommandContext context) {
-
-        SecretsManager secretsManager = context.get(SecretsManager.class);
+    public List<ExpressionLookup> getLookups(SecretsManager secretsManager) {
 
         List<ExpressionLookup> builtInLookups =
                 List.of(
