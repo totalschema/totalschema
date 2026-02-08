@@ -26,18 +26,6 @@ package io.github.totalschema.engine.core.command.api;
 public abstract class CommandExecutor {
 
     /**
-     * Executes a command with a new empty context.
-     *
-     * @param <R> the return type of the command
-     * @param command the command to execute
-     * @return the result of command execution
-     * @throws InterruptedException if the execution is interrupted
-     */
-    public <R> R execute(Command<R> command) throws InterruptedException {
-        return execute(new CommandContext(), command);
-    }
-
-    /**
      * Executes a command with the given context.
      *
      * @param <R> the return type of the command
