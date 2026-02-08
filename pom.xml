@@ -77,6 +77,10 @@
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
 
         <testng.version>7.10.2</testng.version>
+
+        <sonar.organization>totalschema</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.projectKey>totalschema_totalschema</sonar.projectKey>
     </properties>
 
     <modules>
