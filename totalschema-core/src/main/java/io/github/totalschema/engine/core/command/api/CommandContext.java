@@ -18,12 +18,10 @@
 
 package io.github.totalschema.engine.core.command.api;
 
-import io.github.totalschema.concurrent.LockTemplate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,10 +38,15 @@ public final class CommandContext {
 
     private final Logger logger = LoggerFactory.getLogger(CommandContext.class);
 
-    private final LockTemplate lockTemplate =
-            new LockTemplate(1, TimeUnit.MINUTES, new ReentrantLock());
+    private final ConcurrentHashMap<Class<?>, Object> values;
 
-    private final Map<Class<?>, Object> values = new HashMap<>();
+    public CommandContext() {
+        this(new HashMap<>());
+    }
+
+    public CommandContext(Map<Class<?>, Object> engineContext) {
+        this.values = new ConcurrentHashMap<>(engineContext);
+    }
 
     /**
      * Returns true if this context contains a mapping for the specified class.
@@ -57,7 +60,7 @@ public final class CommandContext {
     public boolean has(Class<?> clazz) {
         Objects.requireNonNull(clazz, "Argument clazz cannot be null");
 
-        return lockTemplate.withTryLock(() -> values.containsKey(clazz));
+        return values.containsKey(clazz);
     }
 
     /**
@@ -73,20 +76,16 @@ public final class CommandContext {
     public <R> R get(Class<R> clazz) {
         Objects.requireNonNull(clazz, "Argument clazz cannot be null");
 
-        return lockTemplate.withTryLock(
-                () -> {
-                    @SuppressWarnings(
-                            "unchecked") // due to the contact of setValue, this should always be
-                    // possible
-                    R object = (R) values.get(clazz);
+        // due to the contact of setValue, this should always be possible
+        @SuppressWarnings("unchecked")
+        R object = (R) values.get(clazz);
 
-                    if (object == null) {
-                        throw new IllegalStateException(
-                                "No CommandContext value found for: " + clazz.getName());
-                    }
+        if (object == null) {
+            throw new IllegalStateException(
+                    "No CommandContext value found for: " + clazz.getName());
+        }
 
-                    return object;
-                });
+        return object;
     }
 
     /**
@@ -103,19 +102,14 @@ public final class CommandContext {
         Objects.requireNonNull(clazz, "Argument clazz cannot be null");
         Objects.requireNonNull(value, "Argument value cannot be null");
 
-        lockTemplate.withTryLock(
-                () -> {
-                    if (values.containsKey(clazz)) {
-                        throw new IllegalStateException(
-                                "Value exists already for: " + clazz.getName());
-                    }
+        Object existingValue = values.putIfAbsent(clazz, value);
+        if (existingValue != null) {
+            throw new IllegalStateException("Value exists already for: " + clazz.getName());
+        }
 
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("{} set value in context: {}", getCallerClassName(), value);
-                    }
-
-                    values.put(clazz, value);
-                });
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} set value in context: {}", getCallerClassName(), value);
+        }
     }
 
     private static String getCallerClassName() {
@@ -123,7 +117,6 @@ public final class CommandContext {
         for (int i = 1; i < stElements.length; i++) {
             StackTraceElement ste = stElements[i];
             if (!ste.getClassName().equals(CommandContext.class.getName())
-                    && !ste.getClassName().contains(LockTemplate.class.getSimpleName())
                     && ste.getClassName().indexOf("java.lang.Thread") != 0) {
                 return ste.getClassName();
             }
