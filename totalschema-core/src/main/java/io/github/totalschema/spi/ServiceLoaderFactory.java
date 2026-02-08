@@ -40,17 +40,19 @@ public final class ServiceLoaderFactory {
 
         switch (services.size()) {
             case 0:
-                logger.debug("Found no implementation for {}", serviceClass);
+                logger.debug("Found no loadable implementation for {}", serviceClass);
                 return Optional.empty();
             case 1:
                 S service = services.get(0);
                 logger.debug(
-                        "Found single implementation for {}: {}", serviceClass, service.getClass());
+                        "Found single loadable implementation for {}: {}",
+                        serviceClass,
+                        service.getClass());
                 return Optional.of(service);
 
             default:
                 logger.error(
-                        "Found multiple ServiceLoader services found for {}: {}",
+                        "Found multiple loadable implementations for {}: {}",
                         serviceClass,
                         services);
                 throw new IllegalStateException(
@@ -66,22 +68,20 @@ public final class ServiceLoaderFactory {
         logger.debug("Loading {}", serviceClass);
 
         return (List<S>)
-                SERVICE_CACHE.computeIfAbsent(
-                        serviceClass,
-                        (clazz) -> {
-                            ServiceLoader<S> loadedServices = ServiceLoader.load(serviceClass);
+                SERVICE_CACHE.computeIfAbsent(serviceClass, ServiceLoaderFactory::loadServices);
+    }
 
-                            LinkedList<S> services = new LinkedList<>();
+    private static <S> List<Object> loadServices(Class<S> serviceClass) {
 
-                            for (S service : loadedServices) {
-                                logger.debug(
-                                        "Found {} implementation: {}",
-                                        serviceClass,
-                                        service.getClass());
-                                services.add(service);
-                            }
+        ServiceLoader<S> loadedServices = ServiceLoader.load(serviceClass);
 
-                            return Collections.unmodifiableList(services);
-                        });
+        LinkedList<S> services = new LinkedList<>();
+
+        for (S service : loadedServices) {
+            logger.debug("Found loadable {} implementation: {}", serviceClass, service.getClass());
+            services.add(service);
+        }
+
+        return Collections.unmodifiableList(services);
     }
 }
