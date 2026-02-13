@@ -18,43 +18,27 @@
 
 package io.github.totalschema.engine.core.command.interceptor;
 
-import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
-import io.github.totalschema.config.environment.EnvironmentFactory;
-import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.core.command.api.CommandExecutor;
 import io.github.totalschema.engine.core.command.api.ContextInitializerInterceptor;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.spi.change.ChangeService;
 import io.github.totalschema.spi.change.ChangeServiceFactory;
-import io.github.totalschema.spi.hash.HashService;
-import io.github.totalschema.spi.hash.HashServiceFactory;
 import io.github.totalschema.spi.lock.LockService;
 import io.github.totalschema.spi.lock.LockServiceFactory;
-import io.github.totalschema.spi.script.ScriptExecutorManager;
-import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.state.StateService;
 import io.github.totalschema.spi.state.StateServiceFactory;
 
 public final class ServiceInitializerInterceptor extends ContextInitializerInterceptor {
 
-    private SqlDialect sqlDialect;
-
-    private ScriptExecutorManager scriptExecutorManager;
-
     private ChangeFileFactory changeFileFactory;
-
-    private ConnectorManager connectorManager;
 
     private StateService stateService;
 
     private ChangeService changeService;
 
     private LockService lockService;
-    private HashService hashService;
-
-    private EnvironmentFactory environmentFactory;
 
     public ServiceInitializerInterceptor(CommandExecutor next) {
         super(next);
