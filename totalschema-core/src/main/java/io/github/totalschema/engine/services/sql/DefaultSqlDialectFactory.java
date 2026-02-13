@@ -18,14 +18,13 @@
 
 package io.github.totalschema.engine.services.sql;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.sql.SqlDialectFactory;
 
 public class DefaultSqlDialectFactory implements SqlDialectFactory {
 
     @Override
-    public SqlDialect getSqlDialect(CommandContext context) {
+    public SqlDialect getSqlDialect() {
         return new DefaultSqlDialect();
     }
 }

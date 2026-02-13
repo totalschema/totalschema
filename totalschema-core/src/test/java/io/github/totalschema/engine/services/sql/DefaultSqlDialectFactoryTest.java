@@ -20,7 +20,6 @@ package io.github.totalschema.engine.services.sql;
 
 import static org.testng.Assert.*;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.sql.SqlDialect;
 import org.testng.annotations.Test;
 
@@ -28,10 +27,9 @@ public class DefaultSqlDialectFactoryTest {
 
     @Test
     public void testGetSqlDialect() {
-        CommandContext context = new CommandContext();
         DefaultSqlDialectFactory factory = new DefaultSqlDialectFactory();
 
-        SqlDialect dialect = factory.getSqlDialect(context);
+        SqlDialect dialect = factory.getSqlDialect();
 
         assertNotNull(dialect);
         assertTrue(dialect instanceof DefaultSqlDialect);
@@ -39,11 +37,10 @@ public class DefaultSqlDialectFactoryTest {
 
     @Test
     public void testGetSqlDialectCreatesNewInstances() {
-        CommandContext context = new CommandContext();
         DefaultSqlDialectFactory factory = new DefaultSqlDialectFactory();
 
-        SqlDialect dialect1 = factory.getSqlDialect(context);
-        SqlDialect dialect2 = factory.getSqlDialect(context);
+        SqlDialect dialect1 = factory.getSqlDialect();
+        SqlDialect dialect2 = factory.getSqlDialect();
 
         assertNotNull(dialect1);
         assertNotNull(dialect2);
@@ -56,7 +53,7 @@ public class DefaultSqlDialectFactoryTest {
         DefaultSqlDialectFactory factory = new DefaultSqlDialectFactory();
 
         // Should work even with null context since DefaultSqlDialect doesn't use it
-        SqlDialect dialect = factory.getSqlDialect(null);
+        SqlDialect dialect = factory.getSqlDialect();
 
         assertNotNull(dialect);
     }

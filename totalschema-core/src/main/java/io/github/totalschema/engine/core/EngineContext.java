@@ -23,10 +23,15 @@ import static java.util.Objects.requireNonNull;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.ConfigurationFactory;
 import io.github.totalschema.config.environment.Environment;
+import io.github.totalschema.config.environment.EnvironmentFactory;
+import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.spi.config.ConfigurationSupplier;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluatorFactory;
+import io.github.totalschema.spi.script.ScriptExecutorManager;
 import io.github.totalschema.spi.secrets.SecretsManager;
+import io.github.totalschema.spi.sql.SqlDialect;
+import io.github.totalschema.spi.sql.SqlDialectFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +42,11 @@ final class EngineContext {
     private final SecretsManager secretsManager;
     private final ExpressionEvaluator expressionEvaluator;
     private final Configuration configuration;
+
+    private final EnvironmentFactory environmentFactory;
+    private final ConnectorManager connectorManager;
+    private final ScriptExecutorManager scriptExecutorManager;
+    private final SqlDialect sqlDialect;
 
     static EngineContext create(
             ConfigurationSupplier configurationSupplier,
@@ -61,6 +71,12 @@ final class EngineContext {
                 ConfigurationFactory.getInstance()
                         .getEvaluatedConfiguration(
                                 configurationSupplier, expressionEvaluator, environment);
+
+        this.environmentFactory = EnvironmentFactory.getInstance();
+        this.connectorManager = ConnectorManager.getInstance();
+        this.scriptExecutorManager = ScriptExecutorManager.getInstance();
+
+        this.sqlDialect = SqlDialectFactory.getInstance().getSqlDialect();
     }
 
     Map<Class<?>, Object> asMap() {
@@ -73,6 +89,12 @@ final class EngineContext {
         context.put(SecretsManager.class, secretsManager);
         context.put(ExpressionEvaluator.class, expressionEvaluator);
         context.put(Configuration.class, configuration);
+
+        context.put(EnvironmentFactory.class, environmentFactory);
+        context.put(ConnectorManager.class, connectorManager);
+        context.put(ScriptExecutorManager.class, scriptExecutorManager);
+
+        context.put(SqlDialect.class, sqlDialect);
 
         return Collections.unmodifiableMap(context);
     }

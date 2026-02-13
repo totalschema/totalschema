@@ -18,14 +18,13 @@
 
 package io.github.totalschema.integrations.bigquery.sql;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.sql.SqlDialectFactory;
 
 public final class BigQuerySqlDialectFactory implements SqlDialectFactory {
 
     @Override
-    public SqlDialect getSqlDialect(CommandContext context) {
+    public SqlDialect getSqlDialect() {
         return BigQuerySqlDialect.INSTANCE;
     }
 }

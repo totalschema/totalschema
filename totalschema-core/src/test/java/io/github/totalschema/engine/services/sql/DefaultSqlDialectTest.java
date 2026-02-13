@@ -65,7 +65,7 @@ public class DefaultSqlDialectTest {
     @Test
     public void testDefaultSqlDialectFactory() {
         DefaultSqlDialectFactory factory = new DefaultSqlDialectFactory();
-        DefaultSqlDialect createdDialect = (DefaultSqlDialect) factory.getSqlDialect(null);
+        DefaultSqlDialect createdDialect = (DefaultSqlDialect) factory.getSqlDialect();
 
         assertNotNull(createdDialect);
         assertEquals(createdDialect.timestampColumnExpression(), "TIMESTAMP");

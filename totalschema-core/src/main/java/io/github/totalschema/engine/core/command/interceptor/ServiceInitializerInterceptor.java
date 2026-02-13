@@ -34,7 +34,6 @@ import io.github.totalschema.spi.lock.LockService;
 import io.github.totalschema.spi.lock.LockServiceFactory;
 import io.github.totalschema.spi.script.ScriptExecutorManager;
 import io.github.totalschema.spi.sql.SqlDialect;
-import io.github.totalschema.spi.sql.SqlDialectFactory;
 import io.github.totalschema.spi.state.StateService;
 import io.github.totalschema.spi.state.StateServiceFactory;
 
@@ -66,15 +65,7 @@ public final class ServiceInitializerInterceptor extends ContextInitializerInter
 
         initializeHashService(context);
 
-        initializeSqlDialect(context);
-
-        initializeScriptExecutorManager(context);
-
         initializeChangeFileIdFactory(context);
-
-        initializeConnectorManager(context);
-
-        initializeEnvironmentFactory(context);
 
         if (context.has(Environment.class)) {
             initializeStateService(context);
@@ -89,30 +80,6 @@ public final class ServiceInitializerInterceptor extends ContextInitializerInter
             changeFileFactory = new ChangeFileFactory(context);
         }
         context.setValue(ChangeFileFactory.class, changeFileFactory);
-    }
-
-    private void initializeScriptExecutorManager(CommandContext context) {
-
-        if (scriptExecutorManager == null) {
-            scriptExecutorManager = ScriptExecutorManager.getInstance();
-        }
-
-        context.setValue(ScriptExecutorManager.class, scriptExecutorManager);
-    }
-
-    private void initializeConnectorManager(CommandContext context) {
-        if (connectorManager == null) {
-            connectorManager = ConnectorManager.getInstance();
-        }
-        context.setValue(ConnectorManager.class, connectorManager);
-    }
-
-    private void initializeEnvironmentFactory(CommandContext context) {
-        if (environmentFactory == null) {
-            environmentFactory = EnvironmentFactory.getInstance();
-        }
-
-        context.setValue(EnvironmentFactory.class, environmentFactory);
     }
 
     private void initializeStateService(CommandContext context) {
@@ -133,16 +100,6 @@ public final class ServiceInitializerInterceptor extends ContextInitializerInter
         }
 
         context.setValue(ChangeService.class, changeService);
-    }
-
-    private void initializeSqlDialect(CommandContext context) {
-
-        if (sqlDialect == null) {
-            SqlDialectFactory sqlDialectFactory = SqlDialectFactory.getInstance();
-            sqlDialect = sqlDialectFactory.getSqlDialect(context);
-        }
-
-        context.setValue(SqlDialect.class, sqlDialect);
     }
 
     private void initializeLockService(CommandContext context) {

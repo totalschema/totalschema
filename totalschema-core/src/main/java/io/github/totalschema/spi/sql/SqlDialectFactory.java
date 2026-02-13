@@ -18,7 +18,6 @@
 
 package io.github.totalschema.spi.sql;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.services.sql.DefaultSqlDialectFactory;
 import io.github.totalschema.spi.ServiceLoaderFactory;
 
@@ -29,5 +28,5 @@ public interface SqlDialectFactory {
                 .orElseGet(DefaultSqlDialectFactory::new);
     }
 
-    SqlDialect getSqlDialect(CommandContext context);
+    SqlDialect getSqlDialect();
 }
