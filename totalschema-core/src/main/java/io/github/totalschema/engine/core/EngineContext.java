@@ -25,6 +25,7 @@ import io.github.totalschema.config.ConfigurationFactory;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.config.environment.EnvironmentFactory;
 import io.github.totalschema.connector.ConnectorManager;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.spi.config.ConfigurationSupplier;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluatorFactory;
@@ -37,7 +38,7 @@ import io.github.totalschema.spi.sql.SqlDialectFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-final class EngineContext {
+final class EngineContext implements Context {
 
     private final Environment environment;
     private final SecretsManager secretsManager;
@@ -49,6 +50,8 @@ final class EngineContext {
     private final ScriptExecutorManager scriptExecutorManager;
     private final SqlDialect sqlDialect;
     private final HashService hashService;
+
+    private final Map<Class<?>, Object> immutableContextMap;
 
     static EngineContext create(
             ConfigurationSupplier configurationSupplier,
@@ -81,6 +84,8 @@ final class EngineContext {
         this.sqlDialect = SqlDialectFactory.getInstance().getSqlDialect();
 
         this.hashService = getHashService(configuration);
+
+        this.immutableContextMap = Map.copyOf(initContext());
     }
 
     private static HashService getHashService(Configuration configuration) {
@@ -98,7 +103,7 @@ final class EngineContext {
         return hashService;
     }
 
-    Map<Class<?>, Object> asMap() {
+    private Map<Class<?>, Object> initContext() {
         Map<Class<?>, Object> context = new HashMap<>();
 
         if (environment != null) {
@@ -120,5 +125,25 @@ final class EngineContext {
         }
 
         return context;
+    }
+
+    @Override
+    public boolean has(Class<?> clazz) {
+        return immutableContextMap.containsKey(clazz);
+    }
+
+    @Override
+    public <R> R get(Class<R> clazz) {
+        @SuppressWarnings("unchecked")
+        R returnValue = (R) immutableContextMap.get(clazz);
+        if (returnValue == null) {
+            throw new IllegalStateException("No EngineContext value found for: " + clazz.getName());
+        }
+
+        return returnValue;
+    }
+
+    Map<Class<?>, Object> asMap() {
+        return immutableContextMap;
     }
 }
