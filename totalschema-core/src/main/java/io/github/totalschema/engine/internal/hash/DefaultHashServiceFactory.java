@@ -18,17 +18,17 @@
 
 package io.github.totalschema.engine.internal.hash;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.config.Configuration;
 import io.github.totalschema.spi.hash.HashService;
 import io.github.totalschema.spi.hash.HashServiceFactory;
 
 public final class DefaultHashServiceFactory implements HashServiceFactory {
 
     @Override
-    public HashService getHashService(CommandContext context) {
+    public HashService getHashService(Configuration configuration) {
         try {
 
-            return new DefaultHashService(context);
+            return new DefaultHashService(configuration);
 
         } catch (RuntimeException ex) {
             throw new RuntimeException("Failure initializing HashService", ex);

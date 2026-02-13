@@ -63,8 +63,6 @@ public final class ServiceInitializerInterceptor extends ContextInitializerInter
     @Override
     protected void initializeFromContext(CommandContext context) {
 
-        initializeHashService(context);
-
         initializeChangeFileIdFactory(context);
 
         if (context.has(Environment.class)) {
@@ -111,22 +109,6 @@ public final class ServiceInitializerInterceptor extends ContextInitializerInter
 
         if (lockService != null) {
             context.setValue(LockService.class, lockService);
-        }
-    }
-
-    private void initializeHashService(CommandContext context) {
-
-        Configuration configuration = context.get(Configuration.class);
-
-        if ("contentHash"
-                .equalsIgnoreCase(configuration.getString("validation.type").orElse(null))) {
-
-            if (hashService == null) {
-                HashServiceFactory hashServiceFactory = HashServiceFactory.getInstance();
-                hashService = hashServiceFactory.getHashService(context);
-            }
-
-            context.setValue(HashService.class, hashService);
         }
     }
 }

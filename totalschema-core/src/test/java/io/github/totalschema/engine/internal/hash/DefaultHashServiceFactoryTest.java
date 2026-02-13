@@ -22,7 +22,6 @@ import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MapConfiguration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.hash.HashService;
 import java.util.Map;
 import org.testng.annotations.Test;
@@ -31,12 +30,11 @@ public class DefaultHashServiceFactoryTest {
 
     @Test
     public void testGetHashService() {
-        CommandContext context = new CommandContext();
+
         Configuration config = new MapConfiguration(Map.of());
-        context.setValue(Configuration.class, config);
 
         DefaultHashServiceFactory factory = new DefaultHashServiceFactory();
-        HashService service = factory.getHashService(context);
+        HashService service = factory.getHashService(config);
 
         assertNotNull(service);
         assertTrue(service instanceof DefaultHashService);
@@ -44,14 +42,13 @@ public class DefaultHashServiceFactoryTest {
 
     @Test
     public void testGetHashServiceWithInvalidConfiguration() {
-        CommandContext context = new CommandContext();
+
         Configuration config = new MapConfiguration(Map.of("hash.algorithm", "INVALID"));
-        context.setValue(Configuration.class, config);
 
         DefaultHashServiceFactory factory = new DefaultHashServiceFactory();
 
         RuntimeException thrown =
-                expectThrows(RuntimeException.class, () -> factory.getHashService(context));
+                expectThrows(RuntimeException.class, () -> factory.getHashService(config));
 
         assertTrue(thrown.getMessage().contains("Failure initializing HashService"));
         assertNotNull(thrown.getCause());
@@ -59,13 +56,11 @@ public class DefaultHashServiceFactoryTest {
 
     @Test
     public void testGetHashServiceCreatesNewInstances() {
-        CommandContext context = new CommandContext();
         Configuration config = new MapConfiguration(Map.of());
-        context.setValue(Configuration.class, config);
 
         DefaultHashServiceFactory factory = new DefaultHashServiceFactory();
-        HashService service1 = factory.getHashService(context);
-        HashService service2 = factory.getHashService(context);
+        HashService service1 = factory.getHashService(config);
+        HashService service2 = factory.getHashService(config);
 
         assertNotNull(service1);
         assertNotNull(service2);

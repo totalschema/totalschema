@@ -19,7 +19,6 @@
 package io.github.totalschema.engine.internal.hash;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.hash.HashService;
 import io.github.totalschema.util.HexUtil;
 import java.nio.charset.StandardCharsets;
@@ -32,11 +31,10 @@ final class DefaultHashService implements HashService {
 
     private final String algorithm;
 
-    DefaultHashService(CommandContext context) {
+    DefaultHashService(Configuration configuration) {
 
-        Configuration configuration = context.get(Configuration.class).getPrefixNamespace("hash");
-
-        this.algorithm = configuration.getString("algorithm").orElse(DEFAULT_HASH_ALGORITHM);
+        this.algorithm =
+                configuration.getString("hash", "algorithm").orElse(DEFAULT_HASH_ALGORITHM);
 
         try {
             MessageDigest.getInstance(algorithm);

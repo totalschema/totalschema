@@ -28,11 +28,12 @@ import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.spi.config.ConfigurationSupplier;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluatorFactory;
+import io.github.totalschema.spi.hash.HashService;
+import io.github.totalschema.spi.hash.HashServiceFactory;
 import io.github.totalschema.spi.script.ScriptExecutorManager;
 import io.github.totalschema.spi.secrets.SecretsManager;
 import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.sql.SqlDialectFactory;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +48,7 @@ final class EngineContext {
     private final ConnectorManager connectorManager;
     private final ScriptExecutorManager scriptExecutorManager;
     private final SqlDialect sqlDialect;
+    private final HashService hashService;
 
     static EngineContext create(
             ConfigurationSupplier configurationSupplier,
@@ -77,6 +79,23 @@ final class EngineContext {
         this.scriptExecutorManager = ScriptExecutorManager.getInstance();
 
         this.sqlDialect = SqlDialectFactory.getInstance().getSqlDialect();
+
+        this.hashService = getHashService(configuration);
+    }
+
+    private static HashService getHashService(Configuration configuration) {
+
+        // Initialize hashService if validation.type is set to contentHash
+        final HashService hashService;
+        if ("contentHash"
+                .equalsIgnoreCase(configuration.getString("validation.type").orElse(null))) {
+
+            hashService = HashServiceFactory.getInstance().getHashService(configuration);
+        } else {
+            hashService = null;
+        }
+
+        return hashService;
     }
 
     Map<Class<?>, Object> asMap() {
@@ -96,6 +115,10 @@ final class EngineContext {
 
         context.put(SqlDialect.class, sqlDialect);
 
-        return Collections.unmodifiableMap(context);
+        if (hashService != null) {
+            context.put(HashService.class, hashService);
+        }
+
+        return context;
     }
 }

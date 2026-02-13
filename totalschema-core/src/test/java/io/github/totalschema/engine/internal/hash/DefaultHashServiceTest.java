@@ -22,26 +22,16 @@ import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MapConfiguration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import java.util.Map;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class DefaultHashServiceTest {
 
-    private CommandContext context;
-
-    @BeforeMethod
-    public void setUp() {
-        context = new CommandContext();
-    }
-
     @Test
     public void testHashToHexStringWithDefaultAlgorithm() {
         Configuration config = new MapConfiguration(Map.of());
-        context.setValue(Configuration.class, config);
 
-        DefaultHashService hashService = new DefaultHashService(context);
+        DefaultHashService hashService = new DefaultHashService(config);
         String hash = hashService.hashToHexString("test");
 
         assertNotNull(hash);
@@ -52,9 +42,8 @@ public class DefaultHashServiceTest {
     @Test
     public void testHashToHexStringConsistency() {
         Configuration config = new MapConfiguration(Map.of());
-        context.setValue(Configuration.class, config);
 
-        DefaultHashService hashService = new DefaultHashService(context);
+        DefaultHashService hashService = new DefaultHashService(config);
         String hash1 = hashService.hashToHexString("test");
         String hash2 = hashService.hashToHexString("test");
 
@@ -64,9 +53,8 @@ public class DefaultHashServiceTest {
     @Test
     public void testHashToHexStringDifferentInputs() {
         Configuration config = new MapConfiguration(Map.of());
-        context.setValue(Configuration.class, config);
 
-        DefaultHashService hashService = new DefaultHashService(context);
+        DefaultHashService hashService = new DefaultHashService(config);
         String hash1 = hashService.hashToHexString("test1");
         String hash2 = hashService.hashToHexString("test2");
 
@@ -76,9 +64,8 @@ public class DefaultHashServiceTest {
     @Test
     public void testHashToHexStringWithCustomAlgorithm() {
         Configuration config = new MapConfiguration(Map.of("hash.algorithm", "MD5"));
-        context.setValue(Configuration.class, config);
 
-        DefaultHashService hashService = new DefaultHashService(context);
+        DefaultHashService hashService = new DefaultHashService(config);
         String hash = hashService.hashToHexString("test");
 
         assertNotNull(hash);
@@ -89,17 +76,15 @@ public class DefaultHashServiceTest {
     @Test(expectedExceptions = RuntimeException.class)
     public void testHashToHexStringWithInvalidAlgorithm() {
         Configuration config = new MapConfiguration(Map.of("hash.algorithm", "INVALID-ALGORITHM"));
-        context.setValue(Configuration.class, config);
 
-        new DefaultHashService(context);
+        new DefaultHashService(config);
     }
 
     @Test
     public void testHashToHexStringWithEmptyString() {
         Configuration config = new MapConfiguration(Map.of());
-        context.setValue(Configuration.class, config);
 
-        DefaultHashService hashService = new DefaultHashService(context);
+        DefaultHashService hashService = new DefaultHashService(config);
         String hash = hashService.hashToHexString("");
 
         assertNotNull(hash);
@@ -109,9 +94,8 @@ public class DefaultHashServiceTest {
     @Test
     public void testHashToHexStringKnownValue() {
         Configuration config = new MapConfiguration(Map.of());
-        context.setValue(Configuration.class, config);
 
-        DefaultHashService hashService = new DefaultHashService(context);
+        DefaultHashService hashService = new DefaultHashService(config);
         String hash = hashService.hashToHexString("test");
 
         // Known SHA-256 hash of "test" (uppercase)

@@ -18,7 +18,7 @@
 
 package io.github.totalschema.spi.hash;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.internal.hash.DefaultHashServiceFactory;
 import io.github.totalschema.spi.ServiceLoaderFactory;
 
@@ -40,10 +40,10 @@ public interface HashServiceFactory {
     }
 
     /**
-     * Creates a HashService for the given context.
+     * Creates a HashService for the given configuration.
      *
-     * @param context the command context
+     * @param configuration the configuration of the system (never {@code null})
      * @return a HashService instance
      */
-    HashService getHashService(CommandContext context);
+    HashService getHashService(Configuration configuration);
 }
