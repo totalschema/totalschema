@@ -36,7 +36,8 @@ lock:
         sql: CREATE SCHEMA IF NOT EXISTS ${systemDatabaseSchema}
 
 variables:
-  systemDatabaseJdbcUrl: jdbc:h2:file:./h2db/totalschema_system/h2db/${systemDatabaseSchema}
+  sampleDatabasesRootPath: .
+  systemDatabaseJdbcUrl: jdbc:h2:file:${sampleDatabasesRootPath}/h2db/totalschema_system/h2db/${systemDatabaseSchema}
   systemDatabaseSchema: ${dbName}_totalschema_system
   dbSchema: ${dbName}
   logEngineInternalSql: true
@@ -62,8 +63,8 @@ connectors:
     driver:
       class: org.h2.Driver
     jdbc:
-      url: jdbc:h2:file:./h2db/sample_db/${dbName}
+      url: jdbc:h2:file:${sampleDatabasesRootPath}/h2db/sample_db/${dbName}
+    username: sa
+    password: ${dbPassword}
     db:
       type: generic
-      username: sa
-      password: ${dbPassword}

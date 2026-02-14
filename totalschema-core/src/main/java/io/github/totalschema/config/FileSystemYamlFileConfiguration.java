@@ -47,12 +47,12 @@ public final class FileSystemYamlFileConfiguration {
                 () -> {
                     Path path;
                     if (System.getProperty("totalschema.workspace.directory") != null) {
-                        String customDirectory = System.getProperty("totalschema.workspace.directory");
+                        String customDirectory =
+                                System.getProperty("totalschema.workspace.directory");
                         path = Paths.get(customDirectory, yamlFileName);
                     } else {
                         path = Paths.get(yamlFileName);
                     }
-
 
                     try {
                         if (Files.exists(path)) {
