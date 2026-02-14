@@ -19,7 +19,7 @@
 package io.github.totalschema.engine.internal.state.database;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.jdbc.JdbcDatabaseFactory;
@@ -29,7 +29,6 @@ import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.StateRecord;
 import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.state.StateRepository;
-
 import java.io.IOException;
 import java.sql.*;
 import java.time.ZonedDateTime;
@@ -72,7 +71,7 @@ public class JdbcDatabaseStateRecordRepository implements StateRepository {
     private final SqlDialect sqlDialect;
 
     public static StateRepository newInstance(
-            CommandContext context, Configuration databaseConfiguration) {
+            Context context, Configuration databaseConfiguration) {
 
         JdbcDatabaseStateRecordRepository repository =
                 new JdbcDatabaseStateRecordRepository(context, databaseConfiguration);
@@ -82,7 +81,7 @@ public class JdbcDatabaseStateRecordRepository implements StateRepository {
         return repository;
     }
 
-    public JdbcDatabaseStateRecordRepository(CommandContext context, Configuration configuration) {
+    public JdbcDatabaseStateRecordRepository(Context context, Configuration configuration) {
 
         sqlDialect = context.get(SqlDialect.class);
 

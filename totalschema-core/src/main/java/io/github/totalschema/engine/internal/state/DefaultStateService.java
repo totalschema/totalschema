@@ -19,7 +19,7 @@
 package io.github.totalschema.engine.internal.state;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.model.*;
 import io.github.totalschema.spi.hash.HashService;
 import io.github.totalschema.spi.state.StateRepository;
@@ -43,9 +43,9 @@ class DefaultStateService implements StateService {
     private final StateRepository repository;
     private final HashService hashService;
 
-    private final CommandContext context;
+    private final Context context;
 
-    DefaultStateService(StateRepository repository, CommandContext context) {
+    DefaultStateService(StateRepository repository, Context context) {
         this.repository = repository;
         this.context = context;
 

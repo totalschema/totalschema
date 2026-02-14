@@ -21,7 +21,7 @@ package io.github.totalschema.engine.internal.state;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MisconfigurationException;
 import io.github.totalschema.config.MissingConfigurationKeyException;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.state.csv.CsvFileStateRecordRepository;
 import io.github.totalschema.engine.internal.state.database.JdbcDatabaseStateRecordRepository;
 import io.github.totalschema.spi.state.StateRepository;
@@ -32,7 +32,7 @@ public class DefaultStateRepositoryFactory implements StateRepositoryFactory {
     private static final String PROPERTY_NAMESPACE = "stateRepository";
 
     @Override
-    public StateRepository getStateRecordRepository(CommandContext context) {
+    public StateRepository getStateRecordRepository(Context context) {
 
         Configuration stateConfig =
                 context.get(Configuration.class).getPrefixNamespace(PROPERTY_NAMESPACE);

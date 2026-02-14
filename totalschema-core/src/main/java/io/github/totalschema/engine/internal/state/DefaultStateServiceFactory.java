@@ -18,7 +18,7 @@
 
 package io.github.totalschema.engine.internal.state;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.spi.state.StateRepository;
 import io.github.totalschema.spi.state.StateRepositoryFactory;
 import io.github.totalschema.spi.state.StateService;
@@ -27,7 +27,7 @@ import io.github.totalschema.spi.state.StateServiceFactory;
 public class DefaultStateServiceFactory implements StateServiceFactory {
 
     @Override
-    public StateService getStateService(CommandContext context) {
+    public StateService getStateService(Context context) {
 
         try {
 

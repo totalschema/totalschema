@@ -18,7 +18,7 @@
 
 package io.github.totalschema.spi.state;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.state.DefaultStateServiceFactory;
 import io.github.totalschema.spi.ServiceLoaderFactory;
 
@@ -29,5 +29,5 @@ public interface StateServiceFactory {
                 .orElseGet(DefaultStateServiceFactory::new);
     }
 
-    StateService getStateService(CommandContext context);
+    StateService getStateService(Context context);
 }

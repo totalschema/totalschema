@@ -22,7 +22,7 @@ import io.github.totalschema.ProjectConventions;
 import io.github.totalschema.concurrent.LockTemplate;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.StateRecord;
@@ -142,7 +142,7 @@ public final class CsvFileStateRecordRepository implements StateRepository {
                     FILE_OPERATION_TIMEOUT, FILE_OPERATION_TIMEOUT_UNIT, readWriteLock.writeLock());
 
     public static CsvFileStateRecordRepository newInstance(
-            CommandContext context, Configuration configuration) {
+            Context context, Configuration configuration) {
 
         try {
             CsvFileStateRecordRepository repository =
@@ -157,7 +157,7 @@ public final class CsvFileStateRecordRepository implements StateRepository {
         }
     }
 
-    public CsvFileStateRecordRepository(CommandContext context, Configuration configuration) {
+    public CsvFileStateRecordRepository(Context context, Configuration configuration) {
 
         changeFileFactory = context.get(ChangeFileFactory.class);
 
