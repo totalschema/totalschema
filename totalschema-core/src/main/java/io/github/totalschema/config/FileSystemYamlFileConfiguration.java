@@ -45,7 +45,15 @@ public final class FileSystemYamlFileConfiguration {
     public static YamlFileConfiguration create(String yamlFileName) {
         Supplier<Optional<java.io.InputStream>> provider =
                 () -> {
-                    Path path = Paths.get(yamlFileName);
+                    Path path;
+                    if (System.getProperty("totalschema.workspace.directory") != null) {
+                        String customDirectory = System.getProperty("totalschema.workspace.directory");
+                        path = Paths.get(customDirectory, yamlFileName);
+                    } else {
+                        path = Paths.get(yamlFileName);
+                    }
+
+
                     try {
                         if (Files.exists(path)) {
                             return Optional.of(Files.newInputStream(path));
