@@ -1,0 +1,69 @@
+version: 1
+
+stateRepository:
+  type: database
+  database:
+    username: ${systemDatabaseSchema}
+    password: ${dbPassword}
+    jdbc:
+      url: ${systemDatabaseJdbcUrl}
+    logSql: ${logEngineInternalSql}
+    table:
+      catalog: ${systemDatabaseSchema}
+      beforeCreate:
+        sql: CREATE SCHEMA IF NOT EXISTS ${systemDatabaseSchema}
+      column:
+        change_file_id:
+          type: VARCHAR(255)
+      primaryKeyClause:
+        omit: true
+
+
+validation:
+  type: contentHash
+
+lock:
+  type: database
+  database:
+    username: ${systemDatabaseSchema}
+    password: ${dbPassword}
+    logSql: ${logEngineInternalSql}
+    jdbc:
+      url: ${systemDatabaseJdbcUrl}
+    table:
+      catalog: ${systemDatabaseSchema}
+      beforeCreate:
+        sql: CREATE SCHEMA IF NOT EXISTS ${systemDatabaseSchema}
+
+variables:
+  systemDatabaseJdbcUrl: jdbc:h2:file:./h2db/totalschema_system/h2db/${systemDatabaseSchema}
+  systemDatabaseSchema: ${dbName}_totalschema_system
+  dbSchema: ${dbName}
+  logEngineInternalSql: true
+
+environments:
+  DEV:
+    variables:
+      dbPassword: ${secret:!SECRET;1.0;0F0E0000001068CAFA1CC069D0FA8F71B9BE0B8C460B000000108C514C3146339793BEAC571466C89082000000109356ED1EA6A7EA6B395A60B3C76863C9}
+      dbName: dev_db
+
+  QA:
+    variables:
+      dbPassword: TODO
+      dbName: qa_db
+  PROD:
+    variables:
+      dbPassword: TODO
+      dbName: prod_db
+
+connectors:
+  h2:
+    type: jdbc
+    driver:
+      class: org.h2.Driver
+    jdbc:
+      url: jdbc:h2:file:./h2db/sample_db/${dbName}
+    db:
+      type: generic
+      username: sa
+      password: ${dbPassword}

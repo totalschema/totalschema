@@ -1,0 +1,1 @@
+CREATE TABLE phone_book(id NUMBER, name VARCHAR(255), phone_number VARCHAR(255))

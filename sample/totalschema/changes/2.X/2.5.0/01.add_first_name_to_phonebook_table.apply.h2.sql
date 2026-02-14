@@ -1,0 +1,1 @@
+ALTER TABLE phone_book ADD COLUMN first_name VARCHAR(255)

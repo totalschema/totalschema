@@ -1,0 +1,1 @@
+ALTER TABLE phone_book DROP COLUMN last_name
