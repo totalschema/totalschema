@@ -25,3 +25,7 @@ nerated files
 /*/*.iml
 
 *.iml
+
+# macOS
+.DS_Store
+**/.DS_Store
