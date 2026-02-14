@@ -354,4 +354,9 @@ public final class CsvFileStateRecordRepository implements StateRepository {
             throw new RuntimeException(ex);
         }
     }
+
+    @Override
+    public void close() throws IOException {
+        // no-op
+    }
 }

@@ -20,6 +20,7 @@ package io.github.totalschema.spi.state;
 
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.StateRecord;
+import java.io.Closeable;
 import java.util.List;
 import java.util.Set;
 
@@ -28,7 +29,7 @@ import java.util.Set;
  *
  * <p>Implementations store and retrieve records of executed changes.
  */
-public interface StateRepository {
+public interface StateRepository extends Closeable {
     /**
      * Saves a state record for an executed change.
      *

@@ -153,4 +153,9 @@ class DefaultStateService implements StateService {
         }
         return appliedByUserId;
     }
+
+    @Override
+    public void close() throws IOException {
+        repository.close();
+    }
 }

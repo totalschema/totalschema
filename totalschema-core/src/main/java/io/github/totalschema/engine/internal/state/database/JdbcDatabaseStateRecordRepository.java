@@ -29,6 +29,8 @@ import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.StateRecord;
 import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.state.StateRepository;
+
+import java.io.IOException;
 import java.sql.*;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -407,5 +409,10 @@ public class JdbcDatabaseStateRecordRepository implements StateRepository {
                     STATE_DATABASE_NAME,
                     tableNameExpression);
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        jdbcDatabase.close();
     }
 }

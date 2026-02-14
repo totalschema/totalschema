@@ -22,9 +22,10 @@ import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.RevertFile;
 import io.github.totalschema.model.StateRecord;
+import java.io.Closeable;
 import java.util.List;
 
-public interface StateService {
+public interface StateService extends Closeable {
 
     void registerCompletion(ApplyFile applyFile);
 
