@@ -22,6 +22,9 @@ import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.core.command.api.CommandExecutor;
 import io.github.totalschema.engine.core.command.api.ContextInitializerInterceptor;
+import io.github.totalschema.engine.core.event.ChangeEngineCloseEvent;
+import io.github.totalschema.engine.core.event.CloseResourceChangeEngineCloseListener;
+import io.github.totalschema.engine.core.event.EventDispatcher;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.spi.change.ChangeService;
 import io.github.totalschema.spi.change.ChangeServiceFactory;
@@ -69,6 +72,11 @@ public final class ServiceInitializerInterceptor extends ContextInitializerInter
         if (stateService == null) {
             StateServiceFactory stateServiceFactory = StateServiceFactory.getInstance();
             stateService = stateServiceFactory.getStateService(context);
+
+            EventDispatcher eventDispatcher = context.get(EventDispatcher.class);
+            eventDispatcher.subscribe(
+                    ChangeEngineCloseEvent.class,
+                    CloseResourceChangeEngineCloseListener.create(stateService));
         }
 
         context.setValue(StateService.class, stateService);
