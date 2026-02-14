@@ -25,7 +25,6 @@ import io.github.totalschema.engine.core.command.api.ContextInitializerIntercept
 import io.github.totalschema.engine.core.event.ChangeEngineCloseEvent;
 import io.github.totalschema.engine.core.event.CloseResourceChangeEngineCloseListener;
 import io.github.totalschema.engine.core.event.EventDispatcher;
-import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.spi.change.ChangeService;
 import io.github.totalschema.spi.change.ChangeServiceFactory;
 import io.github.totalschema.spi.lock.LockService;
@@ -34,8 +33,6 @@ import io.github.totalschema.spi.state.StateService;
 import io.github.totalschema.spi.state.StateServiceFactory;
 
 public final class ServiceInitializerInterceptor extends ContextInitializerInterceptor {
-
-    private ChangeFileFactory changeFileFactory;
 
     private StateService stateService;
 
@@ -50,21 +47,12 @@ public final class ServiceInitializerInterceptor extends ContextInitializerInter
     @Override
     protected void initializeFromContext(CommandContext context) {
 
-        initializeChangeFileIdFactory(context);
-
         if (context.has(Environment.class)) {
             initializeStateService(context);
             initializeChangeService(context);
         }
 
         initializeLockService(context);
-    }
-
-    private void initializeChangeFileIdFactory(CommandContext context) {
-        if (changeFileFactory == null) {
-            changeFileFactory = new ChangeFileFactory(context);
-        }
-        context.setValue(ChangeFileFactory.class, changeFileFactory);
     }
 
     private void initializeStateService(CommandContext context) {

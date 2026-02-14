@@ -19,7 +19,6 @@
 package io.github.totalschema.engine.internal.changefile;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.ChangeType;
@@ -48,8 +47,7 @@ public class ChangeFileFactory {
 
     private final Integer changeFileNameMaxLength;
 
-    public ChangeFileFactory(CommandContext context) {
-        Configuration configuration = context.get(Configuration.class);
+    public ChangeFileFactory(Configuration configuration) {
 
         changeFileNameMaxLength =
                 configuration

@@ -26,6 +26,7 @@ import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.config.environment.EnvironmentFactory;
 import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.spi.config.ConfigurationSupplier;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluatorFactory;
@@ -50,6 +51,7 @@ final class EngineContext implements Context {
     private final ScriptExecutorManager scriptExecutorManager;
     private final SqlDialect sqlDialect;
     private final HashService hashService;
+    private final ChangeFileFactory changeFileFactory;
 
     private final Map<Class<?>, Object> immutableContextMap;
 
@@ -84,6 +86,7 @@ final class EngineContext implements Context {
         this.sqlDialect = SqlDialectFactory.getInstance().getSqlDialect();
 
         this.hashService = getHashService(configuration);
+        this.changeFileFactory = new ChangeFileFactory(configuration);
 
         this.immutableContextMap = Map.copyOf(initContext());
     }
@@ -123,6 +126,8 @@ final class EngineContext implements Context {
         if (hashService != null) {
             context.put(HashService.class, hashService);
         }
+
+        context.put(ChangeFileFactory.class, changeFileFactory);
 
         return context;
     }
