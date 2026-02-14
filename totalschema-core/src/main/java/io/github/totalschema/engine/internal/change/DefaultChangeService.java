@@ -21,6 +21,7 @@ package io.github.totalschema.engine.internal.change;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.connector.Connector;
 import io.github.totalschema.connector.ConnectorManager;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.spi.change.ChangeService;
@@ -35,7 +36,7 @@ public class DefaultChangeService implements ChangeService {
     private final ConnectorManager connectorManager;
     private final Environment environment;
 
-    public DefaultChangeService(CommandContext context) {
+    public DefaultChangeService(Context context) {
         this(context.get(ConnectorManager.class), context.get(Environment.class));
     }
 

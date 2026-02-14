@@ -18,7 +18,7 @@
 
 package io.github.totalschema.spi.change;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.change.DefaultChangeServiceFactory;
 import io.github.totalschema.spi.ServiceLoaderFactory;
 
@@ -45,5 +45,5 @@ public interface ChangeServiceFactory {
      * @param context the command context containing environment and configuration
      * @return ChangeService instance
      */
-    ChangeService getChangeService(CommandContext context);
+    ChangeService getChangeService(Context context);
 }

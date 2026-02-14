@@ -18,7 +18,7 @@
 
 package io.github.totalschema.engine.internal.change;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.spi.change.ChangeService;
 import io.github.totalschema.spi.change.ChangeServiceFactory;
 
@@ -26,7 +26,7 @@ import io.github.totalschema.spi.change.ChangeServiceFactory;
 public class DefaultChangeServiceFactory implements ChangeServiceFactory {
 
     @Override
-    public ChangeService getChangeService(CommandContext context) {
+    public ChangeService getChangeService(Context context) {
         return new DefaultChangeService(context);
     }
 }
