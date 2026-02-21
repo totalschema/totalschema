@@ -18,24 +18,73 @@
 
 package io.github.totalschema.engine.internal.state;
 
-import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.spi.state.StateRepository;
-import io.github.totalschema.spi.state.StateRepositoryFactory;
-import io.github.totalschema.spi.state.StateService;
-import io.github.totalschema.spi.state.StateServiceFactory;
+import static io.github.totalschema.spi.state.StateConstants.CONFIG_PROPERTY_NAMESPACE;
 
-public class DefaultStateServiceFactory implements StateServiceFactory {
+import io.github.totalschema.config.Configuration;
+import io.github.totalschema.config.MissingConfigurationKeyException;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.core.event.EventDispatcher;
+import io.github.totalschema.spi.ComponentFactory;
+import io.github.totalschema.spi.hash.HashService;
+import io.github.totalschema.spi.state.StateRepository;
+import io.github.totalschema.spi.state.StateService;
+import java.util.List;
+
+public class DefaultStateServiceFactory implements ComponentFactory<StateService> {
 
     @Override
-    public StateService getStateService(Context context) {
+    public boolean isLazy() {
+        return true;
+    }
 
+    @Override
+    public Class<StateService> getConstructedClass() {
+        return StateService.class;
+    }
+
+    @Override
+    public String getQualifier() {
+        return null;
+    }
+
+    @Override
+    public List<Class<?>> getRequiredContextTypes() {
+        return List.of(Configuration.class, StateRepository.class, EventDispatcher.class);
+    }
+
+    @Override
+    public List<Class<?>> getArgumentTypes() {
+        return List.of();
+    }
+
+    @Override
+    public StateService newComponent(Context context, Object... arguments) {
         try {
+            Configuration configuration = context.get(Configuration.class);
 
-            StateRepositoryFactory repositoryFactory = StateRepositoryFactory.getInstance();
+            String stateType =
+                    configuration
+                            .getString(CONFIG_PROPERTY_NAMESPACE, "type")
+                            .orElseThrow(
+                                    () ->
+                                            MissingConfigurationKeyException.forKey(
+                                                    CONFIG_PROPERTY_NAMESPACE + ".type"));
 
-            StateRepository recordRepository = repositoryFactory.getStateRecordRepository(context);
+            StateRepository stateRepository = context.get(StateRepository.class, stateType);
 
-            return new DefaultStateService(recordRepository, context);
+            HashService hashService;
+            if (context.has(HashService.class)) {
+                hashService = context.get(HashService.class);
+            } else {
+                hashService = null;
+            }
+
+            String overrideAppliedByUserId =
+                    context.get(Configuration.class)
+                            .getString("state.overrideAppliedByUserId")
+                            .orElse(null);
+
+            return new DefaultStateService(stateRepository, hashService, overrideAppliedByUserId);
 
         } catch (RuntimeException ex) {
             throw new RuntimeException("Failure creating StateService", ex);

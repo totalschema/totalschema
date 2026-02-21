@@ -18,8 +18,6 @@
 
 package io.github.totalschema.engine.internal.state;
 
-import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.model.*;
 import io.github.totalschema.spi.hash.HashService;
 import io.github.totalschema.spi.state.StateRepository;
@@ -43,17 +41,14 @@ class DefaultStateService implements StateService {
     private final StateRepository repository;
     private final HashService hashService;
 
-    private final Context context;
+    private final String overrideAppliedByUserId;
 
-    DefaultStateService(StateRepository repository, Context context) {
+    DefaultStateService(
+            StateRepository repository, HashService hashService, String overrideAppliedByUserId) {
         this.repository = repository;
-        this.context = context;
+        this.overrideAppliedByUserId = overrideAppliedByUserId;
 
-        if (context.has(HashService.class)) {
-            hashService = context.get(HashService.class);
-        } else {
-            hashService = null;
-        }
+        this.hashService = hashService;
     }
 
     @Override
@@ -129,6 +124,9 @@ class DefaultStateService implements StateService {
                 Stream.of(ChangeType.values()).map(id::withChangeType).collect(Collectors.toSet());
 
         int recordsDeleted = repository.deleteStateRecordByIds(changeFileIdsToDelete);
+
+        logger.trace("Deleted {} records from state for {}", recordsDeleted, id);
+
         return recordsDeleted;
     }
 
@@ -136,26 +134,21 @@ class DefaultStateService implements StateService {
 
         String appliedByUserId = System.getProperty("user.name");
 
-        if (context.has(Configuration.class)) {
-            String overrideAppliedByUserId =
-                    context.get(Configuration.class)
-                            .getString("state.override.appliedBy.userId")
-                            .orElse(null);
+        if (overrideAppliedByUserId != null) {
+            logger.info(
+                    "Overriding appliedByUserId from {} to {} due to configuration",
+                    appliedByUserId,
+                    overrideAppliedByUserId);
 
-            if (overrideAppliedByUserId != null) {
-                logger.info(
-                        "Overriding appliedByUserId from {} to {} due to configuration",
-                        appliedByUserId,
-                        overrideAppliedByUserId);
-
-                appliedByUserId = overrideAppliedByUserId;
-            }
+            appliedByUserId = overrideAppliedByUserId;
         }
+
         return appliedByUserId;
     }
 
     @Override
     public void close() throws IOException {
-        repository.close();
+        // no-op, as repository is expected to be managed by
+        // the component container and not closed by this service
     }
 }

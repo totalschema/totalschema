@@ -22,15 +22,11 @@ import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.core.command.api.CommandExecutor;
 import io.github.totalschema.engine.core.command.api.ContextInitializerInterceptor;
-import io.github.totalschema.engine.core.event.ChangeEngineCloseEvent;
-import io.github.totalschema.engine.core.event.CloseResourceChangeEngineCloseListener;
-import io.github.totalschema.engine.core.event.EventDispatcher;
 import io.github.totalschema.spi.change.ChangeService;
 import io.github.totalschema.spi.change.ChangeServiceFactory;
 import io.github.totalschema.spi.lock.LockService;
 import io.github.totalschema.spi.lock.LockServiceFactory;
 import io.github.totalschema.spi.state.StateService;
-import io.github.totalschema.spi.state.StateServiceFactory;
 
 public final class ServiceInitializerInterceptor extends ContextInitializerInterceptor {
 
@@ -48,26 +44,9 @@ public final class ServiceInitializerInterceptor extends ContextInitializerInter
     protected void initializeFromContext(CommandContext context) {
 
         if (context.has(Environment.class)) {
-            initializeStateService(context);
             initializeChangeService(context);
+            initializeLockService(context);
         }
-
-        initializeLockService(context);
-    }
-
-    private void initializeStateService(CommandContext context) {
-
-        if (stateService == null) {
-            StateServiceFactory stateServiceFactory = StateServiceFactory.getInstance();
-            stateService = stateServiceFactory.getStateService(context);
-
-            EventDispatcher eventDispatcher = context.get(EventDispatcher.class);
-            eventDispatcher.subscribe(
-                    ChangeEngineCloseEvent.class,
-                    CloseResourceChangeEngineCloseListener.create(stateService));
-        }
-
-        context.setValue(StateService.class, stateService);
     }
 
     private void initializeChangeService(CommandContext context) {
