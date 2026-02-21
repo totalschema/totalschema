@@ -19,18 +19,31 @@
 package io.github.totalschema.engine.core.command.api;
 
 /**
- * Interface for executable commands in the change engine.
+ * Represents a single, executable operation within the change engine. Commands are the fundamental
+ * units of work and are processed by a chain of {@link CommandInterceptor}s and a final {@link
+ * CommandInvoker}.
  *
- * @param <R> the type of result returned by the command
+ * <p>Implementations of this interface define a specific task, such as applying a change file or
+ * validating the database state. They use the provided {@link CommandContext} to interact with the
+ * engine's services and to exchange data with other components in the execution chain.
+ *
+ * @param <R> The type of result returned by the command's execution.
+ * @see CommandContext
+ * @see CommandInterceptor
+ * @see CommandInvoker
  */
 public interface Command<R> {
 
     /**
-     * Executes the command with the given context.
+     * Executes the command's logic using the provided {@link CommandContext}.
      *
-     * @param context the command execution context
-     * @return the result of the command execution
-     * @throws InterruptedException if the command execution is interrupted
+     * <p>The context serves as both a dependency injection container, providing access to core
+     * engine services, and as a mechanism for passing data between {@link CommandInterceptor}s and
+     * the command itself.
+     *
+     * @param context The execution context, which contains all necessary services and state.
+     * @return The result of the command's execution.
+     * @throws InterruptedException if the command execution is interrupted.
      */
     R execute(CommandContext context) throws InterruptedException;
 }

@@ -64,7 +64,7 @@ final class DefaultLockStateRepository implements LockStateRepository {
     }
 
     private DefaultLockStateRepository(Configuration configuration) {
-        beforeCreateInitSql = configuration.getString("table.sql.init.beforeCreate").orElse(null);
+        beforeCreateInitSql = configuration.getString("table.beforeCreate.sql").orElse(null);
         tableCatalog = configuration.getString("table.catalog").orElse(null);
         tableSchema = configuration.getString("table.schema").orElse(null);
         tableName = configuration.getString("table.name").orElse(DefaultValues.LOCK_TABLE_NAME);

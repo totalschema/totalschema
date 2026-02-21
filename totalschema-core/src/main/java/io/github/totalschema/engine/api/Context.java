@@ -35,6 +35,21 @@ public interface Context {
      * IllegalStateException} if this Context contains no mapping for the class.
      *
      * @param clazz the class type whose associated value is to be returned (never {@code null})
+     * @param qualifier the qualifier for the component to be returned (can be {@code null})
+     * @param additionalArgument additional arguments to be passed to the factory when creating the
+     *     component (can be empty)
+     * @param <R> return type
+     * @return the value to which the specified class is mapped (never {@code null})
+     * @throws NullPointerException if the clazz parameter is null
+     * @throws IllegalStateException if the context does not have an association for the given class
+     */
+    <R> R get(Class<R> clazz, String qualifier, Object... additionalArgument);
+
+    /**
+     * Returns the value to which the specified class is mapped, or throws {@code
+     * IllegalStateException} if this Context contains no mapping for the class.
+     *
+     * @param clazz the class type whose associated value is to be returned (never {@code null})
      * @param <R> return type
      * @return the value to which the specified class is mapped (never {@code null})
      * @throws NullPointerException if the clazz parameter is null

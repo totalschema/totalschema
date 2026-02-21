@@ -65,7 +65,7 @@ public class CommandContextTest {
 
     @Test(
             expectedExceptions = IllegalStateException.class,
-            expectedExceptionsMessageRegExp = "Value exists already.*")
+            expectedExceptionsMessageRegExp = "Value for type.*")
     public void testSetValueTwiceThrowsException() {
         context.setValue(String.class, "first");
         context.setValue(String.class, "second");
@@ -73,7 +73,7 @@ public class CommandContextTest {
 
     @Test(
             expectedExceptions = IllegalStateException.class,
-            expectedExceptionsMessageRegExp = "No CommandContext value found.*")
+            expectedExceptionsMessageRegExp = "No Context value found.*")
     public void testGetWithMissingValueThrowsException() {
         context.get(String.class);
     }

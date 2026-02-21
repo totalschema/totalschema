@@ -23,10 +23,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Abstract base class for command interceptors in the chain of responsibility pattern.
+ * An abstract base class for implementing the interceptor pattern around {@link Command} execution.
+ * Interceptors form a chain of responsibility, where each can examine, modify, or augment the
+ * command execution process.
  *
- * <p>Interceptors can perform actions before and after command execution, modify the context, or
- * prevent execution altogether.
+ * <p>This pattern is central to the engine's architecture, enabling cross-cutting concerns such as
+ * logging, transaction management, and security to be applied transparently. Each interceptor can
+ * add values to the {@link CommandContext}, which are then available to subsequent interceptors and
+ * the final command.
+ *
+ * <p>Subclasses must implement the {@link #intercept(CommandContext, Command, CommandExecutor)}
+ * method to define their specific logic.
+ *
+ * @see Command
+ * @see CommandContext
+ * @see CommandInvoker
  */
 public abstract class CommandInterceptor extends CommandExecutor {
 
@@ -35,10 +46,11 @@ public abstract class CommandInterceptor extends CommandExecutor {
     private final CommandExecutor next;
 
     /**
-     * Constructs a CommandInterceptor with the next executor in the chain.
+     * Constructs a {@code CommandInterceptor} that forms part of a processing chain.
      *
-     * @param next the next executor in the chain
-     * @throws NullPointerException if next is null
+     * @param next The next {@link CommandExecutor} in the chain, which could be another interceptor
+     *     or the final {@link CommandInvoker}. Must not be {@code null}.
+     * @throws NullPointerException if {@code next} is {@code null}.
      */
     public CommandInterceptor(CommandExecutor next) {
         this.next = Objects.requireNonNull(next, "Argument next cannot be null");
@@ -47,27 +59,34 @@ public abstract class CommandInterceptor extends CommandExecutor {
     @Override
     public final <R> R execute(CommandContext context, Command<R> command)
             throws InterruptedException {
-
         log.trace("Intercepted: {}, next: {}", command, next);
-
         R returnValue = intercept(context, command, next);
-
         log.trace("return value: {}", returnValue);
-
         return returnValue;
     }
 
     /**
-     * Intercepts command execution and may delegate to the next executor.
+     * The core method for implementing interceptor logic. It is called when a {@link Command} is
+     * executed and allows the interceptor to perform actions before or after delegating to the next
+     * executor in the chain.
      *
-     * @param <R> the return type of the command
-     * @param context the execution context
-     * @param command the command to execute
-     * @param next the next executor in the chain
-     * @return the result of command execution
-     * @throws InterruptedException if the execution is interrupted
+     * <p>Implementations can:
+     *
+     * <ul>
+     *   <li>Modify the {@link CommandContext} by adding or updating values.
+     *   <li>Perform pre-processing before calling {@code next.execute(context, command)}.
+     *   <li>Perform post-processing after the next executor returns.
+     *   <li>Short-circuit the execution chain by not calling the next executor at all.
+     * </ul>
+     *
+     * @param <R> The return type of the command.
+     * @param context The execution context, which can be modified by the interceptor.
+     * @param command The command being executed.
+     * @param next The next executor in the chain to which the execution should be delegated.
+     * @return The result of the command's execution.
+     * @throws InterruptedException if the execution is interrupted.
      */
-    protected abstract <R> R intercept(
+    public abstract <R> R intercept(
             CommandContext context, Command<R> command, CommandExecutor next)
             throws InterruptedException;
 }
