@@ -18,14 +18,12 @@
 
 package io.github.totalschema.engine.core.container;
 
-import io.github.totalschema.concurrent.Locked;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.spi.ComponentFactory;
 import java.io.Closeable;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,24 +38,18 @@ import org.slf4j.LoggerFactory;
  * @see ComponentContainerBuilder
  * @see ComponentFactory
  */
-public final class ComponentContainer implements Context, Closeable {
+public final class ComponentContainer implements Closeable, Context {
 
     private final Logger logger = LoggerFactory.getLogger(ComponentContainer.class);
 
-    private enum State {
-        CREATED,
-        READY,
-        CLOSED,
-        FAILED
-    }
+    private final ConcurrentHashMap<ObjectSpecification, Object> objects =
+            new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<FactorySpecification, ComponentFactory<?>> factories =
+            new ConcurrentHashMap<>();
 
-    private static final long DEFAULT_LOCK_TIMEOUT = 2;
-    private static final TimeUnit DEFAULT_LOCK_TIMEOUT_UNIT = TimeUnit.MINUTES;
+    private final List<Closeable> closeableList = Collections.synchronizedList(new LinkedList<>());
 
-    private final Locked<Map<ObjectSpecification, Object>> objects;
-    private final Locked<Map<FactorySpecification, ComponentFactory<?>>> factories;
-
-    private final AtomicReference<State> state;
+    private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
     /**
      * Returns a new builder for creating a {@link ComponentContainer}.
@@ -68,223 +60,191 @@ public final class ComponentContainer implements Context, Closeable {
         return new ComponentContainerBuilder();
     }
 
-    /**
-     * Constructs a new ComponentContainer. This is package-private to enforce usage of the builder.
-     */
-    ComponentContainer(
-            Map<ObjectSpecification, Object> objects,
-            Map<FactorySpecification, ComponentFactory<?>> factories) {
+    public void registerComponent(ObjectSpecification specification, Object component) {
 
-        this.objects =
-                Locked.of(
-                        new LinkedHashMap<>(objects),
-                        DEFAULT_LOCK_TIMEOUT,
-                        DEFAULT_LOCK_TIMEOUT_UNIT);
-        this.factories =
-                Locked.of(
-                        new LinkedHashMap<>(factories),
-                        DEFAULT_LOCK_TIMEOUT,
-                        DEFAULT_LOCK_TIMEOUT_UNIT);
+        requireNotClosed();
 
-        this.state = new AtomicReference<>(State.CREATED);
+        if (component instanceof Closeable) {
+            closeableList.add(0, (Closeable) component);
+        }
+        objects.put(specification, component);
     }
 
-    /** Initializes the container, creating all non-lazy components. */
-    void initialize() {
-        boolean setWasSuccessful = this.state.compareAndSet(State.CREATED, State.READY);
-        if (!setWasSuccessful) {
-            // we set the state here, if startup fails, the try-catch block below will set it to
-            // FAILED,
-            // so we can distinguish between failed startup and invalid state transitions
-            throw new IllegalStateException(
-                    "ComponentContainer can only be initialized from CREATED state. "
-                            + "Current state: "
-                            + this.state.get());
+    public void registerComponentFactory(
+            FactorySpecification specification, ComponentFactory<?> factory) {
+
+        requireNotClosed();
+
+        if (factory instanceof Closeable) {
+            closeableList.add((Closeable) factory);
         }
-
-        try {
-            factories.withTryLock(this::createObjectsFromFactories);
-
-        } catch (RuntimeException ex) {
-
-            this.state.set(State.FAILED);
-
-            logger.error("Failed to initialize ComponentContainer", ex);
-            logger.error("Container state is '{}' after a failed initialization", this.state.get());
-
-            throw ex;
-        }
+        factories.put(specification, factory);
     }
 
-    private void createObjectsFromFactories(
-            Map<FactorySpecification, ComponentFactory<?>> theFactories) {
-        for (Map.Entry<FactorySpecification, ComponentFactory<?>> entry : theFactories.entrySet()) {
-
-            ComponentFactory<?> factory = entry.getValue();
-
-            if (!factory.isLazy()) {
-                List<Class<?>> argumentTypes = factory.getArgumentTypes();
-                if (argumentTypes == null || argumentTypes.isEmpty()) {
-                    FactorySpecification factorySpecification = entry.getKey();
-
-                    Object createdObject =
-                            getOrCreateObject(
-                                    factorySpecification.getConstructedClass(),
-                                    factorySpecification.getQualifier());
-
-                    logger.debug(
-                            "Created object {} for {} using factory {}",
-                            createdObject,
-                            factorySpecification,
-                            factory);
-                }
-            }
-        }
-    }
-
-    /**
-     * Checks if a component of the given type is registered in the container.
-     *
-     * @param clazz The class type to check.
-     * @return {@code true} if a component of the given type is registered, {@code false} otherwise.
-     * @throws NullPointerException if clazz is null.
-     */
     @Override
     public boolean has(Class<?> clazz) {
-        Objects.requireNonNull(clazz, "clazz must not be null");
-        checkState();
+
+        requireNotClosed();
 
         return isObjectExistForClass(clazz) || isAnyFactoryFoundThatCouldCreateClass(clazz);
     }
 
     private boolean isObjectExistForClass(Class<?> clazz) {
-        return objects.withTryLock(
-                theObjects -> {
-                    for (ObjectSpecification objectSpecification : theObjects.keySet()) {
-                        if (clazz.isAssignableFrom(objectSpecification.getType())) {
-                            return true;
-                        }
-                    }
+        for (ObjectSpecification objectSpecification : objects.keySet()) {
+            if (clazz.isAssignableFrom(objectSpecification.getType())) {
+                return true;
+            }
+        }
 
-                    return false;
-                });
+        return false;
     }
 
     private boolean isAnyFactoryFoundThatCouldCreateClass(Class<?> clazz) {
-        return factories.withTryLock(
-                theFactories -> {
-                    for (ComponentFactory<?> factory : theFactories.values()) {
-                        if (clazz.isAssignableFrom(factory.getConstructedClass())) {
-                            return true;
-                        }
-                    }
+        for (ComponentFactory<?> factory : factories.values()) {
+            if (clazz.isAssignableFrom(factory.getConstructedClass())) {
+                return true;
+            }
+        }
 
-                    return false;
-                });
+        return false;
     }
 
-    /**
-     * Retrieves a component of the given type from the container.
-     *
-     * @param clazz The class type of the component to retrieve.
-     * @param <R> The type of the component.
-     * @return The component instance.
-     * @throws IllegalStateException if no component definition is found for the given type, or if
-     *     multiple definitions are found without a qualifier.
-     */
     @Override
     public <R> R get(Class<R> clazz) {
         return get(clazz, null);
     }
 
-    /**
-     * Retrieves a component of the given type and qualifier from the container.
-     *
-     * @param clazz The class type of the component to retrieve.
-     * @param qualifier The qualifier to disambiguate between multiple components of the same type.
-     * @param <R> The type of the component.
-     * @return The component instance.
-     * @throws IllegalStateException if no component definition is found for the given type and
-     *     qualifier, or if the container has not been initialized.
-     */
     @Override
+    @SuppressWarnings("unchecked")
     public <R> R get(Class<R> clazz, String qualifier, Object... additionalArgument) {
-        checkState();
 
-        return getOrCreateObject(clazz, qualifier, additionalArgument);
+        requireNotClosed();
+
+        ObjectSpecification objectSpecification = ObjectSpecification.from(clazz, qualifier);
+
+        // Use computeIfAbsent to atomically create and store the component.
+        // Only one thread executes the mapping function; all others wait on the result.
+        // If the mapping function throws an exception, the mapping is left unestablished,
+        // allowing retry on the next call.
+        Object component =
+                objects.computeIfAbsent(objectSpecification, this::createComponentUsingFactory);
+
+        return (R) component;
     }
 
     @SuppressWarnings("unchecked")
-    private <R> R getOrCreateObject(
-            Class<R> clazz, String qualifier, Object... additionalArgument) {
-
-        ObjectSpecification objectSpecification =
-                ObjectSpecification.from(clazz, qualifier, additionalArgument);
-
-        return objects.withTryLock(
-                theObjects -> {
-                    R contextObject = (R) theObjects.get(objectSpecification);
-
-                    if (contextObject == null) {
-                        contextObject = (R) this.createObject(objectSpecification);
-                        theObjects.put(objectSpecification, contextObject);
-                    }
-
-                    return contextObject;
-                });
-    }
-
-    private Object createObject(ObjectSpecification objectSpecification) {
+    private <R> R createComponentUsingFactory(ObjectSpecification objectSpecification) {
 
         FactorySpecification factorySpecification = FactorySpecification.from(objectSpecification);
 
-        return factories.withTryLock(
-                theFactories -> {
-                    ComponentFactory<?> componentFactory = theFactories.get(factorySpecification);
-                    if (componentFactory == null) {
-                        throw new IllegalStateException(
-                                "No component definition found for type: "
-                                        + objectSpecification.getType()
-                                        + " and qualifier: "
-                                        + objectSpecification.getQualifier());
-                    }
+        ComponentFactory<?> factory = factories.get(factorySpecification);
+        if (factory == null) {
+            throw new IllegalStateException(
+                    "No factory found for specification: " + factorySpecification);
+        }
 
-                    Object returnValue;
+        R newComponent;
 
-                    if (objectSpecification.getArguments().isPresent()) {
-                        List<Object> additionalArgument = objectSpecification.getArguments().get();
+        validateRequiredDependencies(factory, objectSpecification);
 
-                        Object[] argumentArray = additionalArgument.toArray(new Object[0]);
+        if (objectSpecification.getArguments().isEmpty()) {
+            newComponent = (R) factory.newComponent(this);
+        } else {
+            List<Object> argumentsList = objectSpecification.getArguments().get();
 
-                        returnValue = componentFactory.newComponent(this, argumentArray);
+            Object[] array = argumentsList.toArray();
 
-                    } else {
-                        returnValue = componentFactory.newComponent(this);
-                    }
+            newComponent = (R) factory.newComponent(this, array);
+        }
 
-                    return returnValue;
-                });
+        Objects.requireNonNull(
+                newComponent, "Factory for " + factorySpecification + " returned null");
+
+        if (newComponent instanceof Closeable) {
+            closeableList.add(0, (Closeable) newComponent);
+        }
+
+        return newComponent;
+    }
+
+    /**
+     * Validates that all required dependencies for a factory are available in the container.
+     *
+     * @param componentFactory The factory whose dependencies should be validated
+     * @param objectSpecification The specification of the object being created
+     * @throws IllegalStateException if any required dependency is missing
+     */
+    private void validateRequiredDependencies(
+            ComponentFactory<?> componentFactory, ObjectSpecification objectSpecification) {
+
+        List<Class<?>> requiredTypes = componentFactory.getRequiredContextTypes();
+        if (requiredTypes == null || requiredTypes.isEmpty()) {
+            return;
+        }
+
+        List<Class<?>> missingDependencies = new LinkedList<>();
+
+        for (Class<?> requiredType : requiredTypes) {
+            boolean isAvailable = has(requiredType);
+
+            if (!isAvailable) {
+                missingDependencies.add(requiredType);
+            }
+        }
+
+        if (!missingDependencies.isEmpty()) {
+            StringBuilder errorMessage = new StringBuilder();
+            errorMessage
+                    .append("Cannot create component of type '")
+                    .append(objectSpecification.getType().getName())
+                    .append("'");
+
+            if (objectSpecification.getQualifier() != null) {
+                errorMessage
+                        .append(" with qualifier '")
+                        .append(objectSpecification.getQualifier())
+                        .append("'");
+            }
+
+            errorMessage.append(
+                    ". The following required dependencies are not available in the container:");
+
+            for (Class<?> missingDependency : missingDependencies) {
+                errorMessage.append("\n  - ").append(missingDependency.getName());
+            }
+
+            errorMessage
+                    .append("\n\nPlease ensure that factories or instances for these types are ")
+                    .append(
+                            "registered in the ComponentContainerBuilder before building the container.");
+
+            throw new IllegalStateException(errorMessage.toString());
+        }
     }
 
     @Override
     public void close() {
 
-        checkState();
+        requireNotClosed();
 
-        // we set the state here, if close fails, the official state remain closed.
-        boolean setWasSuccessful = this.state.compareAndSet(State.READY, State.CLOSED);
-        if (!setWasSuccessful) {
-            // despite our previous check, another thread might have commenced closing the
-            // container, to make sure only one thread performs the close logic, we check
-            // the state transition was successful, if not, we just return, as the other
-            // thread will perform the close logic
-            return;
+        // we set the state here, if close fails, the official state remains closed.
+        boolean setWasSuccessful = this.isClosed.compareAndSet(false, true);
+        if (setWasSuccessful) {
+            // we could successfully set the state to closed, so we proceed with closing the
+            // components.
+            doClose();
         }
+    }
 
-        List<Closeable> reverseEnlistmentOrderList =
-                getCloseableComponentsInReverseEnlistmentOrder();
+    private void requireNotClosed() {
+        if (isClosed.get()) {
+            throw new IllegalStateException("Closed already");
+        }
+    }
 
-        List<Exception> collectedExceptions = closeComponents(reverseEnlistmentOrderList);
+    private void doClose() {
+
+        List<Exception> collectedExceptions = closeComponents(closeableList);
 
         if (collectedExceptions.isEmpty()) {
             logger.debug("ComponentContainer closed successfully");
@@ -295,15 +255,15 @@ public final class ComponentContainer implements Context, Closeable {
             Iterator<Exception> iterator = collectedExceptions.iterator();
             Exception firstException = iterator.next();
 
+            logger.error("Exception closing component(s)", firstException);
+
             if (collectedExceptions.size() == 1) {
-                logger.error("Close of component failed", firstException);
                 throw new RuntimeException("Failure closing ComponentContainer", firstException);
 
             } else {
-                logger.error("Close of components failed", firstException);
-
                 RuntimeException runtimeException =
                         new RuntimeException("Failure closing ComponentContainer", firstException);
+
                 iterator.forEachRemaining(runtimeException::addSuppressed);
 
                 throw runtimeException;
@@ -311,12 +271,13 @@ public final class ComponentContainer implements Context, Closeable {
         }
     }
 
-    private List<Exception> closeComponents(List<Closeable> reverseEnlistmentOrderList) {
+    private List<Exception> closeComponents(List<Closeable> componentsToClose) {
+
         List<Exception> collectedExceptions = new LinkedList<>();
 
-        logger.debug("Closing {} components", reverseEnlistmentOrderList.size());
+        logger.debug("Closing {} components", componentsToClose.size());
 
-        for (Closeable component : reverseEnlistmentOrderList) {
+        for (Closeable component : componentsToClose) {
             try {
                 logger.debug("Closing: {}", component);
 
@@ -324,56 +285,13 @@ public final class ComponentContainer implements Context, Closeable {
 
             } catch (Exception ex) {
 
-                logger.warn("Failed to close resource: {}", component, ex);
+                logger.warn("Failed to close component: {}", component, ex);
                 // will re-throw after all close attempts have been made,
                 // to ensure best-effort closing of all resources
                 collectedExceptions.add(ex);
             }
         }
+
         return collectedExceptions;
-    }
-
-    private List<Closeable> getCloseableComponentsInReverseEnlistmentOrder() {
-
-        LinkedList<Closeable> reverseEnlistmentOrderList = new LinkedList<>();
-
-        List<Closeable> objectsInReverseEnlistmentOrder =
-                objects.withTryLock(
-                        theObjects -> {
-                            return getCloseableObjectsInReverseOrder(theObjects.values());
-                        });
-
-        reverseEnlistmentOrderList.addAll(objectsInReverseEnlistmentOrder);
-
-        List<Closeable> factoriesInReverseEnlistmentOrder =
-                factories.withTryLock(
-                        theFactories -> {
-                            return getCloseableObjectsInReverseOrder(theFactories.values());
-                        });
-
-        reverseEnlistmentOrderList.addAll(factoriesInReverseEnlistmentOrder);
-
-        return reverseEnlistmentOrderList;
-    }
-
-    private List<Closeable> getCloseableObjectsInReverseOrder(Collection<?> input) {
-
-        List<Closeable> objects =
-                input.stream()
-                        .filter(it -> it instanceof Closeable)
-                        .map(Closeable.class::cast)
-                        // we will reverse in-place, so we need a mutable list!
-                        .collect(Collectors.toCollection(LinkedList::new));
-
-        Collections.reverse(objects);
-
-        return objects;
-    }
-
-    private void checkState() {
-        State currentState = state.get();
-        if (currentState != State.READY) {
-            throw new IllegalStateException("Operation is not allowed in state: " + currentState);
-        }
     }
 }

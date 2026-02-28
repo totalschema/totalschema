@@ -21,12 +21,16 @@ package io.github.totalschema.engine.core.container;
 import io.github.totalschema.spi.ComponentFactory;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A builder for creating and configuring a {@link ComponentContainer}. This builder provides a
  * fluent API for registering components and factories before building the container.
  */
 public final class ComponentContainerBuilder {
+
+    private final Logger logger = LoggerFactory.getLogger(ComponentContainerBuilder.class);
 
     private final Map<ObjectSpecification, Object> objects = new LinkedHashMap<>();
     private final Map<FactorySpecification, ComponentFactory<?>> factories = new LinkedHashMap<>();
@@ -70,12 +74,18 @@ public final class ComponentContainerBuilder {
      */
     public ComponentContainer build() {
 
-        ComponentContainer componentContainer = new ComponentContainer(objects, factories);
         if (allowUnqualifiedAccessToSingleComponents) {
             initializeUnqualifiedAccess();
         }
 
-        componentContainer.initialize();
+        ComponentContainer componentContainer = new ComponentContainer();
+        objects.forEach(componentContainer::registerComponent);
+
+        Map<FactorySpecification, ComponentFactory<?>> enabledFactories = filterEnabledFactories();
+        enabledFactories.forEach(componentContainer::registerComponentFactory);
+
+        createObjectsFromFactories(componentContainer);
+
         return componentContainer;
     }
 
@@ -110,5 +120,65 @@ public final class ComponentContainerBuilder {
                             FactorySpecification defaultSpec = spec.withQualifier(null);
                             factories.computeIfAbsent(defaultSpec, k -> factories.get(spec));
                         });
+    }
+
+    private Map<FactorySpecification, ComponentFactory<?>> filterEnabledFactories() {
+
+        Map<ObjectSpecification, Object> unmodifiableViewOfObjects =
+                Collections.unmodifiableMap(objects);
+        Map<FactorySpecification, ComponentFactory<?>> unmodifiableViewOfFactories =
+                Collections.unmodifiableMap(factories);
+
+        // Filter factories based on whether their required context types are available
+        return factories.entrySet().stream()
+                .filter(
+                        entry -> {
+                            ComponentFactory<?> factory = entry.getValue();
+
+                            boolean enabled =
+                                    factory.isEnabled(
+                                            unmodifiableViewOfObjects, unmodifiableViewOfFactories);
+
+                            logger.debug(
+                                    "Factory {} is {}.",
+                                    factory.getClass().getName(),
+                                    enabled ? "enabled" : "NOT enabled");
+
+                            return enabled;
+                        })
+                .collect(
+                        Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (a, b) -> a,
+                                LinkedHashMap::new));
+    }
+
+    private void createObjectsFromFactories(ComponentContainer componentContainer) {
+
+        for (Map.Entry<FactorySpecification, ComponentFactory<?>> entry : factories.entrySet()) {
+
+            ComponentFactory<?> factory = entry.getValue();
+
+            if (!factory.isLazy()) {
+                List<Class<?>> argumentTypes = factory.getArgumentTypes();
+                if (argumentTypes == null || argumentTypes.isEmpty()) {
+                    FactorySpecification factorySpecification = entry.getKey();
+
+                    ObjectSpecification objectSpecification =
+                            ObjectSpecification.from(factorySpecification);
+
+                    Object createdObject =
+                            componentContainer.get(
+                                    objectSpecification.getType(),
+                                    objectSpecification.getQualifier());
+                    logger.debug(
+                            "Created object {} for {} using factory {}",
+                            createdObject,
+                            factorySpecification,
+                            factory);
+                }
+            }
+        }
     }
 }
