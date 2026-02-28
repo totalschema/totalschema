@@ -18,15 +18,46 @@
 
 package io.github.totalschema.engine.internal.change;
 
+import io.github.totalschema.config.environment.Environment;
+import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.ConditionalComponentFactory;
 import io.github.totalschema.spi.change.ChangeService;
-import io.github.totalschema.spi.change.ChangeServiceFactory;
+import java.util.List;
 
-/** Default implementation of ChangeServiceFactory. Creates DefaultChangeService instances. */
-public class DefaultChangeServiceFactory implements ChangeServiceFactory {
+public final class DefaultChangeServiceFactory extends ConditionalComponentFactory<ChangeService> {
 
     @Override
-    public ChangeService getChangeService(Context context) {
-        return new DefaultChangeService(context);
+    public boolean isLazy() {
+        return false;
+    }
+
+    @Override
+    public Class<ChangeService> getConstructedClass() {
+        return ChangeService.class;
+    }
+
+    @Override
+    public String getQualifier() {
+        return null;
+    }
+
+    @Override
+    public List<Class<?>> getRequiredContextTypes() {
+        return List.of(ConnectorManager.class, Environment.class);
+    }
+
+    @Override
+    public List<Class<?>> getArgumentTypes() {
+        return List.of();
+    }
+
+    @Override
+    public ChangeService newComponent(Context context, Object... arguments) {
+
+        ConnectorManager connectorManager = context.get(ConnectorManager.class);
+        Environment environment = context.get(Environment.class);
+
+        return new DefaultChangeService(connectorManager, environment);
     }
 }

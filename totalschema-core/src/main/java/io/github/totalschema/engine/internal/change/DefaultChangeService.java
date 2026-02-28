@@ -21,7 +21,6 @@ package io.github.totalschema.engine.internal.change;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.connector.Connector;
 import io.github.totalschema.connector.ConnectorManager;
-import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.spi.change.ChangeService;
@@ -31,14 +30,10 @@ import java.util.Optional;
  * Default implementation of ChangeService that routes changes to appropriate connectors. Validates
  * that the change file matches the current environment before applying.
  */
-public class DefaultChangeService implements ChangeService {
+final class DefaultChangeService implements ChangeService {
 
     private final ConnectorManager connectorManager;
     private final Environment environment;
-
-    public DefaultChangeService(Context context) {
-        this(context.get(ConnectorManager.class), context.get(Environment.class));
-    }
 
     DefaultChangeService(ConnectorManager connectorManager, Environment environment) {
         this.connectorManager = connectorManager;

@@ -1,3 +1,4 @@
 io.github.totalschema.engine.internal.state.csv.CsvFileStateRecordRepositoryFactory
 io.github.totalschema.engine.internal.state.database.DatabaseStateRecordRepositoryFactory
 io.github.totalschema.engine.internal.state.DefaultStateServiceFactory
+io.github.totalschema.engine.internal.change.DefaultChangeServiceFactory

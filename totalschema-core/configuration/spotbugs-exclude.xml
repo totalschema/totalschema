@@ -50,4 +50,11 @@
         <!-- package protected constructor for testing purposes only -->
     </Match>
 
+    <Match>
+        <Class name="io.github.totalschema.engine.core.DefaultChangeEngine" />
+        <Method name="&lt;init&gt;"/>
+        <Bug pattern="EI_EXPOSE_REP2" />
+        <!-- accepting the EventDispatcher is correct, it comes from the factory -->
+    </Match>
+
 </FindBugsFilter>

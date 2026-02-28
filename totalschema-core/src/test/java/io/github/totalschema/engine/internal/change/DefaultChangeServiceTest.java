@@ -125,21 +125,19 @@ public class DefaultChangeServiceTest {
 
     @Test
     public void testConstructorWithCommandContext() {
-        context.setValue(ConnectorManager.class, mockConnectorManager);
-        context.setValue(Environment.class, environment);
-
-        DefaultChangeService service = new DefaultChangeService(context);
+        DefaultChangeService service = new DefaultChangeService(mockConnectorManager, environment);
         assertNotNull(service);
     }
 
     @Test
     public void testDefaultChangeServiceFactory() {
+
         DefaultChangeServiceFactory factory = new DefaultChangeServiceFactory();
 
         context.setValue(ConnectorManager.class, mockConnectorManager);
         context.setValue(Environment.class, environment);
 
-        DefaultChangeService service = (DefaultChangeService) factory.getChangeService(context);
+        DefaultChangeService service = (DefaultChangeService) factory.newComponent(context);
         assertNotNull(service);
     }
 }

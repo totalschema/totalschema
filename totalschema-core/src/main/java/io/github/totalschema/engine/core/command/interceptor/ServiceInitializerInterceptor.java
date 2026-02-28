@@ -22,17 +22,10 @@ import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.core.command.api.CommandExecutor;
 import io.github.totalschema.engine.core.command.api.ContextInitializerInterceptor;
-import io.github.totalschema.spi.change.ChangeService;
-import io.github.totalschema.spi.change.ChangeServiceFactory;
 import io.github.totalschema.spi.lock.LockService;
 import io.github.totalschema.spi.lock.LockServiceFactory;
-import io.github.totalschema.spi.state.StateService;
 
 public final class ServiceInitializerInterceptor extends ContextInitializerInterceptor {
-
-    private StateService stateService;
-
-    private ChangeService changeService;
 
     private LockService lockService;
 
@@ -44,19 +37,8 @@ public final class ServiceInitializerInterceptor extends ContextInitializerInter
     protected void initializeFromContext(CommandContext context) {
 
         if (context.has(Environment.class)) {
-            initializeChangeService(context);
             initializeLockService(context);
         }
-    }
-
-    private void initializeChangeService(CommandContext context) {
-
-        if (changeService == null) {
-            ChangeServiceFactory changeServiceFactory = ChangeServiceFactory.getInstance();
-            changeService = changeServiceFactory.getChangeService(context);
-        }
-
-        context.setValue(ChangeService.class, changeService);
     }
 
     private void initializeLockService(CommandContext context) {
