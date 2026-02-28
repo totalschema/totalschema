@@ -29,6 +29,7 @@ import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.StateRecord;
 import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.state.StateRepository;
+import java.io.Closeable;
 import java.io.IOException;
 import java.sql.*;
 import java.time.ZonedDateTime;
@@ -36,7 +37,7 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JdbcDatabaseStateRecordRepository implements StateRepository {
+public class JdbcDatabaseStateRecordRepository implements StateRepository, Closeable {
 
     private final Logger logger = LoggerFactory.getLogger(JdbcDatabaseStateRecordRepository.class);
 
@@ -70,25 +71,13 @@ public class JdbcDatabaseStateRecordRepository implements StateRepository {
 
     private final SqlDialect sqlDialect;
 
-    public static StateRepository newInstance(
-            Context context, Configuration databaseConfiguration) {
-
-        JdbcDatabaseStateRecordRepository repository =
-                new JdbcDatabaseStateRecordRepository(context, databaseConfiguration);
-
-        repository.init();
-
-        return repository;
-    }
-
-    public JdbcDatabaseStateRecordRepository(Context context, Configuration configuration) {
+    public JdbcDatabaseStateRecordRepository(
+            Context context, JdbcDatabaseFactory jdbcDatabaseFactory, Configuration configuration) {
 
         sqlDialect = context.get(SqlDialect.class);
 
         changeFileFactory = context.get(ChangeFileFactory.class);
         changeFileNameMaxLength = changeFileFactory.getChangeFileNameMaxLength();
-
-        JdbcDatabaseFactory jdbcDatabaseFactory = JdbcDatabaseFactory.getInstance();
 
         boolean logSql = configuration.getBoolean("logSql").orElse(false);
 
@@ -139,7 +128,7 @@ public class JdbcDatabaseStateRecordRepository implements StateRepository {
                         .orElseGet(() -> getInsertSql(configuration));
     }
 
-    private void init() {
+    void init() {
         try {
             createStateTableIfNotFound();
 

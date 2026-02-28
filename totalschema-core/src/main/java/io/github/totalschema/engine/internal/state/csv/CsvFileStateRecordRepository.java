@@ -103,8 +103,8 @@ import org.apache.commons.csv.CSVRecord;
  */
 public final class CsvFileStateRecordRepository implements StateRepository {
 
-    private static final int FILE_OPERATION_TIMEOUT = 30;
-    private static final TimeUnit FILE_OPERATION_TIMEOUT_UNIT = TimeUnit.SECONDS;
+    private static final int LOCK_TIMEOUT = 30;
+    private static final TimeUnit LOCK_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     private enum CsvHeaders {
         CHANGE_FILE_ID,
@@ -134,12 +134,12 @@ public final class CsvFileStateRecordRepository implements StateRepository {
                     .get();
 
     private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
     private final LockTemplate readLockTemplate =
-            new LockTemplate(
-                    FILE_OPERATION_TIMEOUT, FILE_OPERATION_TIMEOUT_UNIT, readWriteLock.readLock());
+            new LockTemplate(LOCK_TIMEOUT, LOCK_TIMEOUT_UNIT, readWriteLock.readLock());
+
     private final LockTemplate writeLockTemplate =
-            new LockTemplate(
-                    FILE_OPERATION_TIMEOUT, FILE_OPERATION_TIMEOUT_UNIT, readWriteLock.writeLock());
+            new LockTemplate(LOCK_TIMEOUT, LOCK_TIMEOUT_UNIT, readWriteLock.writeLock());
 
     public static CsvFileStateRecordRepository newInstance(
             Context context, Configuration configuration) {
@@ -353,10 +353,5 @@ public final class CsvFileStateRecordRepository implements StateRepository {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-    }
-
-    @Override
-    public void close() throws IOException {
-        // no-op
     }
 }
