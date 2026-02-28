@@ -2,12 +2,13 @@ package io.github.totalschema.engine.internal.state.database;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.jdbc.JdbcDatabaseFactory;
 import io.github.totalschema.spi.ComponentFactory;
 import io.github.totalschema.spi.state.StateConstants;
 import io.github.totalschema.spi.state.StateRepository;
 import java.util.List;
 
-public class DatabaseStateRecordRepositoryFactory implements ComponentFactory<StateRepository> {
+public class DatabaseStateRecordRepositoryFactory extends ComponentFactory<StateRepository> {
 
     @Override
     public boolean isLazy() {
@@ -41,7 +42,14 @@ public class DatabaseStateRecordRepositoryFactory implements ComponentFactory<St
                 context.get(Configuration.class)
                         .getPrefixNamespace(StateConstants.CONFIG_PROPERTY_NAMESPACE);
 
-        return JdbcDatabaseStateRecordRepository.newInstance(
-                context, stateConfig.getPrefixNamespace("database"));
+        JdbcDatabaseFactory jdbcDatabaseFactory = JdbcDatabaseFactory.getInstance();
+
+        JdbcDatabaseStateRecordRepository repository =
+                new JdbcDatabaseStateRecordRepository(
+                        context, jdbcDatabaseFactory, stateConfig.getPrefixNamespace("database"));
+
+        repository.init();
+
+        return repository;
     }
 }

@@ -30,11 +30,11 @@ import io.github.totalschema.spi.state.StateRepository;
 import io.github.totalschema.spi.state.StateService;
 import java.util.List;
 
-public class DefaultStateServiceFactory implements ComponentFactory<StateService> {
+public class DefaultStateServiceFactory extends ComponentFactory<StateService> {
 
     @Override
     public boolean isLazy() {
-        return true;
+        return false;
     }
 
     @Override
