@@ -145,10 +145,4 @@ class DefaultStateService implements StateService {
 
         return appliedByUserId;
     }
-
-    @Override
-    public void close() throws IOException {
-        // no-op, as repository is expected to be managed by
-        // the component container and not closed by this service
-    }
 }
