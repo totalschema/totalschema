@@ -26,11 +26,11 @@ public class DefaultEnvironmentFactory implements EnvironmentFactory {
 
     @Override
     public List<Environment> getEnvironments(Configuration configuration) {
-        return configuration.getPrefixNamespace("environments")
-                .getKeys().stream()
+        return configuration.getPrefixNamespace("environments").getKeys().stream()
                 .map(key -> key.split("\\.")[0])
                 .filter(it -> !it.equalsIgnoreCase("environments"))
-                .collect(Collectors.toSet()).stream()
+                .collect(Collectors.toSet())
+                .stream()
                 .map(Environment::new)
                 .collect(Collectors.toList());
     }

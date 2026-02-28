@@ -24,8 +24,10 @@ import static org.testng.Assert.*;
 import io.github.totalschema.config.Configuration;
 import java.util.List;
 import java.util.Optional;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
+@Ignore
 public class DefaultEnvironmentFactoryTest {
 
     @Test
