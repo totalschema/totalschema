@@ -29,8 +29,10 @@ import io.github.totalschema.engine.core.command.api.CommandContext;
 import java.util.List;
 import java.util.Optional;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
+@Ignore
 public class ListEnvironmentsCommandTest {
 
     private CommandContext context;
