@@ -7,7 +7,7 @@ import io.github.totalschema.spi.state.StateConstants;
 import io.github.totalschema.spi.state.StateRepository;
 import java.util.List;
 
-public class CsvFileStateRecordRepositoryFactory implements ComponentFactory<StateRepository> {
+public class CsvFileStateRecordRepositoryFactory extends ComponentFactory<StateRepository> {
 
     @Override
     public boolean isLazy() {
