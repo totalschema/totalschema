@@ -23,7 +23,9 @@ import io.github.totalschema.spi.ComponentFactory;
 import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +48,7 @@ public final class ComponentContainer implements Closeable, Context {
             new ConcurrentHashMap<>();
     private final ConcurrentHashMap<FactorySpecification, ComponentFactory<?>> factories =
             new ConcurrentHashMap<>();
+    private final ReentrantLock creationLock = new ReentrantLock();
 
     private final List<Closeable> closeableList = Collections.synchronizedList(new LinkedList<>());
 
@@ -64,9 +67,17 @@ public final class ComponentContainer implements Closeable, Context {
 
         requireNotClosed();
 
+        logger.debug("Registering component {}: {}", specification, component);
+
         if (component instanceof Closeable) {
             closeableList.add(0, (Closeable) component);
+
+            logger.debug(
+                    "Component {} registered for lifecycle management ({})",
+                    component,
+                    specification);
         }
+
         objects.put(specification, component);
     }
 
@@ -75,9 +86,15 @@ public final class ComponentContainer implements Closeable, Context {
 
         requireNotClosed();
 
+        logger.debug("Registering factory {}: {}", specification, factory);
+
         if (factory instanceof Closeable) {
             closeableList.add((Closeable) factory);
+
+            logger.debug(
+                    "Factory {} registered for lifecycle management ({})", factory, specification);
         }
+
         factories.put(specification, factory);
     }
 
@@ -120,16 +137,67 @@ public final class ComponentContainer implements Closeable, Context {
 
         requireNotClosed();
 
-        ObjectSpecification objectSpecification = ObjectSpecification.from(clazz, qualifier);
+        ObjectSpecification objectSpecification =
+                ObjectSpecification.from(clazz, qualifier, additionalArgument);
 
-        // Use computeIfAbsent to atomically create and store the component.
-        // Only one thread executes the mapping function; all others wait on the result.
-        // If the mapping function throws an exception, the mapping is left unestablished,
-        // allowing retry on the next call.
-        Object component =
-                objects.computeIfAbsent(objectSpecification, this::createComponentUsingFactory);
+        // Fast path: check if component already exists (no locking)
+        Object component = objects.get(objectSpecification);
+        if (component != null) {
+            return (R) component;
+        }
 
-        return (R) component;
+        // Component doesn't exist, need to create it.
+        // We cannot use computeIfAbsent because the factory's newComponent() method
+        // may call context.get() to resolve dependencies, which would trigger
+        // a nested computeIfAbsent call on the same ConcurrentHashMap.
+        // This causes "Recursive update" IllegalStateException.
+
+        return createComponent(objectSpecification);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <R> R createComponent(ObjectSpecification objectSpecification) {
+        // Use a single global lock for all component creation.
+        // Since the container is read-heavy (fast path without locking) and component
+        // creation is primarily a startup concern, a single lock is simple and adequate.
+        //
+        // We use tryLock with a timeout to prevent deadlocks and provide better diagnostics
+        // if something goes wrong.
+
+        try {
+            boolean lockAcquired = creationLock.tryLock(2, TimeUnit.MINUTES);
+            if (!lockAcquired) {
+                throw new IllegalStateException(
+                        "Failed to acquire component creation lock within timeout: "
+                                + objectSpecification
+                                + ". This may indicate a deadlock or a component factory that is taking too long to initialize.");
+            }
+
+            try {
+                // Double-check: another thread might have created it while we waited for the lock
+                R component = (R) objects.get(objectSpecification);
+                if (component != null) {
+                    return component;
+                }
+
+                // Create the component (may recursively call get() for dependencies)
+                component = createComponentUsingFactory(objectSpecification);
+
+                // Store it in the map
+                objects.put(objectSpecification, component);
+
+                return component;
+
+            } finally {
+                creationLock.unlock();
+            }
+
+        } catch (InterruptedException e) {
+            // Restore interrupt status
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(
+                    "Interrupted while waiting to create component: " + objectSpecification, e);
+        }
     }
 
     @SuppressWarnings("unchecked")
