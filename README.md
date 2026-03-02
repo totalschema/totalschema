@@ -8,7 +8,7 @@ deployment scenarios where you need to manage:
 
 - Multiple databases simultaneously
 - Different database technologies (Oracle, PostgreSQL, H2, BigQuery, etc.)
-- Non-database assets (Linux/Unix servers, cloud infrastructure, configuration files)
+- Non-database connectors (Linux/Unix servers, cloud infrastructure, configuration files)
 - Complex deployment orchestration across heterogeneous systems
 
 ## Why TotalSchema?
@@ -16,18 +16,18 @@ deployment scenarios where you need to manage:
 Traditional change tools work perfectly when you have one application managing one database. However, they fall short in scenarios where:
 
 - **Multiple systems need synchronized changes** - In DWH and cloud environments, a single logical deployment might require updates to an operational database, a staging database, a data warehouse, and cloud infrastructure (e.g., spinning up a GCP cluster)
-- **Non-database resources are involved** - You need to deploy configuration files, restart services, provision infrastructure, or execute shell commands as part of your deployment
-- **Complex environment management is required** - Different environments (DEV, QA, PROD) may have completely different asset configurations
+- **Non-database resources are involved** - You need to deploy configuration files, restart services, provision infrastructure, or execute shell commands as part of your deployment using non-JDBC connectors
+- **Complex environment management is required** - Different environments (DEV, QA, PROD) may have completely different connector configurations
 
-TotalSchema addresses these issues by treating databases as just one type of "asset" among many, allowing you to orchestrate complex multi-system deployments through a single, version-controlled set of change scripts.
+TotalSchema addresses these issues by treating databases as just one type of "connector" among many, allowing you to orchestrate complex multi-system deployments through a single, version-controlled set of change scripts.
 
 ## Key Features
 
-- **Multi-Asset Management**: Manage unlimited databases and non-database assets within a single project
+- **Multi-Connector Management**: Manage unlimited databases and non-database connectors within a single project
 - **State Tracking**: Persistent state table (stored in a database) tracks which changes have been applied, with optional file content hashing for validation
 - **Multiple Script Types**: Native support for SQL, Shell scripts, and Groovy scripts (with injected `sql` object for database operations)
-- **Asset Types**: JDBC databases, SSH remote execution, local shell commands
-- **Environment Management**: Define separate configurations, variables, and asset sets for each environment
+- **Connector Types**: JDBC databases, SSH remote execution, local shell commands
+- **Environment Management**: Define separate configurations, variables, and connector sets for each environment
 - **Script Execution Modes**: Support for one-time execution, always-run scripts, change-triggered scripts, and rollback/revert operations
 - **Locking**: Optional database-based locking to prevent concurrent executions
 - **Variable Substitution**: Powerful variable system with environment overrides and expression evaluation
@@ -53,7 +53,7 @@ This README covers architecture, concepts, and configuration. For usage-specific
 TotalSchema is built around several core concepts:
 
 1. **Change Scripts**: Version-controlled scripts organized in a hierarchical directory structure
-2. **Assets**: Target systems (databases, servers, cloud infrastructure) where scripts are executed
+2. **Connectors**: Target systems (databases, servers, cloud infrastructure) where scripts are executed
 3. **Environments**: Separate configurations for DEV, QA, PROD, etc.
 4. **State Table**: Tracks which changes have been applied (stored in a database of your choice)
 5. **Script Execution Modes**: Control how and when scripts are executed
@@ -355,8 +355,8 @@ environments:
       dbPassword: prodpassword
       dbName: prod_db
 
-# Define assets (target systems)
-assets:
+# Define connectors (target systems)
+connectors:
   mydb:
     type: jdbc
     driver:
@@ -446,13 +446,13 @@ Change script files must follow a strict naming convention to be recognized by T
 ### Pattern
 
 ```
-<order>.<description>.<environment>.<changetype>.<asset>.<extension>
+<order>.<description>.<environment>.<changetype>.<connector>.<extension>
 ```
 
 or (for non-environment-specific changes):
 
 ```
-<order>.<description>.<changetype>.<asset>.<extension>
+<order>.<description>.<changetype>.<connector>.<extension>
 ```
 
 ### Components
@@ -465,7 +465,7 @@ or (for non-environment-specific changes):
    - `apply_always` - Execute on every run, NOT tracked in state
    - `apply_on_change` - Execute when file content changes (requires hashing)
    - `revert` - Rollback script for an apply change
-5. **Asset** (`<asset>`): Target system name as defined in configuration (e.g., `mydb`, `myserver`)
+5. **Connector** (`<connector>`): Target system name as defined in configuration (e.g., `mydb`, `myserver`)
 6. **Extension** (`<extension>`): File type (e.g., `sql`, `groovy`, `sh`)
 
 ### Examples
@@ -611,7 +611,7 @@ TotalSchema supports multiple connector types for executing change scripts acros
 Connect to any JDBC-compliant database:
 
 ```yaml
-assets:
+connectors:
   mydb:
     type: jdbc
     driver:
@@ -642,7 +642,7 @@ Executes complete shell scripts on remote servers. The script is transferred to 
 **Use this when:** You need variables, functions, or state to be shared across lines in your script.
 
 ```yaml
-assets:
+connectors:
   myserver:
     type: ssh-script
     host: server.example.com
@@ -682,7 +682,7 @@ Executes commands from a file line-by-line, where **each line is an independent 
 **Use this when:** You need to execute a series of independent commands that don't depend on each other.
 
 ```yaml
-assets:
+connectors:
   myserver:
     type: ssh-commands
     host: server.example.com
@@ -712,7 +712,7 @@ Both SSH connector types support multiple authentication methods:
 
 ```yaml
 # Password authentication
-assets:
+connectors:
   myserver:
     type: ssh-script  # or ssh-commands
     host: server.example.com
@@ -720,7 +720,7 @@ assets:
     password: ${serverPassword}
 
 # Key-based authentication (recommended)
-assets:
+connectors:
   myserver:
     type: ssh-script
     host: server.example.com
@@ -736,7 +736,7 @@ assets:
 Execute scripts on the local machine:
 
 ```yaml
-assets:
+connectors:
   localshell:
     type: shell
 ```
@@ -1178,7 +1178,7 @@ environments:
 Variables are substituted using `${variableName}` syntax:
 
 ```yaml
-assets:
+connectors:
   mydb:
     type: jdbc
     jdbc:
@@ -1292,8 +1292,8 @@ environments:
       dbPassword: '${secret:!SECRET;1.0;...}'
       apiKey: '${secret:!SECRET;1.0;...}'
 
-# Secrets in asset configuration
-assets:
+# Secrets in connector configuration
+connectors:
   myserver:
     type: ssh-script  # or ssh-commands
     host: server.example.com
@@ -1315,7 +1315,7 @@ variables:
   # Path to encrypted SSH key file
   sshKeyPath: /secure/keys/id_rsa.secret
 
-assets:
+connectors:
   myDatabase:
     type: jdbc
     connection:
@@ -1577,7 +1577,7 @@ println "Transformation completed successfully!"
 ### Multi-Database DWH Setup
 
 ```yaml
-assets:
+connectors:
   # Operational database
   operational:
     type: jdbc
@@ -1722,7 +1722,7 @@ UPDATE users SET auth_system = 'new' WHERE auth_system = 'legacy';
 - Verify file naming convention is correct
 - Check that file is in a directory under `changes/`
 - Ensure environment in filename matches `-e` parameter
-- Verify asset name matches configuration
+- Verify connector name matches configuration
 
 ### State Database Connection Failed
 
@@ -1753,14 +1753,14 @@ UPDATE users SET auth_system = 'new' WHERE auth_system = 'legacy';
 - If modification was accidental: revert to original content
 - Last resort: manually update hash in the state table (NOT RECOMMENDED)
 
-### Asset Not Found
+### Connector Not Found
 
-**Problem**: `Asset 'mydb' not found` error.
+**Problem**: `Connector 'mydb' not found` error.
 
 **Solutions**:
-- Verify asset is defined in `totalschema.yml`
-- Check asset name spelling in configuration and filename
-- Ensure environment-specific asset overrides are correct
+- Verify connector is defined in `totalschema.yml`
+- Check connector name spelling in configuration and filename
+- Ensure environment-specific connector overrides are correct
 
 ## FAQ
 
