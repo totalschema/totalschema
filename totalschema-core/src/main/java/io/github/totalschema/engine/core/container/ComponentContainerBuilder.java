@@ -84,7 +84,7 @@ public final class ComponentContainerBuilder {
         Map<FactorySpecification, ComponentFactory<?>> enabledFactories = filterEnabledFactories();
         enabledFactories.forEach(componentContainer::registerComponentFactory);
 
-        createObjectsFromFactories(componentContainer);
+        createObjectsFromFactories(componentContainer, enabledFactories);
 
         return componentContainer;
     }
@@ -154,9 +154,12 @@ public final class ComponentContainerBuilder {
                                 LinkedHashMap::new));
     }
 
-    private void createObjectsFromFactories(ComponentContainer componentContainer) {
+    private void createObjectsFromFactories(
+            ComponentContainer componentContainer,
+            Map<FactorySpecification, ComponentFactory<?>> enabledFactories) {
 
-        for (Map.Entry<FactorySpecification, ComponentFactory<?>> entry : factories.entrySet()) {
+        for (Map.Entry<FactorySpecification, ComponentFactory<?>> entry :
+                enabledFactories.entrySet()) {
 
             ComponentFactory<?> factory = entry.getValue();
 
