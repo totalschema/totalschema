@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.lock.database;
+package io.github.totalschema.engine.internal.lock.database.service;
 
 import io.github.totalschema.concurrent.LockTemplate;
 import io.github.totalschema.config.Configuration;
@@ -56,13 +56,7 @@ public final class DefaultDatabaseLockService implements LockService {
 
     private ZonedDateTime acquiredLockExpiration;
 
-    public static DefaultDatabaseLockService newInstance(
-            LockStateRepository lockStateRepository, Configuration configuration) {
-
-        return new DefaultDatabaseLockService(lockStateRepository, configuration);
-    }
-
-    DefaultDatabaseLockService(
+    public DefaultDatabaseLockService(
             LockStateRepository lockStateRepository, Configuration configuration) {
 
         this.lockStateRepository = lockStateRepository;

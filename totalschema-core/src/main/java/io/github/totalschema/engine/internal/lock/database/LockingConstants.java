@@ -16,18 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.lock.database.repository.spi;
+package io.github.totalschema.engine.internal.lock.database;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
-import io.github.totalschema.engine.internal.lock.database.repository.impl.DefaultLockStateRepositoryFactory;
-import io.github.totalschema.spi.ServiceLoaderFactory;
-
-public interface LockStateRepositoryFactory {
-
-    static LockStateRepositoryFactory getInstance() {
-        return ServiceLoaderFactory.getSingleService(LockStateRepositoryFactory.class)
-                .orElseGet(DefaultLockStateRepositoryFactory::new);
-    }
-
-    LockStateRepository getLockStateRepository(CommandContext context);
+public class LockingConstants {
+    public static final String PROPERTY_NAMESPACE = "lock";
 }

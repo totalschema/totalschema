@@ -16,17 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.lock.database.repository.impl;
+package io.github.totalschema.engine.internal.lock.database.service;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.lock.database.LockingComponentFactory;
+import io.github.totalschema.engine.internal.lock.database.LockingConstants;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
-import java.sql.SQLException;
+import io.github.totalschema.spi.lock.LockService;
 import java.util.List;
 
-public final class DefaultLockStateRepositoryFactory
-        extends LockingComponentFactory<LockStateRepository> {
+public class DefaultLockServiceFactory extends LockingComponentFactory<LockService> {
 
     @Override
     public boolean isLazy() {
@@ -34,8 +34,8 @@ public final class DefaultLockStateRepositoryFactory
     }
 
     @Override
-    public Class<LockStateRepository> getConstructedClass() {
-        return LockStateRepository.class;
+    public Class<LockService> getConstructedClass() {
+        return LockService.class;
     }
 
     @Override
@@ -54,23 +54,17 @@ public final class DefaultLockStateRepositoryFactory
     }
 
     @Override
-    public LockStateRepository newComponent(Context context, Object... arguments) {
-        try {
-            Configuration configuration =
-                    context.get(Configuration.class).getPrefixNamespace("lock.database");
+    public LockService newComponent(Context context, Object... arguments) {
 
-            DefaultLockStateRepository repository = new DefaultLockStateRepository(configuration);
+        Configuration lockConfig =
+                context.get(Configuration.class)
+                        .getPrefixNamespace(LockingConstants.PROPERTY_NAMESPACE);
 
-            repository.init();
+        LockStateRepository lockStateRepository = context.get(LockStateRepository.class);
 
-            return repository;
+        Configuration configuration =
+                lockConfig.getPrefixNamespace(DefaultDatabaseLockService.CONFIG_PREFIX);
 
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("interrupted", e);
-        }
+        return new DefaultDatabaseLockService(lockStateRepository, configuration);
     }
 }

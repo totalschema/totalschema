@@ -30,7 +30,6 @@ import io.github.totalschema.engine.api.ChangeEngineFactory;
 import io.github.totalschema.engine.core.command.api.CommandExecutor;
 import io.github.totalschema.engine.core.command.api.CommandInvoker;
 import io.github.totalschema.engine.core.command.interceptor.LockInterceptor;
-import io.github.totalschema.engine.core.command.interceptor.ServiceInitializerInterceptor;
 import io.github.totalschema.engine.core.container.ComponentContainer;
 import io.github.totalschema.engine.core.container.ComponentContainerBuilder;
 import io.github.totalschema.engine.core.event.EventDispatcher;
@@ -42,18 +41,23 @@ import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluatorFactory;
 import io.github.totalschema.spi.hash.HashService;
 import io.github.totalschema.spi.hash.HashServiceFactory;
+import io.github.totalschema.spi.lock.LockService;
 import io.github.totalschema.spi.script.ScriptExecutorManager;
 import io.github.totalschema.spi.secrets.SecretManagerFactory;
 import io.github.totalschema.spi.secrets.SecretsManager;
 import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.sql.SqlDialectFactory;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of ChangeEngineFactory. Creates ChangeEngine instances with a chain of
  * interceptors for executing commands inside the engine.
  */
 public class DefaultChangeEngineFactory implements ChangeEngineFactory {
+
+    private final Logger logger = LoggerFactory.getLogger(DefaultChangeEngineFactory.class);
 
     @Override
     @SuppressWarnings("unused") // Possible API usage
@@ -69,16 +73,15 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
             SecretsManager secretsManager,
             String environmentName) {
 
-        CommandExecutor commandExecutor = new CommandInvoker();
-
-        commandExecutor = new LockInterceptor(commandExecutor);
-
-        commandExecutor = new ServiceInitializerInterceptor(commandExecutor);
-
         Environment environment = environmentName != null ? new Environment(environmentName) : null;
 
         if (secretsManager == null) {
             SecretManagerFactory secretManagerFactory = SecretManagerFactory.getInstance();
+
+            logger.debug(
+                    "Creating SecretsManager using SecretManagerFactory: {}",
+                    secretManagerFactory.getClass().getName());
+
             secretsManager = secretManagerFactory.getSecretsManager(null, null);
         }
 
@@ -87,6 +90,15 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
         ComponentContainer componentContainer =
                 createComponentContainer(
                         environment, configurationSupplier, secretsManager, eventDispatcher);
+
+        CommandExecutor commandExecutor = new CommandInvoker();
+
+        if (componentContainer.has(LockService.class)) {
+            logger.debug(
+                    "Adding LockInterceptor to command execution chain, as LockService is available");
+
+            commandExecutor = new LockInterceptor(commandExecutor);
+        }
 
         return new DefaultChangeEngine(commandExecutor, componentContainer, eventDispatcher);
     }

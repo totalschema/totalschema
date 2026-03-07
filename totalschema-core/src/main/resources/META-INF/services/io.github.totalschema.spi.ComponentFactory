@@ -2,3 +2,5 @@ io.github.totalschema.engine.internal.state.csv.CsvFileStateRecordRepositoryFact
 io.github.totalschema.engine.internal.state.database.DatabaseStateRecordRepositoryFactory
 io.github.totalschema.engine.internal.state.DefaultStateServiceFactory
 io.github.totalschema.engine.internal.change.DefaultChangeServiceFactory
+io.github.totalschema.engine.internal.lock.database.repository.impl.DefaultLockStateRepositoryFactory
+io.github.totalschema.engine.internal.lock.database.service.DefaultLockServiceFactory

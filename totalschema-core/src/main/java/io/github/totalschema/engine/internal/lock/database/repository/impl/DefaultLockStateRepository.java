@@ -22,6 +22,8 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
 import io.github.totalschema.jdbc.*;
 import io.github.totalschema.model.LockRecord;
+import java.io.Closeable;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.ZoneOffset;
@@ -31,7 +33,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class DefaultLockStateRepository implements LockStateRepository {
+final class DefaultLockStateRepository implements LockStateRepository, Closeable {
 
     private static final String LOCK_DATABASE_NAME = "lock";
 
@@ -53,17 +55,7 @@ final class DefaultLockStateRepository implements LockStateRepository {
 
     private final JdbcDatabase jdbcDatabase;
 
-    public static DefaultLockStateRepository newInstance(Configuration configuration)
-            throws SQLException, InterruptedException {
-
-        DefaultLockStateRepository repository = new DefaultLockStateRepository(configuration);
-
-        repository.init();
-
-        return repository;
-    }
-
-    private DefaultLockStateRepository(Configuration configuration) {
+    DefaultLockStateRepository(Configuration configuration) {
         beforeCreateInitSql = configuration.getString("table.beforeCreate.sql").orElse(null);
         tableCatalog = configuration.getString("table.catalog").orElse(null);
         tableSchema = configuration.getString("table.schema").orElse(null);
@@ -131,7 +123,7 @@ final class DefaultLockStateRepository implements LockStateRepository {
         jdbcDatabase = jdbcDatabaseFactory.getJdbcDatabase(LOCK_DATABASE_NAME, configWithLogSqlSet);
     }
 
-    private void init() throws SQLException, InterruptedException {
+    void init() throws SQLException, InterruptedException {
 
         if (isLockTableNotFound()) {
             logger.info(
@@ -314,5 +306,10 @@ final class DefaultLockStateRepository implements LockStateRepository {
         if (changedRows != 1) {
             throw new IllegalStateException("Unexpected number of rows changed: " + changedRows);
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        jdbcDatabase.close();
     }
 }
