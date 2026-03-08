@@ -19,172 +19,114 @@
 package io.github.totalschema.engine.internal.lock.database.repository.impl;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.engine.internal.common.repository.AbstractJdbcTableRepository;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
 import io.github.totalschema.jdbc.*;
 import io.github.totalschema.model.LockRecord;
-import java.io.Closeable;
-import java.io.IOException;
+import io.github.totalschema.spi.sql.SqlDialect;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-final class DefaultLockStateRepository implements LockStateRepository, Closeable {
+final class DefaultLockStateRepository extends AbstractJdbcTableRepository
+        implements LockStateRepository {
 
     private static final String LOCK_DATABASE_NAME = "lock";
 
-    private final Logger logger = LoggerFactory.getLogger(DefaultLockStateRepository.class);
+    /** Static SQL configuration for lock state repository. */
+    private static class LockStateSqlConfiguration
+            implements AbstractJdbcTableRepository.SqlConfiguration {
 
-    private final String beforeCreateInitSql;
-    private final String createSql;
+        @Override
+        public String getDefaultTableName() {
+            return DefaultValues.LOCK_TABLE_NAME;
+        }
+
+        @Override
+        public String getDefaultCreateSql(
+                Configuration configuration, SqlDialect sqlDialect, String tableNameExpression) {
+            return String.format(
+                    configuration
+                            .getString("table.sql.create")
+                            .orElse(DefaultValues.CREATE_TABLE_SQL),
+                    tableNameExpression);
+        }
+    }
+
     private final String dropSql;
     private final String insertSql;
     private final String acquireSql;
     private final String renewSql;
     private final String querySql;
     private final String releaseSql;
-    private final String tableCatalog;
-    private final String tableSchema;
-    private final String tableName;
-    private final String tableNameExpression;
-    private final String tableNameQuote;
 
-    private final JdbcDatabase jdbcDatabase;
+    DefaultLockStateRepository(
+            SqlDialect sqlDialect, JdbcDatabase jdbcDatabase, Configuration configuration) {
+        super(
+                sqlDialect,
+                jdbcDatabase,
+                LOCK_DATABASE_NAME,
+                new LockStateSqlConfiguration(),
+                configuration);
 
-    DefaultLockStateRepository(Configuration configuration) {
-        beforeCreateInitSql = configuration.getString("table.beforeCreate.sql").orElse(null);
-        tableCatalog = configuration.getString("table.catalog").orElse(null);
-        tableSchema = configuration.getString("table.schema").orElse(null);
-        tableName = configuration.getString("table.name").orElse(DefaultValues.LOCK_TABLE_NAME);
-        tableNameQuote = configuration.getString("table.name.quote").orElse(null);
-        tableNameExpression =
-                configuration
-                        .getString("table.name.expression")
-                        .orElseGet(
-                                () ->
-                                        JdbcUtils.getTableNameExpression(
-                                                tableCatalog,
-                                                tableSchema,
-                                                tableName,
-                                                tableNameQuote));
-        createSql =
-                String.format(
-                        configuration
-                                .getString("table.sql.create")
-                                .orElse(DefaultValues.CREATE_TABLE_SQL),
-                        tableNameExpression);
         dropSql =
-                String.format(
+                formatSqlWithTableName(
                         configuration
                                 .getString("table.sql.drop")
-                                .orElse(DefaultValues.DROP_TABLE_SQL),
-                        tableNameExpression);
+                                .orElse(DefaultValues.DROP_TABLE_SQL));
+
         insertSql =
-                String.format(
+                formatSqlWithTableName(
                         configuration
                                 .getString("table.sql.insert")
-                                .orElse(DefaultValues.INSERT_RECORD_SQL),
-                        tableNameExpression);
+                                .orElse(DefaultValues.INSERT_RECORD_SQL));
+
         acquireSql =
-                String.format(
+                formatSqlWithTableName(
                         configuration
                                 .getString("table.sql.acquire")
-                                .orElse(DefaultValues.ACQUIRE_LOCK_SQL),
-                        tableNameExpression);
+                                .orElse(DefaultValues.ACQUIRE_LOCK_SQL));
+
         renewSql =
-                String.format(
+                formatSqlWithTableName(
                         configuration
                                 .getString("table.sql.renewSql")
-                                .orElse(DefaultValues.RENEW_LOCK_SQL),
-                        tableNameExpression);
+                                .orElse(DefaultValues.RENEW_LOCK_SQL));
+
         querySql =
-                String.format(
+                formatSqlWithTableName(
                         configuration
                                 .getString("table.sql.query")
-                                .orElse(DefaultValues.QUERY_RECORD_SQL),
-                        tableNameExpression);
+                                .orElse(DefaultValues.QUERY_RECORD_SQL));
+
         releaseSql =
-                String.format(
+                formatSqlWithTableName(
                         configuration
                                 .getString("table.sql.release")
-                                .orElse(DefaultValues.RELEASE_LOCK_SQL),
-                        tableNameExpression);
-
-        boolean logSql = configuration.getBoolean("logSql").orElse(false);
-
-        Configuration configWithLogSqlSet =
-                configuration.withEntry("logSql", Boolean.toString(logSql));
-
-        JdbcDatabaseFactory jdbcDatabaseFactory = JdbcDatabaseFactory.getInstance();
-        jdbcDatabase = jdbcDatabaseFactory.getJdbcDatabase(LOCK_DATABASE_NAME, configWithLogSqlSet);
+                                .orElse(DefaultValues.RELEASE_LOCK_SQL));
     }
 
-    void init() throws SQLException, InterruptedException {
+    @Override
+    protected void performPostCreationSteps() throws SQLException, InterruptedException {
+        jdbcDatabase.executeUpdate(insertSql);
+        logger.info(
+                "[{}] database: The single record used for locking is inserted to {}",
+                LOCK_DATABASE_NAME,
+                tableNameExpression);
 
-        if (isLockTableNotFound()) {
-            logger.info(
-                    "[{}] database: Lock table is NOT found, creating it now: {}",
-                    LOCK_DATABASE_NAME,
-                    tableName);
-
-            if (beforeCreateInitSql != null) {
-                jdbcDatabase.executeUpdate(beforeCreateInitSql);
-            }
-
-            jdbcDatabase.executeUpdate(createSql);
-
-            logger.info(
-                    "[{}] database: Lock table is created: {}",
-                    LOCK_DATABASE_NAME,
-                    tableNameExpression);
-
-            jdbcDatabase.executeUpdate(insertSql);
-            logger.info(
-                    "[{}] database: The single record used for locking is inserted to {}",
-                    LOCK_DATABASE_NAME,
-                    tableNameExpression);
-
-            try {
-                requiredTableCanBeFoundWithConfig();
-                requiredLockRecordExists();
-            } catch (RuntimeException runtimeException) {
-                try {
-                    jdbcDatabase.executeUpdate(dropSql);
-                } catch (RuntimeException dropException) {
-                    logger.error(
-                            "Failure cleaning up lock table created with incorrect configuration");
-                    runtimeException.addSuppressed(dropException);
-                }
-
-                throw runtimeException;
-            }
-
-        } else {
-            logger.info(
-                    "[{}] database: Lock table found: {}", LOCK_DATABASE_NAME, tableNameExpression);
-        }
+        requiredLockRecordExists();
     }
 
-    private void requiredTableCanBeFoundWithConfig() throws SQLException, InterruptedException {
-        if (isLockTableNotFound()) {
-
-            logger.error(
-                    "Lock table [{}] was not found after the create attempt, "
-                            + "while searching with tableCatalog={}, tableSchema={}, tableName={}",
-                    tableNameExpression,
-                    tableCatalog,
-                    tableSchema,
-                    tableName);
-
-            throw new IllegalStateException(
-                    String.format(
-                            "The lock table %s had been created, "
-                                    + "but the lookup failed to find it after that with the current configuration",
-                            tableNameExpression));
+    @Override
+    protected void handleCreationFailure(RuntimeException e) {
+        try {
+            jdbcDatabase.executeUpdate(dropSql);
+        } catch (RuntimeException | SQLException | InterruptedException dropException) {
+            logger.error("Failure cleaning up lock table created with incorrect configuration");
+            e.addSuppressed(dropException);
         }
     }
 
@@ -192,10 +134,6 @@ final class DefaultLockStateRepository implements LockStateRepository, Closeable
         if (getLockRecord() == null) {
             throw new IllegalStateException("No lock could be found");
         }
-    }
-
-    private boolean isLockTableNotFound() throws SQLException, InterruptedException {
-        return !jdbcDatabase.isTableFound(tableCatalog, tableSchema, tableName);
     }
 
     @Override
@@ -306,10 +244,5 @@ final class DefaultLockStateRepository implements LockStateRepository, Closeable
         if (changedRows != 1) {
             throw new IllegalStateException("Unexpected number of rows changed: " + changedRows);
         }
-    }
-
-    @Override
-    public void close() throws IOException {
-        jdbcDatabase.close();
     }
 }

@@ -37,6 +37,11 @@ public class DefaultJdbcDatabaseFactory implements JdbcDatabaseFactory {
 
     @Override
     public JdbcDatabase newJdbcDatabase(String name, Configuration configuration) {
-        return DefaultJdbcDatabase.newInstance(name, configuration);
+
+        DefaultJdbcDatabase database = new DefaultJdbcDatabase(name, configuration);
+
+        database.init();
+
+        return database;
     }
 }

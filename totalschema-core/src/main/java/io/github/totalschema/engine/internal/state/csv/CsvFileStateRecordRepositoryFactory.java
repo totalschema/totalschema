@@ -30,11 +30,6 @@ public class CsvFileStateRecordRepositoryFactory extends ComponentFactory<StateR
     }
 
     @Override
-    public List<Class<?>> getArgumentTypes() {
-        return List.of();
-    }
-
-    @Override
     public StateRepository newComponent(Context context, Object... arguments) {
 
         Configuration stateConfig =

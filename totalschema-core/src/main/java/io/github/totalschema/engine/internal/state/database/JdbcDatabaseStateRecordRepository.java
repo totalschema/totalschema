@@ -19,103 +19,146 @@
 package io.github.totalschema.engine.internal.state.database;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
+import io.github.totalschema.engine.internal.common.repository.AbstractJdbcTableRepository;
 import io.github.totalschema.jdbc.JdbcDatabase;
-import io.github.totalschema.jdbc.JdbcDatabaseFactory;
 import io.github.totalschema.jdbc.Parameter;
 import io.github.totalschema.jdbc.TypeConversions;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.StateRecord;
 import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.state.StateRepository;
-import java.io.Closeable;
-import java.io.IOException;
 import java.sql.*;
 import java.time.ZonedDateTime;
 import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class JdbcDatabaseStateRecordRepository implements StateRepository, Closeable {
-
-    private final Logger logger = LoggerFactory.getLogger(JdbcDatabaseStateRecordRepository.class);
+public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableRepository
+        implements StateRepository {
 
     private static final String STATE_DATABASE_NAME = "state";
 
-    private final int changeFileNameMaxLength;
+    /** Static SQL configuration for state record repository. */
+    private static class StateRecordSqlConfiguration
+            implements AbstractJdbcTableRepository.SqlConfiguration {
 
-    private final String beforeCreateInitSql;
+        private final int changeFileNameMaxLength;
+
+        StateRecordSqlConfiguration(int changeFileNameMaxLength) {
+            this.changeFileNameMaxLength = changeFileNameMaxLength;
+        }
+
+        @Override
+        public String getDefaultTableName() {
+            return JdbcDatabaseStateRecordRepositoryDefaultValues.STATE_TABLE_NAME;
+        }
+
+        @Override
+        public String getDefaultCreateSql(
+                Configuration configuration, SqlDialect sqlDialect, String tableNameExpression) {
+            var createSqlBuilder =
+                    new StringBuilder("CREATE TABLE ")
+                            .append(tableNameExpression)
+                            .append(" ")
+                            .append("(");
+
+            createSqlBuilder
+                    .append("change_file_id ")
+                    .append(
+                            getColumnType(
+                                    configuration,
+                                    "change_file_id",
+                                    getChangeFieldIdColumnType(sqlDialect)))
+                    .append(", ");
+
+            createSqlBuilder
+                    .append("file_hash ")
+                    .append(
+                            getColumnType(
+                                    configuration, "file_hash", getFileHashColumnType(sqlDialect)))
+                    .append(", ");
+
+            createSqlBuilder
+                    .append("apply_timestamp ")
+                    .append(
+                            getColumnType(
+                                    configuration,
+                                    "apply_timestamp",
+                                    getApplyTimestampColumnType(sqlDialect)))
+                    .append(", ");
+
+            createSqlBuilder
+                    .append("applied_by ")
+                    .append(
+                            getColumnType(
+                                    configuration,
+                                    "applied_by",
+                                    getAppliedByColumnType(sqlDialect)));
+
+            if (!configuration.getBoolean("table.primaryKeyClause.omit").orElse(false)) {
+                createSqlBuilder
+                        .append(", ")
+                        .append(
+                                configuration
+                                        .getString("table.primaryKeyClause.definition")
+                                        .orElse("PRIMARY KEY(change_file_id)"));
+            }
+
+            createSqlBuilder.append(")");
+
+            return createSqlBuilder.toString();
+        }
+
+        private String getColumnType(
+                Configuration configuration, String columnName, String defaultType) {
+            return configuration
+                    .getString("table.columns." + columnName + ".type")
+                    .orElse(defaultType);
+        }
+
+        private String getChangeFieldIdColumnType(SqlDialect sqlDialect) {
+            return sqlDialect.variableCharacterColumnExpression(changeFileNameMaxLength);
+        }
+
+        private String getFileHashColumnType(SqlDialect sqlDialect) {
+            return sqlDialect.variableCharacterColumnExpression(
+                    JdbcDatabaseStateRecordRepositoryDefaultValues.HASH_COLUMN_LENGTH);
+        }
+
+        private String getApplyTimestampColumnType(SqlDialect sqlDialect) {
+            return sqlDialect.timestampColumnExpression();
+        }
+
+        private String getAppliedByColumnType(SqlDialect sqlDialect) {
+            return sqlDialect.variableCharacterColumnExpression(
+                    JdbcDatabaseStateRecordRepositoryDefaultValues.APPLIED_BY_COLUMN_LENGTH);
+        }
+    }
 
     private final String afterCreateInitSql;
-
-    private final String createSql;
 
     private final String querySql;
 
     private final String insertSql;
 
-    private final String tableCatalog;
-
-    private final String tableSchema;
-
-    private final String tableName;
-
-    private final String tableNameExpression;
-
-    private final String tableNameQuote;
-
-    private final JdbcDatabase jdbcDatabase;
-
     private final ChangeFileFactory changeFileFactory;
 
-    private final SqlDialect sqlDialect;
-
     public JdbcDatabaseStateRecordRepository(
-            Context context, JdbcDatabaseFactory jdbcDatabaseFactory, Configuration configuration) {
+            SqlDialect sqlDialect,
+            JdbcDatabase jdbcDatabase,
+            ChangeFileFactory changeFileFactory,
+            int changeFileNameMaxLength,
+            Configuration configuration) {
 
-        sqlDialect = context.get(SqlDialect.class);
+        super(
+                sqlDialect,
+                jdbcDatabase,
+                STATE_DATABASE_NAME,
+                new StateRecordSqlConfiguration(changeFileNameMaxLength),
+                configuration);
 
-        changeFileFactory = context.get(ChangeFileFactory.class);
-        changeFileNameMaxLength = changeFileFactory.getChangeFileNameMaxLength();
-
-        boolean logSql = configuration.getBoolean("logSql").orElse(false);
-
-        Configuration configWithLogSqlSet =
-                configuration.withEntry("logSql", Boolean.toString(logSql));
-
-        jdbcDatabase =
-                jdbcDatabaseFactory.getJdbcDatabase(STATE_DATABASE_NAME, configWithLogSqlSet);
-
-        tableCatalog = configuration.getString("table.catalog").orElse(null);
-        tableSchema = configuration.getString("table.schema").orElse(null);
-
-        tableName =
-                configuration
-                        .getString("table.name")
-                        .orElse(JdbcDatabaseStateRecordRepositoryDefaultValues.STATE_TABLE_NAME);
-
-        tableNameQuote = configuration.getString("table.name.quote").orElse(null);
-
-        tableNameExpression =
-                configuration
-                        .getString("table.name.expression")
-                        .orElseGet(
-                                () ->
-                                        getTableNameExpression(
-                                                tableCatalog,
-                                                tableSchema,
-                                                tableName,
-                                                tableNameQuote));
-
-        beforeCreateInitSql = configuration.getString("table.beforeCreate.sql").orElse(null);
+        this.changeFileFactory = changeFileFactory;
 
         afterCreateInitSql = configuration.getString("table.afterCreate.sql").orElse(null);
-
-        createSql =
-                configuration
-                        .getString("table.create.sql")
-                        .orElseGet(() -> getCreateSql(configuration));
 
         querySql =
                 configuration
@@ -128,111 +171,11 @@ public class JdbcDatabaseStateRecordRepository implements StateRepository, Close
                         .orElseGet(() -> getInsertSql(configuration));
     }
 
-    void init() {
-        try {
-            createStateTableIfNotFound();
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Initialization failed", e);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("interrupted", e);
+    @Override
+    protected void executeAfterCreateHooks() throws SQLException, InterruptedException {
+        if (afterCreateInitSql != null) {
+            jdbcDatabase.executeUpdate(afterCreateInitSql);
         }
-    }
-
-    protected String getTableNameExpression(
-            String tableCatalog, String tableSchema, String tableName, String tableNameQuote) {
-
-        String tableNameExpression;
-
-        StringBuilder tableNameExpressionBuilder = new StringBuilder();
-        if (tableCatalog != null && !tableCatalog.isBlank()) {
-            tableNameExpressionBuilder.append(tableCatalog).append(".");
-        }
-
-        if (tableSchema != null && !tableSchema.isBlank()) {
-            tableNameExpressionBuilder.append(tableSchema).append(".");
-        }
-
-        tableNameExpression = tableNameExpressionBuilder.append(tableName).toString();
-
-        if (tableNameQuote != null) {
-            tableNameExpression =
-                    String.format("%s%s%s", tableNameQuote, tableNameExpression, tableNameQuote);
-        }
-
-        return tableNameExpression;
-    }
-
-    protected String getCreateSql(Configuration configuration) {
-        var createSqlBuilder =
-                new StringBuilder("CREATE TABLE ")
-                        .append(tableNameExpression)
-                        .append(" ")
-                        .append("(");
-
-        createSqlBuilder
-                .append("change_file_id ")
-                .append(
-                        configuration
-                                .getString("table.column.change_file_id.type")
-                                .orElse(getChangeFieldIdColumnType()))
-                .append(", ");
-
-        createSqlBuilder
-                .append("file_hash ")
-                .append(
-                        configuration
-                                .getString("table.column.file_hash.type")
-                                .orElse(getFileHashColumnType()))
-                .append(", ");
-
-        createSqlBuilder
-                .append("apply_timestamp ")
-                .append(
-                        configuration
-                                .getString("table.column.apply_timestamp.type")
-                                .orElse(getApplyTimestampColumnType()))
-                .append(", ");
-
-        createSqlBuilder
-                .append("applied_by ")
-                .append(
-                        configuration
-                                .getString("table.column.applied_by.type")
-                                .orElse(getAppliedByColumnType()));
-
-        if (!configuration.getBoolean("table.primaryKeyClause.omit").orElse(false)) {
-            createSqlBuilder
-                    .append(", ")
-                    .append(
-                            configuration
-                                    .getString("table.primaryKeyClause.definition")
-                                    .orElse("PRIMARY KEY(change_file_id)"));
-        }
-
-        createSqlBuilder.append(")");
-
-        return createSqlBuilder.toString();
-    }
-
-    protected String getChangeFieldIdColumnType() {
-        return sqlDialect.variableCharacterColumnExpression(changeFileNameMaxLength);
-    }
-
-    private String getFileHashColumnType() {
-        return sqlDialect.variableCharacterColumnExpression(
-                JdbcDatabaseStateRecordRepositoryDefaultValues.HASH_COLUMN_LENGTH);
-    }
-
-    protected String getApplyTimestampColumnType() {
-        return sqlDialect.timestampColumnExpression();
-    }
-
-    protected String getAppliedByColumnType() {
-        return sqlDialect.variableCharacterColumnExpression(
-                JdbcDatabaseStateRecordRepositoryDefaultValues.APPLIED_BY_COLUMN_LENGTH);
     }
 
     private String getQuerySql(Configuration configuration) {
@@ -349,58 +292,5 @@ public class JdbcDatabaseStateRecordRepository implements StateRepository, Close
 
             throw new RuntimeException(e);
         }
-    }
-
-    protected void createStateTableIfNotFound() throws SQLException, InterruptedException {
-
-        if (!jdbcDatabase.isTableFound(tableCatalog, tableSchema, tableName)) {
-            logger.info(
-                    "[{}] database: State table is NOT found, creating it now: {}",
-                    STATE_DATABASE_NAME,
-                    tableName);
-
-            if (beforeCreateInitSql != null) {
-                jdbcDatabase.executeUpdate(beforeCreateInitSql);
-            }
-
-            jdbcDatabase.executeUpdate(createSql);
-
-            if (afterCreateInitSql != null) {
-                jdbcDatabase.executeUpdate(afterCreateInitSql);
-            }
-
-            logger.info(
-                    "[{}] database: State table is created: {}",
-                    STATE_DATABASE_NAME,
-                    tableNameExpression);
-
-            if (!jdbcDatabase.isTableFound(tableCatalog, tableSchema, tableName)) {
-
-                logger.error(
-                        "State table [{}] was not found in the [{}] database after the create attempt, "
-                                + "while searching with tableCatalog={}, tableSchema={}, tableName={}",
-                        tableNameExpression,
-                        STATE_DATABASE_NAME,
-                        tableCatalog,
-                        tableSchema,
-                        tableName);
-
-                throw new IllegalStateException(
-                        String.format(
-                                "The state table %s had been created, "
-                                        + "but the lookup failed to find it after that with the current configuration",
-                                tableNameExpression));
-            }
-        } else {
-            logger.info(
-                    "[{}] database: State table found: {}",
-                    STATE_DATABASE_NAME,
-                    tableNameExpression);
-        }
-    }
-
-    @Override
-    public void close() throws IOException {
-        jdbcDatabase.close();
     }
 }

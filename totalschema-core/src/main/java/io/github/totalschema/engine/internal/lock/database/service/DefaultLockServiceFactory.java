@@ -49,11 +49,6 @@ public class DefaultLockServiceFactory extends LockingComponentFactory<LockServi
     }
 
     @Override
-    public List<Class<?>> getArgumentTypes() {
-        return List.of();
-    }
-
-    @Override
     public LockService newComponent(Context context, Object... arguments) {
 
         Configuration lockConfig =

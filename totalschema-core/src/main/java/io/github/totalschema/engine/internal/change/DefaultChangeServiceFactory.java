@@ -48,11 +48,6 @@ public final class DefaultChangeServiceFactory extends ConditionalComponentFacto
     }
 
     @Override
-    public List<Class<?>> getArgumentTypes() {
-        return List.of();
-    }
-
-    @Override
     public ChangeService newComponent(Context context, Object... arguments) {
 
         ConnectorManager connectorManager = context.get(ConnectorManager.class);

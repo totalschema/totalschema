@@ -53,11 +53,6 @@ public class DefaultStateServiceFactory extends ComponentFactory<StateService> {
     }
 
     @Override
-    public List<Class<?>> getArgumentTypes() {
-        return List.of();
-    }
-
-    @Override
     public StateService newComponent(Context context, Object... arguments) {
         try {
             Configuration configuration = context.get(Configuration.class);

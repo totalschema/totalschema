@@ -18,6 +18,7 @@
 
 package io.github.totalschema.engine.core.container;
 
+import io.github.totalschema.spi.ArgumentSpecification;
 import io.github.totalschema.spi.ComponentFactory;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -164,7 +165,7 @@ public final class ComponentContainerBuilder {
             ComponentFactory<?> factory = entry.getValue();
 
             if (!factory.isLazy()) {
-                List<Class<?>> argumentTypes = factory.getArgumentTypes();
+                List<ArgumentSpecification<?>> argumentTypes = factory.getArgumentSpecifications();
                 if (argumentTypes == null || argumentTypes.isEmpty()) {
                     FactorySpecification factorySpecification = entry.getKey();
 

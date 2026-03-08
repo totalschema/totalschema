@@ -22,7 +22,8 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.lock.database.LockingComponentFactory;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
-import java.sql.SQLException;
+import io.github.totalschema.jdbc.JdbcDatabase;
+import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.List;
 
 public final class DefaultLockStateRepositoryFactory
@@ -45,32 +46,29 @@ public final class DefaultLockStateRepositoryFactory
 
     @Override
     public List<Class<?>> getRequiredContextTypes() {
-        return List.of(Configuration.class);
-    }
-
-    @Override
-    public List<Class<?>> getArgumentTypes() {
-        return List.of();
+        return List.of(Configuration.class, SqlDialect.class);
     }
 
     @Override
     public LockStateRepository newComponent(Context context, Object... arguments) {
-        try {
-            Configuration configuration =
-                    context.get(Configuration.class).getPrefixNamespace("lock.database");
+        Configuration configuration =
+                context.get(Configuration.class).getPrefixNamespace("lock.database");
 
-            DefaultLockStateRepository repository = new DefaultLockStateRepository(configuration);
+        SqlDialect sqlDialect = context.get(SqlDialect.class);
 
-            repository.init();
+        // Create JdbcDatabase instance with logSql configuration
+        boolean logSql = configuration.getBoolean("logSql").orElse(false);
+        Configuration configWithLogSqlSet =
+                configuration.withEntry("logSql", Boolean.toString(logSql));
 
-            return repository;
+        JdbcDatabase jdbcDatabase =
+                context.get(JdbcDatabase.class, null, "lock", configWithLogSqlSet);
 
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        DefaultLockStateRepository repository =
+                new DefaultLockStateRepository(sqlDialect, jdbcDatabase, configuration);
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("interrupted", e);
-        }
+        repository.init();
+
+        return repository;
     }
 }

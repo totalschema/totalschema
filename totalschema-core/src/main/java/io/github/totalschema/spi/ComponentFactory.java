@@ -48,7 +48,7 @@ import java.util.Map;
  *     public List<Class<?>> getRequiredContextTypes() { return List.of(Configuration.class); }
  *
  *     @Override
- *     public List<Class<?>> getArgumentTypes() { return List.of(); }
+ *     public List<ArgumentSpecification<?>> getArgumentSpecifications() { return List.of(); }
  *
  *     @Override
  *     public StateRepository newComponent(Context context, Object... arguments) {
@@ -71,7 +71,8 @@ public abstract class ComponentFactory<T> {
      *
      * <p>Lazy components are created only when first requested via {@link Context#get(Class)} or
      * {@link Context#get(Class, String, Object...)}. Eager components are instantiated during
-     * container initialization, but only if {@link #getArgumentTypes()} returns an empty list.
+     * container initialization, but only if {@link #getArgumentSpecifications()} returns an empty
+     * list.
      *
      * @return {@code true} if the component should be created lazily, {@code false} for eager
      *     initialization
@@ -156,19 +157,42 @@ public abstract class ComponentFactory<T> {
     public abstract List<Class<?>> getRequiredContextTypes();
 
     /**
-     * Returns the list of argument types expected by {@link #newComponent(Context, Object...)}.
+     * Returns the specification of arguments expected by {@link #newComponent(Context, Object...)}.
      *
-     * <p>This method indicates what types of runtime arguments the factory expects when creating
-     * components. If this returns a non-empty list, the component will NOT be created automatically
-     * during container initialization, even if {@link #isLazy()} returns {@code false}.
+     * <p>This method declares what arguments the factory expects when creating components. Each
+     * {@link ArgumentSpecification} defines the type and name of a required argument. If this
+     * returns a non-empty list, the component will NOT be created automatically during container
+     * initialization, even if {@link #isLazy()} returns {@code false}.
      *
      * <p>Arguments must be provided when retrieving the component via {@link Context#get(Class,
-     * String, Object...)}.
+     * String, Object...)}. The arguments will be validated to ensure:
      *
-     * @return An immutable list of argument types (never {@code null}). Return an empty list if no
-     *     arguments are required.
+     * <ul>
+     *   <li>The exact number of arguments matches the specifications
+     *   <li>Each argument is of the correct type (strict type checking)
+     *   <li>No argument is null
+     * </ul>
+     *
+     * <p><b>Example:</b>
+     *
+     * <pre>{@code
+     * @Override
+     * public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+     *     return List.of(
+     *         new ArgumentSpecification<>(String.class, "name"),
+     *         new ArgumentSpecification<>(Integer.class, "port")
+     *     );
+     * }
+     * }</pre>
+     *
+     * @return An immutable list of {@link ArgumentSpecification}s (never {@code null}). Return an
+     *     empty list if no arguments are required.
+     * @see ArgumentSpecification
+     * @see ArgumentValidator
      */
-    public abstract List<Class<?>> getArgumentTypes();
+    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+        return List.of();
+    }
 
     /**
      * Constructs a new component instance.
@@ -179,11 +203,42 @@ public abstract class ComponentFactory<T> {
      *
      * @param context The IoC container context for retrieving dependencies (never {@code null})
      * @param arguments Runtime arguments passed from {@link Context#get(Class, String, Object...)}.
-     *     The number and types should match what {@link #getArgumentTypes()} declares. May be empty
-     *     if no arguments are required.
+     *     The number and types should match what {@link #getArgumentSpecifications()} declares. May
+     *     be empty if no arguments are required.
      * @return A new instance of the component (never {@code null})
      * @throws RuntimeException if component creation fails due to missing dependencies, invalid
      *     arguments, or other errors
      */
     public abstract T newComponent(Context context, Object... arguments);
+
+    @SuppressWarnings("unchecked")
+    protected <R> R getArgument(ArgumentSpecification<R> spec, Object[] args, int index) {
+        validateArguments(args);
+
+        return (R) args[index];
+    }
+
+    /**
+     * Validates the provided arguments according to the specifications returned by {@link
+     * #getArgumentSpecifications()}.
+     *
+     * <p>This method validates:
+     *
+     * <ul>
+     *   <li>The number of provided arguments matches the number of specifications
+     *   <li>Each argument is of the correct type (strict type checking, no conversion)
+     *   <li>No argument is null
+     * </ul>
+     *
+     * <p>Child classes should call this method at the beginning of {@link #newComponent(Context,
+     * Object...)} to ensure arguments are valid before using them.
+     *
+     * @param arguments The arguments to validate
+     * @throws IllegalArgumentException if validation fails
+     * @see ArgumentValidator
+     */
+    protected void validateArguments(Object... arguments) {
+        ArgumentValidator.validate(
+                arguments, getArgumentSpecifications(), getClass().getSimpleName());
+    }
 }

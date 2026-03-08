@@ -4,3 +4,4 @@ io.github.totalschema.engine.internal.state.DefaultStateServiceFactory
 io.github.totalschema.engine.internal.change.DefaultChangeServiceFactory
 io.github.totalschema.engine.internal.lock.database.repository.impl.DefaultLockStateRepositoryFactory
 io.github.totalschema.engine.internal.lock.database.service.DefaultLockServiceFactory
+io.github.totalschema.jdbc.JdbcDatabaseComponentFactory

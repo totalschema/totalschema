@@ -79,16 +79,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
 
     private volatile boolean isClosed = false;
 
-    public static JdbcDatabase newInstance(String name, Configuration configuration) {
-
-        DefaultJdbcDatabase database = new DefaultJdbcDatabase(name, configuration);
-
-        database.init();
-
-        return database;
-    }
-
-    private DefaultJdbcDatabase(String name, Configuration connectorConfiguration) {
+    DefaultJdbcDatabase(String name, Configuration connectorConfiguration) {
         this.name = name;
 
         this.jdbcUrl =
@@ -221,7 +212,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
         return new HikariDataSource(config);
     }
 
-    private void init() {
+    void init() {
 
         try {
             log.info("[{}] database: Connecting to: {}", name, jdbcUrl);
