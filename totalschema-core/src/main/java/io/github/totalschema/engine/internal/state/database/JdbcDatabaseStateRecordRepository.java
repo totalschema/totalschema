@@ -134,8 +134,6 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
         }
     }
 
-    private final String afterCreateInitSql;
-
     private final String querySql;
 
     private final String insertSql;
@@ -158,8 +156,6 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
 
         this.changeFileFactory = changeFileFactory;
 
-        afterCreateInitSql = configuration.getString("table.afterCreate.sql").orElse(null);
-
         querySql =
                 configuration
                         .getString("table.query.sql")
@@ -169,13 +165,6 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
                 configuration
                         .getString("table.insert.sql")
                         .orElseGet(() -> getInsertSql(configuration));
-    }
-
-    @Override
-    protected void executeAfterCreateHooks() throws SQLException, InterruptedException {
-        if (afterCreateInitSql != null) {
-            jdbcDatabase.executeUpdate(afterCreateInitSql);
-        }
     }
 
     private String getQuerySql(Configuration configuration) {
@@ -192,22 +181,6 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
                         .getString("table.sql.insert")
                         .orElse(JdbcDatabaseStateRecordRepositoryDefaultValues.INSERT_RECORDS_SQL),
                 tableNameExpression);
-    }
-
-    protected String getDeleteSql(int parameterCount) {
-        var deleteSqlBuilder =
-                new StringBuilder("DELETE FROM ").append(tableNameExpression).append(" WHERE ");
-
-        for (int i = 0; i < parameterCount; i++) {
-
-            if (i != 0) {
-                deleteSqlBuilder.append(" OR ");
-            }
-
-            deleteSqlBuilder.append("change_file_id").append(" = ").append("?");
-        }
-
-        return deleteSqlBuilder.toString();
     }
 
     @Override
@@ -292,5 +265,21 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
 
             throw new RuntimeException(e);
         }
+    }
+
+    protected String getDeleteSql(int parameterCount) {
+        var deleteSqlBuilder =
+                new StringBuilder("DELETE FROM ").append(tableNameExpression).append(" WHERE ");
+
+        for (int i = 0; i < parameterCount; i++) {
+
+            if (i != 0) {
+                deleteSqlBuilder.append(" OR ");
+            }
+
+            deleteSqlBuilder.append("change_file_id").append(" = ").append("?");
+        }
+
+        return deleteSqlBuilder.toString();
     }
 }

@@ -63,6 +63,7 @@ public abstract class AbstractJdbcTableRepository {
 
     protected final String databaseName;
     protected final String beforeCreateInitSql;
+    protected final String afterCreateInitSql;
     protected final String tableCatalog;
     protected final String tableSchema;
     protected final String tableName;
@@ -111,6 +112,7 @@ public abstract class AbstractJdbcTableRepository {
                                                 tableNameQuote));
 
         beforeCreateInitSql = configuration.getString("table.beforeCreate.sql").orElse(null);
+        afterCreateInitSql = configuration.getString("table.afterCreate.sql").orElse(null);
 
         createSql =
                 configuration
@@ -196,13 +198,16 @@ public abstract class AbstractJdbcTableRepository {
     }
 
     /**
-     * Executes SQL statements after table creation. Subclasses can override to add custom logic.
+     * Executes SQL statements after table creation. Default implementation executes
+     * afterCreateInitSql if configured.
      *
      * @throws SQLException if a database error occurs
      * @throws InterruptedException if the thread is interrupted
      */
     protected void executeAfterCreateHooks() throws SQLException, InterruptedException {
-        // Default implementation does nothing
+        if (afterCreateInitSql != null) {
+            jdbcDatabase.executeUpdate(afterCreateInitSql);
+        }
     }
 
     /**
