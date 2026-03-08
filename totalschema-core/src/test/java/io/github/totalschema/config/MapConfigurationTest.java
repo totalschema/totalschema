@@ -130,4 +130,50 @@ public class MapConfigurationTest {
                         + aValueTooLarge
                         + "}} cannot be parsed to an integer");
     }
+
+    @Test
+    public void testGetPrefixNamespace() {
+        // Test case demonstrating the expected behavior:
+        // If we have "foo.bar" = "baz", requesting prefix "foo" should give us "bar" = "baz"
+        MapConfiguration configuration =
+                new MapConfiguration(
+                        Map.of(
+                                "foo.bar", "baz",
+                                "foo.qux", "quux",
+                                "other.key", "value",
+                                "foo", "fooValue"));
+
+        Configuration prefixConfig = configuration.getPrefixNamespace("foo");
+
+        // The prefixed namespace should contain only keys under "foo."
+        assertEquals(prefixConfig.getString("bar").orElse(null), "baz");
+        assertEquals(prefixConfig.getString("qux").orElse(null), "quux");
+
+        // It should NOT contain keys that don't start with "foo."
+        assertEquals(prefixConfig.getString("other.key"), Optional.empty());
+
+        // It should NOT contain the exact prefix key "foo" itself
+        assertEquals(prefixConfig.getString("foo"), Optional.empty());
+
+        // And verify we only have the expected keys
+        assertEquals(prefixConfig.getKeys(), Set.of("bar", "qux"));
+    }
+
+    @Test
+    public void testGetPrefixNamespaceWithNestedPrefix() {
+        // Test with multi-level prefixes
+        MapConfiguration configuration =
+                new MapConfiguration(
+                        Map.of(
+                                "database.connection.url", "jdbc:...",
+                                "database.connection.user", "admin",
+                                "database.pool.size", "10"));
+
+        Configuration connectionConfig = configuration.getPrefixNamespace("database", "connection");
+
+        assertEquals(connectionConfig.getString("url").orElse(null), "jdbc:...");
+        assertEquals(connectionConfig.getString("user").orElse(null), "admin");
+        assertEquals(connectionConfig.getString("size"), Optional.empty());
+        assertEquals(connectionConfig.getKeys(), Set.of("url", "user"));
+    }
 }

@@ -118,13 +118,14 @@ public abstract class AbstractConfiguration implements Configuration {
     public final Configuration getPrefixNamespace(String... prefixes) {
 
         String prefixNamesSpace = String.join(".", prefixes);
+        String prefixWithDot = prefixNamesSpace + ".";
 
         Map<String, String> map =
                 getKeys().stream()
-                        .filter(it -> it.startsWith(prefixNamesSpace))
+                        .filter(it -> it.startsWith(prefixWithDot))
                         .collect(
                                 Collectors.toMap(
-                                        key -> key.replaceFirst(prefixNamesSpace + "\\.", ""),
+                                        key -> key.substring(prefixWithDot.length()),
                                         key ->
                                                 getString(key)
                                                         .orElseThrow(
