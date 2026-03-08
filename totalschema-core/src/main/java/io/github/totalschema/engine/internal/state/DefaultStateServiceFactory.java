@@ -67,12 +67,7 @@ public class DefaultStateServiceFactory extends ComponentFactory<StateService> {
 
             StateRepository stateRepository = context.get(StateRepository.class, stateType);
 
-            HashService hashService;
-            if (context.has(HashService.class)) {
-                hashService = context.get(HashService.class);
-            } else {
-                hashService = null;
-            }
+            HashService hashService = context.getOptional(HashService.class).orElse(null);
 
             String overrideAppliedByUserId =
                     context.get(Configuration.class)

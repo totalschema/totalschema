@@ -18,7 +18,49 @@
 
 package io.github.totalschema.engine.api;
 
+import java.util.Optional;
+
 public interface Context {
+
+    /**
+     * Returns an {@link Optional} containing the value to which the specified class is mapped, or
+     * an empty {@link Optional} if this Context contains no mapping for the class.
+     *
+     * <p>This is a convenience method that combines {@link #has(Class)} and {@link #get(Class)}
+     * into a single call, returning an {@link Optional} instead of throwing an exception when the
+     * component is not found.
+     *
+     * <p><b>Example usage:</b>
+     *
+     * <pre>{@code
+     * Optional<Configuration> config = context.getOptional(Configuration.class);
+     * if (config.isPresent()) {
+     *     // Use the configuration
+     *     String value = config.get().getString("key");
+     * }
+     *
+     * // Or with Optional chaining
+     * String value = context.getOptional(Configuration.class)
+     *     .map(cfg -> cfg.getString("key"))
+     *     .orElse("default");
+     * }</pre>
+     *
+     * @param clazz the class type whose associated value is to be returned (never {@code null})
+     * @param <R> the type of the component to retrieve
+     * @return an {@link Optional} containing the component if present, or an empty {@link Optional}
+     *     if no mapping exists for the specified class
+     * @throws NullPointerException if the clazz parameter is null
+     * @see #has(Class)
+     * @see #get(Class)
+     */
+    default <R> Optional<R> getOptional(Class<R> clazz) {
+        if (has(clazz)) {
+            return Optional.of(get(clazz));
+        } else {
+            return Optional.empty();
+        }
+    }
+
     /**
      * Returns true if this context contains a mapping for the specified class.
      *
