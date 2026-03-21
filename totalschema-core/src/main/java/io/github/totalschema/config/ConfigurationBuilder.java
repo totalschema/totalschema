@@ -76,6 +76,34 @@ public final class ConfigurationBuilder {
     }
 
     /**
+     * Sets a configuration value for the given key only if the key is not already present.
+     *
+     * <p>If the key already exists in this builder, this method does nothing and returns this
+     * builder unchanged. This is useful for providing default values that can be overridden.
+     *
+     * <h2>Usage Example</h2>
+     *
+     * <pre>{@code
+     * Configuration config = Configuration.builder()
+     *     .set("username", "admin")
+     *     .setIfAbsent("username", "default")  // No effect, key already exists
+     *     .setIfAbsent("password", "secret")   // Sets password since key doesn't exist
+     *     .build();
+     * }</pre>
+     *
+     * @param key the configuration key (must not be null)
+     * @param value the configuration value (must not be null)
+     * @return this builder for method chaining
+     * @throws NullPointerException if key or value is null
+     */
+    public ConfigurationBuilder setIfAbsent(String key, String value) {
+        Objects.requireNonNull(key, "key must not be null");
+        Objects.requireNonNull(value, "value must not be null");
+        entries.putIfAbsent(key, value);
+        return this;
+    }
+
+    /**
      * Sets a configuration value for the given key with an integer value.
      *
      * <p>The integer value is converted to a string representation.
@@ -137,6 +165,75 @@ public final class ConfigurationBuilder {
         Objects.requireNonNull(key, "key must not be null");
         Objects.requireNonNull(value, "value must not be null");
         entries.put(key, value.name());
+        return this;
+    }
+
+    /**
+     * Sets a configuration value for the given key with an integer value, only if the key is not
+     * already present.
+     *
+     * <p>The integer value is converted to a string representation.
+     *
+     * @param key the configuration key (must not be null)
+     * @param value the integer configuration value
+     * @return this builder for method chaining
+     * @throws NullPointerException if key is null
+     */
+    public ConfigurationBuilder setIfAbsent(String key, int value) {
+        Objects.requireNonNull(key, "key must not be null");
+        entries.putIfAbsent(key, Integer.toString(value));
+        return this;
+    }
+
+    /**
+     * Sets a configuration value for the given key with a long value, only if the key is not
+     * already present.
+     *
+     * <p>The long value is converted to a string representation.
+     *
+     * @param key the configuration key (must not be null)
+     * @param value the long configuration value
+     * @return this builder for method chaining
+     * @throws NullPointerException if key is null
+     */
+    public ConfigurationBuilder setIfAbsent(String key, long value) {
+        Objects.requireNonNull(key, "key must not be null");
+        entries.putIfAbsent(key, Long.toString(value));
+        return this;
+    }
+
+    /**
+     * Sets a configuration value for the given key with a boolean value, only if the key is not
+     * already present.
+     *
+     * <p>The boolean value is converted to a string representation ("true" or "false").
+     *
+     * @param key the configuration key (must not be null)
+     * @param value the boolean configuration value
+     * @return this builder for method chaining
+     * @throws NullPointerException if key is null
+     */
+    public ConfigurationBuilder setIfAbsent(String key, boolean value) {
+        Objects.requireNonNull(key, "key must not be null");
+        entries.putIfAbsent(key, Boolean.toString(value));
+        return this;
+    }
+
+    /**
+     * Sets a configuration value for the given key with an enum value, only if the key is not
+     * already present.
+     *
+     * <p>The enum value is converted to its name string representation using {@link Enum#name()}.
+     *
+     * @param key the configuration key (must not be null)
+     * @param value the enum configuration value (must not be null)
+     * @return this builder for method chaining
+     * @throws NullPointerException if key or value is null
+     */
+    public ConfigurationBuilder setIfAbsent(String key, Enum<?> value) {
+        Objects.requireNonNull(key, "key must not be null");
+        Objects.requireNonNull(value, "value must not be null");
+        entries.putIfAbsent(key, value.name());
         return this;
     }
 

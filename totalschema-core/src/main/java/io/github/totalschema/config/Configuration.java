@@ -37,6 +37,31 @@ public interface Configuration {
     }
 
     /**
+     * Creates a new builder pre-populated with all entries from this configuration.
+     *
+     * <p>This allows for creating modified copies of existing configurations using a fluent API.
+     *
+     * <h2>Usage Example</h2>
+     *
+     * <pre>{@code
+     * Configuration original = Configuration.builder()
+     *     .set("key1", "value1")
+     *     .set("key2", "value2")
+     *     .build();
+     *
+     * Configuration modified = original.toBuilder()
+     *     .set("key2", "newValue2")  // Override existing value
+     *     .set("key3", "value3")      // Add new value
+     *     .build();
+     * }</pre>
+     *
+     * @return a new ConfigurationBuilder instance containing all entries from this configuration
+     */
+    default ConfigurationBuilder toBuilder() {
+        return Configuration.builder().setAll(this);
+    }
+
+    /**
      * Retrieves a string value for the given key.
      *
      * @param key the configuration key

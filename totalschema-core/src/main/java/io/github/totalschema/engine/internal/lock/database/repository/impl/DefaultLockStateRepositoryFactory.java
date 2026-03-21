@@ -57,9 +57,8 @@ public final class DefaultLockStateRepositoryFactory
         SqlDialect sqlDialect = context.get(SqlDialect.class);
 
         // Create JdbcDatabase instance with logSql configuration
-        boolean logSql = configuration.getBoolean("logSql").orElse(false);
         Configuration configWithLogSqlSet =
-                configuration.withEntry("logSql", Boolean.toString(logSql));
+                configuration.toBuilder().setIfAbsent("logSql", false).build();
 
         JdbcDatabase jdbcDatabase =
                 context.get(JdbcDatabase.class, null, "lock", configWithLogSqlSet);

@@ -273,4 +273,253 @@ public class ConfigurationBuilderTest {
         assertEquals(extended.getString("newKey").orElse(null), "newValue");
         assertEquals(extended.getString("jdbc.url").orElse(null), "jdbc:h2:mem:testdb");
     }
+
+    @Test
+    public void testToBuilder() {
+        Configuration original =
+                Configuration.builder()
+                        .set("key1", "value1")
+                        .set("key2", "value2")
+                        .set("key3", "value3")
+                        .build();
+
+        Configuration modified = original.toBuilder().set("key2", "newValue2").build();
+
+        // Original should be unchanged
+        assertEquals(original.getString("key1").orElse(null), "value1");
+        assertEquals(original.getString("key2").orElse(null), "value2");
+        assertEquals(original.getString("key3").orElse(null), "value3");
+
+        // Modified should have updated value
+        assertEquals(modified.getString("key1").orElse(null), "value1");
+        assertEquals(modified.getString("key2").orElse(null), "newValue2");
+        assertEquals(modified.getString("key3").orElse(null), "value3");
+    }
+
+    @Test
+    public void testToBuilderAddNewValues() {
+        Configuration original =
+                Configuration.builder().set("key1", "value1").set("key2", "value2").build();
+
+        Configuration modified =
+                original.toBuilder().set("key3", "value3").set("key4", "value4").build();
+
+        // Original should be unchanged
+        assertEquals(original.getString("key1").orElse(null), "value1");
+        assertEquals(original.getString("key2").orElse(null), "value2");
+        assertFalse(original.getString("key3").isPresent());
+        assertFalse(original.getString("key4").isPresent());
+
+        // Modified should have all values
+        assertEquals(modified.getString("key1").orElse(null), "value1");
+        assertEquals(modified.getString("key2").orElse(null), "value2");
+        assertEquals(modified.getString("key3").orElse(null), "value3");
+        assertEquals(modified.getString("key4").orElse(null), "value4");
+    }
+
+    @Test
+    public void testToBuilderRemoveValues() {
+        Configuration original =
+                Configuration.builder()
+                        .set("key1", "value1")
+                        .set("key2", "value2")
+                        .set("key3", "value3")
+                        .build();
+
+        Configuration modified = original.toBuilder().remove("key2").build();
+
+        // Original should be unchanged
+        assertEquals(original.getString("key1").orElse(null), "value1");
+        assertEquals(original.getString("key2").orElse(null), "value2");
+        assertEquals(original.getString("key3").orElse(null), "value3");
+
+        // Modified should not have key2
+        assertEquals(modified.getString("key1").orElse(null), "value1");
+        assertFalse(modified.getString("key2").isPresent());
+        assertEquals(modified.getString("key3").orElse(null), "value3");
+    }
+
+    @Test
+    public void testToBuilderWithEmptyConfiguration() {
+        Configuration empty = Configuration.builder().build();
+
+        Configuration modified = empty.toBuilder().set("key1", "value1").build();
+
+        // Empty should remain empty
+        assertTrue(empty.isEmpty());
+
+        // Modified should have the new value
+        assertEquals(modified.getString("key1").orElse(null), "value1");
+    }
+
+    @Test
+    public void testToBuilderChaining() {
+        Configuration config1 =
+                Configuration.builder()
+                        .set("jdbc.url", "jdbc:h2:mem:testdb")
+                        .set("username", "sa")
+                        .build();
+
+        Configuration config2 =
+                config1.toBuilder()
+                        .set("password", "secret")
+                        .set("autoCommit", true)
+                        .set("pool.size", 10)
+                        .build();
+
+        Configuration config3 =
+                config2.toBuilder()
+                        .set("username", "admin") // Override
+                        .remove("pool.size") // Remove
+                        .set("timeout", 5000L)
+                        .build();
+
+        // Verify config1
+        assertEquals(config1.getString("jdbc.url").orElse(null), "jdbc:h2:mem:testdb");
+        assertEquals(config1.getString("username").orElse(null), "sa");
+        assertFalse(config1.getString("password").isPresent());
+
+        // Verify config2
+        assertEquals(config2.getString("jdbc.url").orElse(null), "jdbc:h2:mem:testdb");
+        assertEquals(config2.getString("username").orElse(null), "sa");
+        assertEquals(config2.getString("password").orElse(null), "secret");
+        assertTrue(config2.getBoolean("autoCommit").orElse(null));
+
+        // Verify config3
+        assertEquals(config3.getString("jdbc.url").orElse(null), "jdbc:h2:mem:testdb");
+        assertEquals(config3.getString("username").orElse(null), "admin");
+        assertEquals(config3.getString("password").orElse(null), "secret");
+        assertTrue(config3.getBoolean("autoCommit").orElse(null));
+        assertFalse(config3.getString("pool.size").isPresent());
+        assertEquals(config3.getLong("timeout").orElse(null), (Long) 5000L);
+    }
+
+    @Test
+    public void testSetIfAbsentString() {
+        Configuration config =
+                Configuration.builder()
+                        .set("key1", "value1")
+                        .setIfAbsent("key1", "newValue1") // Should not override
+                        .setIfAbsent("key2", "value2") // Should add
+                        .build();
+
+        assertEquals(config.getString("key1").orElse(null), "value1");
+        assertEquals(config.getString("key2").orElse(null), "value2");
+    }
+
+    @Test
+    public void testSetIfAbsentInt() {
+        Configuration config =
+                Configuration.builder()
+                        .set("port", 8080)
+                        .setIfAbsent("port", 9090) // Should not override
+                        .setIfAbsent("maxConnections", 100) // Should add
+                        .build();
+
+        assertEquals(config.getInt("port").orElse(null), (Integer) 8080);
+        assertEquals(config.getInt("maxConnections").orElse(null), (Integer) 100);
+    }
+
+    @Test
+    public void testSetIfAbsentLong() {
+        Configuration config =
+                Configuration.builder()
+                        .set("timeout", 5000L)
+                        .setIfAbsent("timeout", 10000L) // Should not override
+                        .setIfAbsent("maxFileSize", 1048576L) // Should add
+                        .build();
+
+        assertEquals(config.getLong("timeout").orElse(null), (Long) 5000L);
+        assertEquals(config.getLong("maxFileSize").orElse(null), (Long) 1048576L);
+    }
+
+    @Test
+    public void testSetIfAbsentBoolean() {
+        Configuration config =
+                Configuration.builder()
+                        .set("enabled", true)
+                        .setIfAbsent("enabled", false) // Should not override
+                        .setIfAbsent("debug", false) // Should add
+                        .build();
+
+        assertTrue(config.getBoolean("enabled").orElse(null));
+        assertFalse(config.getBoolean("debug").orElse(null));
+    }
+
+    @Test
+    public void testSetIfAbsentEnum() {
+        Configuration config =
+                Configuration.builder()
+                        .set("unit", TimeUnit.SECONDS)
+                        .setIfAbsent("unit", TimeUnit.MILLISECONDS) // Should not override
+                        .setIfAbsent("defaultUnit", TimeUnit.MINUTES) // Should add
+                        .build();
+
+        assertEquals(config.getEnumValue(TimeUnit.class, "unit").orElse(null), TimeUnit.SECONDS);
+        assertEquals(
+                config.getEnumValue(TimeUnit.class, "defaultUnit").orElse(null), TimeUnit.MINUTES);
+    }
+
+    @Test
+    public void testSetIfAbsentWithDefaults() {
+        // Use case: providing default values that can be overridden
+        Configuration config =
+                Configuration.builder()
+                        // Set user-provided values
+                        .set("username", "admin")
+                        .set("port", 8080)
+                        // Set defaults (only applied if not already set)
+                        .setIfAbsent("username", "guest")
+                        .setIfAbsent("password", "defaultPassword")
+                        .setIfAbsent("port", 3000)
+                        .setIfAbsent("debug", false)
+                        .build();
+
+        // User-provided values should remain
+        assertEquals(config.getString("username").orElse(null), "admin");
+        assertEquals(config.getInt("port").orElse(null), (Integer) 8080);
+
+        // Defaults should be applied where no value was set
+        assertEquals(config.getString("password").orElse(null), "defaultPassword");
+        assertFalse(config.getBoolean("debug").orElse(null));
+    }
+
+    @Test
+    public void testSetIfAbsentNullKeyThrowsException() {
+        ConfigurationBuilder builder = Configuration.builder();
+
+        assertThrows(NullPointerException.class, () -> builder.setIfAbsent(null, "value"));
+    }
+
+    @Test
+    public void testSetIfAbsentNullStringValueThrowsException() {
+        ConfigurationBuilder builder = Configuration.builder();
+
+        assertThrows(NullPointerException.class, () -> builder.setIfAbsent("key", (String) null));
+    }
+
+    @Test
+    public void testSetIfAbsentNullEnumValueThrowsException() {
+        ConfigurationBuilder builder = Configuration.builder();
+
+        assertThrows(NullPointerException.class, () -> builder.setIfAbsent("key", (Enum<?>) null));
+    }
+
+    @Test
+    public void testSetIfAbsentChaining() {
+        Configuration config =
+                Configuration.builder()
+                        .setIfAbsent("key1", "value1")
+                        .setIfAbsent("key2", 42)
+                        .setIfAbsent("key3", true)
+                        .setIfAbsent("key4", TimeUnit.SECONDS)
+                        .set("key2", 100) // Override
+                        .setIfAbsent("key2", 200) // Should not override
+                        .build();
+
+        assertEquals(config.getString("key1").orElse(null), "value1");
+        assertEquals(config.getInt("key2").orElse(null), (Integer) 100);
+        assertTrue(config.getBoolean("key3").orElse(null));
+        assertEquals(config.getEnumValue(TimeUnit.class, "key4").orElse(null), TimeUnit.SECONDS);
+    }
 }

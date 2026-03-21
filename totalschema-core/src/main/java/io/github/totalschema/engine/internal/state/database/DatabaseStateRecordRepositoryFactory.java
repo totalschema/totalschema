@@ -45,9 +45,9 @@ public class DatabaseStateRecordRepositoryFactory extends ComponentFactory<State
 
         Configuration dbConfig = stateConfig.getPrefixNamespace("database");
 
-        // Create JdbcDatabase instance with logSql configuration
-        boolean logSql = dbConfig.getBoolean("logSql").orElse(false);
-        Configuration configWithLogSqlSet = dbConfig.withEntry("logSql", Boolean.toString(logSql));
+        // Create JdbcDatabase instance with logSql configuration defaulting to false
+        Configuration configWithLogSqlSet =
+                dbConfig.toBuilder().setIfAbsent("logSql", false).build();
 
         JdbcDatabase jdbcDatabase =
                 context.get(JdbcDatabase.class, null, "state", configWithLogSqlSet);
