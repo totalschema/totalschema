@@ -28,6 +28,15 @@ import java.util.*;
 public interface Configuration {
 
     /**
+     * Creates a new builder for constructing Configuration instances.
+     *
+     * @return a new ConfigurationBuilder instance
+     */
+    static ConfigurationBuilder builder() {
+        return new ConfigurationBuilder();
+    }
+
+    /**
      * Retrieves a string value for the given key.
      *
      * @param key the configuration key
