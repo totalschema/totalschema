@@ -59,7 +59,7 @@ public final class GroovyScriptExecutor implements ScriptExecutor {
         log.info("[{}] database: Initializing Groovy Script interpreter", name);
 
         try {
-            jdbcDatabase.execute(
+            jdbcDatabase.withConnection(
                     new ConnectionAction<Void>() {
                         @Override
                         public Void execute(Connection connection) {

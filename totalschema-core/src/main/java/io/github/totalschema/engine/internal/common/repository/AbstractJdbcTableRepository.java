@@ -155,7 +155,7 @@ public abstract class AbstractJdbcTableRepository {
 
             executeBeforeCreateHooks();
 
-            jdbcDatabase.executeUpdate(createSql);
+            jdbcDatabase.execute(createSql);
 
             executeAfterCreateHooks();
 
@@ -193,7 +193,7 @@ public abstract class AbstractJdbcTableRepository {
      */
     protected void executeBeforeCreateHooks() throws SQLException, InterruptedException {
         if (beforeCreateInitSql != null) {
-            jdbcDatabase.executeUpdate(beforeCreateInitSql);
+            jdbcDatabase.execute(beforeCreateInitSql);
         }
     }
 
@@ -206,7 +206,7 @@ public abstract class AbstractJdbcTableRepository {
      */
     protected void executeAfterCreateHooks() throws SQLException, InterruptedException {
         if (afterCreateInitSql != null) {
-            jdbcDatabase.executeUpdate(afterCreateInitSql);
+            jdbcDatabase.execute(afterCreateInitSql);
         }
     }
 

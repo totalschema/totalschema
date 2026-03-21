@@ -27,11 +27,171 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Default implementation of {@link JdbcDatabase} providing connection pooling and SQL execution
+ * capabilities using HikariCP.
+ *
+ * <p>This class is the primary JDBC abstraction layer for the totalschema library, used for
+ * database locking, schema management, and change tracking. It provides a high-level API for
+ * executing SQL statements with automatic connection pooling, transaction management, and proper
+ * resource cleanup.
+ *
+ * <h2>Key Features</h2>
+ *
+ * <ul>
+ *   <li><b>Connection Pooling:</b> Uses HikariCP for high-performance connection pooling with
+ *       configurable pool size, timeouts, and connection lifecycle management
+ *   <li><b>Transaction Management:</b> Supports both auto-commit and manual transaction modes with
+ *       automatic commit/rollback on success/failure
+ *   <li><b>Thread Safety:</b> All operations are thread-safe. Multiple threads can safely execute
+ *       queries concurrently. Close operation is idempotent and thread-safe using atomic
+ *       compare-and-set semantics
+ *   <li><b>Interruption Support:</b> All operations check for thread interruption and respond
+ *       promptly to cancellation requests, making them suitable for long-running operations
+ *   <li><b>Resource Management:</b> Automatic resource cleanup using try-with-resources.
+ *       Connections are obtained from the pool for each operation and automatically returned
+ *       afterward
+ *   <li><b>Error Handling:</b> Comprehensive exception handling with proper exception chaining,
+ *       suppressed exceptions, and cleanup on failure
+ * </ul>
+ *
+ * <h2>Lifecycle</h2>
+ *
+ * <p>Instances must be created using the static factory method {@link #newInstance(String,
+ * Configuration)} which ensures proper initialization of the connection pool and validates
+ * connectivity before returning. The constructor is private to prevent direct instantiation and
+ * eliminate two-phase initialization hazards.
+ *
+ * <p>Example initialization:
+ *
+ * <pre>{@code
+ * Configuration config = Configuration.builder()
+ *     .set("jdbc.url", "jdbc:h2:mem:testdb")
+ *     .set("username", "sa")
+ *     .set("password", "")
+ *     .build();
+ *
+ * try (JdbcDatabase database = DefaultJdbcDatabase.newInstance("mydb", config)) {
+ *     // Use database
+ * }
+ * }</pre>
+ *
+ * <h2>Configuration</h2>
+ *
+ * <p>The following configuration options are supported:
+ *
+ * <ul>
+ *   <li><b>jdbc.url</b> (required): JDBC connection URL
+ *   <li><b>jdbc.driver.class</b> (optional): JDBC driver class name (auto-detected for JDBC 4.0+)
+ *   <li><b>username</b> (optional): Database username
+ *   <li><b>password</b> (optional): Database password
+ *   <li><b>autoCommit</b> (optional, default: true): Enable auto-commit mode
+ *   <li><b>logSql</b> (optional, default: true): Enable SQL statement logging
+ *   <li><b>jdbc.properties.*</b> (optional): Additional JDBC properties
+ *   <li><b>connectionTest.timeout</b> (optional, default: 30): Connection test timeout
+ *   <li><b>connectionTest.timeoutUnit</b> (optional, default: SECONDS): Connection test timeout
+ *       unit
+ *   <li><b>connectionTest.query</b> (optional): Custom connection test query
+ *   <li><b>pool.maximumPoolSize</b> (optional, default: 1): Maximum number of connections in pool
+ *   <li><b>pool.minimumIdle</b> (optional, default: 1): Minimum number of idle connections
+ *   <li><b>pool.connectionTimeout</b> (optional, default: 30000): Connection acquisition timeout
+ *       (ms)
+ *   <li><b>pool.idleTimeout</b> (optional, default: 600000): Idle connection timeout (ms, 10
+ *       minutes)
+ *   <li><b>pool.maxLifetime</b> (optional, default: 1800000): Maximum connection lifetime (ms, 30
+ *       minutes)
+ * </ul>
+ *
+ * <h2>Thread Safety</h2>
+ *
+ * <p>This class is fully thread-safe:
+ *
+ * <ul>
+ *   <li>Multiple threads can execute queries concurrently - HikariCP handles connection pooling
+ *   <li>The close operation uses {@link AtomicBoolean#compareAndSet(boolean, boolean)} for
+ *       thread-safe, idempotent closure
+ *   <li>The requireOpen() check provides fast fail-fast behavior when database is closed
+ *   <li>Connection acquisition from HikariCP is thread-safe and handles concurrent close gracefully
+ * </ul>
+ *
+ * <h2>Transaction Handling</h2>
+ *
+ * <p>When auto-commit is enabled (default), each SQL statement is executed in its own transaction
+ * and automatically committed upon successful completion.
+ *
+ * <p>When auto-commit is disabled, transactions are managed automatically:
+ *
+ * <ul>
+ *   <li>A transaction is committed upon successful completion of the operation
+ *   <li>A transaction is rolled back if a {@link SQLException} occurs
+ *   <li>A transaction is rolled back if an {@link InterruptedException} occurs
+ *   <li>Rollback failures are captured as suppressed exceptions
+ * </ul>
+ *
+ * <h2>Interruption Support</h2>
+ *
+ * <p>All operations check for thread interruption at appropriate points:
+ *
+ * <ul>
+ *   <li>After acquiring a connection from the pool
+ *   <li>Before executing SQL statements (executeUpdate, execute)
+ *   <li>During query result processing (in the result set loop)
+ * </ul>
+ *
+ * <p>When interrupted, operations throw {@link InterruptedException}, properly clean up resources
+ * (rollback if needed), and restore the interrupt flag on the current thread.
+ *
+ * <h2>Performance Considerations</h2>
+ *
+ * <ul>
+ *   <li>Connection pooling eliminates the overhead of creating new connections for each operation
+ *   <li>HikariCP is one of the fastest connection pool implementations available
+ *   <li>Thread-safe operations use lock-free atomic operations where possible
+ *   <li>No unnecessary synchronization that would serialize concurrent operations
+ *   <li>Connection leak detection helps identify resource leaks in development (60 second
+ *       threshold)
+ * </ul>
+ *
+ * <h2>Usage Examples</h2>
+ *
+ * <pre>{@code
+ * // Execute an update
+ * int rows = database.executeUpdate(
+ *     "UPDATE locks SET lock_expiration = ? WHERE lock_id = ?",
+ *     Parameter.timestamp(expiration),
+ *     Parameter.string(lockId)
+ * );
+ *
+ * // Execute a query
+ * List<LockRecord> locks = database.query(
+ *     "SELECT lock_id, lock_expiration FROM locks",
+ *     row -> new LockRecord(
+ *         row.getString("lock_id"),
+ *         row.getTimestamp("lock_expiration")
+ *     )
+ * );
+ *
+ * // Execute with direct connection access
+ * String dbProduct = database.withConnection(connection ->
+ *     connection.getMetaData().getDatabaseProductName()
+ * );
+ * }</pre>
+ *
+ * <p>This class is package-private and not intended for direct use outside the jdbc package. Access
+ * is provided through the {@link JdbcDatabase} interface and {@link JdbcDatabaseComponentFactory}.
+ *
+ * @see JdbcDatabase
+ * @see JdbcDatabaseComponentFactory
+ * @see ConnectionAction
+ * @see Parameter
+ * @see RowMapper
+ */
 final class DefaultJdbcDatabase implements JdbcDatabase {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultJdbcDatabase.class);
@@ -77,9 +237,16 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
 
     private final HikariDataSource dataSource;
 
-    private volatile boolean isClosed = false;
+    private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
-    DefaultJdbcDatabase(String name, Configuration connectorConfiguration) {
+    public static DefaultJdbcDatabase newInstance(
+            String name, Configuration connectorConfiguration) {
+        DefaultJdbcDatabase database = new DefaultJdbcDatabase(name, connectorConfiguration);
+        database.init();
+        return database;
+    }
+
+    private DefaultJdbcDatabase(String name, Configuration connectorConfiguration) {
         this.name = name;
 
         this.jdbcUrl =
@@ -249,19 +416,53 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
 
         logSql("executeUpdate", sql, parameters);
 
-        return execute(
-                new ConnectionAction<Integer>() {
-                    @Override
-                    public Integer execute(Connection connection) throws SQLException {
+        return withConnection(
+                connection -> {
+                    try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
-                        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-
-                            if (parameters != null) {
-                                setPreparedStatementParameters(ps, parameters);
-                            }
-
-                            return ps.executeUpdate();
+                        if (parameters != null) {
+                            setPreparedStatementParameters(ps, parameters);
                         }
+
+                        if (Thread.currentThread().isInterrupted()) {
+                            throw new InterruptedException();
+                        }
+
+                        return ps.executeUpdate();
+                    }
+                });
+    }
+
+    @Override
+    public void execute(String sql, Parameter<?>... parameters)
+            throws SQLException, InterruptedException {
+
+        logSql("execute", sql, parameters);
+
+        withConnection(
+                connection -> {
+                    try (PreparedStatement ps = connection.prepareStatement(sql)) {
+
+                        if (parameters != null) {
+                            setPreparedStatementParameters(ps, parameters);
+                        }
+
+                        if (Thread.currentThread().isInterrupted()) {
+                            throw new InterruptedException();
+                        }
+
+                        boolean isResultSet = ps.execute();
+
+                        if (isResultSet) {
+                            log.debug("[{}] database: statement yielded a ResultSet", name);
+                        } else {
+                            int updateCount = ps.getUpdateCount();
+                            log.debug("[{}] database: update count: {}", name, updateCount);
+                        }
+
+                        log.info("[{}] database: statement executed successfully", name);
+
+                        return (Void) null; // cast for lambda compatibility
                     }
                 });
     }
@@ -272,37 +473,32 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
 
         logSql("query", sql, parameters);
 
-        return execute(
-                new ConnectionAction<List<R>>() {
-                    @Override
-                    public List<R> execute(Connection connection)
-                            throws InterruptedException, SQLException {
+        return withConnection(
+                connection -> {
+                    List<R> resultList = new ArrayList<>();
 
-                        LinkedList<R> resultList = new LinkedList<>();
+                    try (PreparedStatement ps = connection.prepareStatement(sql)) {
 
-                        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                        setPreparedStatementParameters(ps, parameters);
 
-                            setPreparedStatementParameters(ps, parameters);
+                        try (ResultSet resultSet = ps.executeQuery()) {
+                            // we create one ResultRow instance as the cursor
+                            // of the underlying ResultSet is moved forward
+                            ResultRow resultRow = new ResultRow(resultSet);
 
-                            try (ResultSet resultSet = ps.executeQuery()) {
-                                // we create one ResultRow instance as the cursor
-                                // of the underlying ResultSet is moved forward
-                                ResultRow resultRow = new ResultRow(resultSet);
-
-                                while (resultSet.next()) {
-                                    if (Thread.currentThread().isInterrupted()) {
-                                        throw new InterruptedException();
-                                    }
-
-                                    R result = rowMapper.mapResultRow(resultRow);
-
-                                    resultList.add(result);
+                            while (resultSet.next()) {
+                                if (Thread.currentThread().isInterrupted()) {
+                                    throw new InterruptedException();
                                 }
+
+                                R result = rowMapper.mapResultRow(resultRow);
+
+                                resultList.add(result);
                             }
                         }
-
-                        return Collections.unmodifiableList(resultList);
                     }
+
+                    return Collections.unmodifiableList(resultList);
                 });
     }
 
@@ -343,15 +539,20 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
     public boolean isTableFound(String catalog, String schema, String tableName)
             throws SQLException, InterruptedException {
 
-        return execute(new CheckIfTableExists(catalog, schema, tableName));
+        return withConnection(new CheckIfTableExists(catalog, schema, tableName));
     }
 
     @Override
-    public <R> R execute(ConnectionAction<R> action) throws InterruptedException, SQLException {
+    public <R> R withConnection(ConnectionAction<R> action)
+            throws InterruptedException, SQLException {
 
         requireOpen();
 
         try (Connection connection = dataSource.getConnection()) {
+
+            if (Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException();
+            }
 
             return executeWithConnection(action, connection);
         }
@@ -403,9 +604,10 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
     @Override
     public void close() throws IOException {
 
-        requireOpen();
-
-        isClosed = true;
+        boolean wasSet = isClosed.compareAndSet(false, true);
+        if (!wasSet) {
+            return; // was closed already, do nothing
+        }
 
         try {
             if (!dataSource.isClosed()) {
@@ -418,7 +620,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
     }
 
     private void requireOpen() {
-        if (isClosed) {
+        if (isClosed.get()) {
             throw new IllegalStateException("Database is closed");
         }
     }

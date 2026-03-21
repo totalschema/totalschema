@@ -111,7 +111,7 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
 
     @Override
     protected void performPostCreationSteps() throws SQLException, InterruptedException {
-        jdbcDatabase.executeUpdate(insertSql);
+        jdbcDatabase.execute(insertSql);
         logger.info(
                 "[{}] database: The single record used for locking is inserted to {}",
                 LOCK_DATABASE_NAME,
@@ -123,7 +123,7 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
     @Override
     protected void handleCreationFailure(RuntimeException e) {
         try {
-            jdbcDatabase.executeUpdate(dropSql);
+            jdbcDatabase.execute(dropSql);
         } catch (RuntimeException | SQLException | InterruptedException dropException) {
             logger.error("Failure cleaning up lock table created with incorrect configuration");
             e.addSuppressed(dropException);

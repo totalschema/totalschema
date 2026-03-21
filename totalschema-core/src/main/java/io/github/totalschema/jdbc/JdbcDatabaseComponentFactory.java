@@ -45,10 +45,6 @@ public class JdbcDatabaseComponentFactory extends ComponentFactory<JdbcDatabase>
         String name = getArgument(NAME_ARGUMENT, arguments, 0);
         Configuration configuration = getArgument(CONFIGURATION_ARGUMENT, arguments, 1);
 
-        DefaultJdbcDatabase database = new DefaultJdbcDatabase(name, configuration);
-
-        database.init();
-
-        return database;
+        return DefaultJdbcDatabase.newInstance(name, configuration);
     }
 }

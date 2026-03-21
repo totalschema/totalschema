@@ -62,7 +62,7 @@ public final class SqlScriptExecutor implements ScriptExecutor {
         for (String statement : statements) {
 
             try {
-                jdbcDatabase.executeUpdate(statement);
+                jdbcDatabase.execute(statement);
 
             } catch (SQLException e) {
                 throw new RuntimeException("Statement failed: " + statement, e);
