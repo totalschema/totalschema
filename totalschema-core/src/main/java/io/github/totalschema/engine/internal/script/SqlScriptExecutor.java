@@ -21,9 +21,7 @@ package io.github.totalschema.engine.internal.script;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.jdbc.JdbcDatabase;
-import io.github.totalschema.jdbc.JdbcDatabaseFactory;
 import io.github.totalschema.spi.script.ScriptExecutor;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.function.Predicate;
@@ -39,7 +37,13 @@ public final class SqlScriptExecutor implements ScriptExecutor {
         private static final String STATEMENT_SEPARATOR = ";";
     }
 
-    public SqlScriptExecutor(String name, Configuration connectorConfiguration) {
+    /**
+     * Constructs a SqlScriptExecutor with the provided dependencies.
+     *
+     * @param connectorConfiguration Configuration for the script executor
+     * @param jdbcDatabase The JDBC database connection (injected via IoC container)
+     */
+    public SqlScriptExecutor(Configuration connectorConfiguration, JdbcDatabase jdbcDatabase) {
 
         if (connectorConfiguration.getBoolean("no.statementSeparator").orElse(false)) {
             this.statementSeparator = null;
@@ -50,8 +54,7 @@ public final class SqlScriptExecutor implements ScriptExecutor {
                             .orElse(DefaultValues.STATEMENT_SEPARATOR);
         }
 
-        JdbcDatabaseFactory jdbcDatabaseFactory = JdbcDatabaseFactory.getInstance();
-        jdbcDatabase = jdbcDatabaseFactory.getJdbcDatabase(name, connectorConfiguration);
+        this.jdbcDatabase = jdbcDatabase;
     }
 
     @Override
@@ -87,11 +90,6 @@ public final class SqlScriptExecutor implements ScriptExecutor {
                 .map(String::trim)
                 .filter(Predicate.not(String::isBlank))
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public void close() throws IOException {
-        jdbcDatabase.close();
     }
 
     @Override

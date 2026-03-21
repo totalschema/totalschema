@@ -19,8 +19,7 @@
 package io.github.totalschema.spi.script;
 
 import io.github.totalschema.engine.core.command.api.CommandContext;
-import java.io.Closeable;
 
-public interface ScriptExecutor extends Closeable {
+public interface ScriptExecutor {
     void execute(String script, CommandContext context) throws InterruptedException;
 }

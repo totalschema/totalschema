@@ -26,15 +26,13 @@ import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.jdbc.ConnectionAction;
 import io.github.totalschema.jdbc.JdbcDatabase;
-import io.github.totalschema.jdbc.JdbcDatabaseFactory;
 import io.github.totalschema.spi.script.ScriptExecutor;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class GroovyScriptExecutor implements ScriptExecutor {
+final class GroovyScriptExecutor implements ScriptExecutor {
 
     private final Logger log = LoggerFactory.getLogger(GroovyScriptExecutor.class);
 
@@ -43,13 +41,17 @@ public final class GroovyScriptExecutor implements ScriptExecutor {
     private final JdbcDatabase jdbcDatabase;
     private final Configuration configuration;
 
-    public GroovyScriptExecutor(String name, Configuration configuration) {
+    /**
+     * Constructs a GroovyScriptExecutor with the provided dependencies.
+     *
+     * @param name The name of the connector
+     * @param configuration Configuration for the script executor
+     * @param jdbcDatabase The JDBC database connection (injected via IoC container)
+     */
+    GroovyScriptExecutor(String name, Configuration configuration, JdbcDatabase jdbcDatabase) {
 
         this.name = name;
-
-        JdbcDatabaseFactory jdbcDatabaseFactory = JdbcDatabaseFactory.getInstance();
-        jdbcDatabase = jdbcDatabaseFactory.getJdbcDatabase(name, configuration);
-
+        this.jdbcDatabase = jdbcDatabase;
         this.configuration = configuration;
     }
 
@@ -104,12 +106,12 @@ public final class GroovyScriptExecutor implements ScriptExecutor {
     }
 
     @Override
-    public void close() throws IOException {}
-
-    @Override
     public String toString() {
         return "GroovyScriptExecutor{"
-                + "jdbcDatabase="
+                + "name='"
+                + name
+                + '\''
+                + ", jdbcDatabase="
                 + jdbcDatabase
                 + ", configuration="
                 + configuration

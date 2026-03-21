@@ -42,7 +42,6 @@ import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluatorFactory
 import io.github.totalschema.spi.hash.HashService;
 import io.github.totalschema.spi.hash.HashServiceFactory;
 import io.github.totalschema.spi.lock.LockService;
-import io.github.totalschema.spi.script.ScriptExecutorManager;
 import io.github.totalschema.spi.secrets.SecretManagerFactory;
 import io.github.totalschema.spi.secrets.SecretsManager;
 import io.github.totalschema.spi.sql.SqlDialect;
@@ -136,7 +135,6 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
 
         builder.withComponent(EnvironmentFactory.class, EnvironmentFactory.getInstance());
         builder.withComponent(ConnectorManager.class, ConnectorManager.getInstance());
-        builder.withComponent(ScriptExecutorManager.class, ScriptExecutorManager.getInstance());
 
         builder.withComponent(SqlDialect.class, SqlDialectFactory.getInstance().getSqlDialect());
 
@@ -145,6 +143,8 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
 
         builder.withComponent(ChangeFileFactory.class, new ChangeFileFactory(configuration));
 
+        // Register all ComponentFactory implementations discovered via ServiceLoader
+        // This includes SqlScriptExecutorComponentFactory, GroovyScriptExecutorFactory, etc.
         ServiceLoaderFactory.getAllServices(ComponentFactory.class).forEach(builder::withFactory);
 
         return builder.allowUnqualifiedAccessToSingleComponents(true).build();

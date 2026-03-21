@@ -23,8 +23,6 @@ import io.github.totalschema.connector.Connector;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.spi.script.ScriptExecutor;
-import io.github.totalschema.spi.script.ScriptExecutorFactory;
-import io.github.totalschema.spi.script.ScriptExecutorManager;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,15 +63,12 @@ public class JdbcConnector extends Connector {
         try {
             String fileContent = Files.readString(file);
 
-            ScriptExecutorManager scriptExecutorManager = context.get(ScriptExecutorManager.class);
-
             String extension = changeFile.getId().getExtension();
 
-            ScriptExecutorFactory scriptExecutorFactory =
-                    scriptExecutorManager.getScriptExecutorFactoryByExtension(extension);
-
+            // Get ScriptExecutor directly from IoC container with qualifier and arguments
+            // e.g., context.get(ScriptExecutor.class, "sql", name, configuration)
             ScriptExecutor scriptExecutor =
-                    scriptExecutorFactory.getScriptExecutor(name, connectorConfiguration, context);
+                    context.get(ScriptExecutor.class, extension, name, connectorConfiguration);
 
             scriptExecutor.execute(fileContent, context);
 

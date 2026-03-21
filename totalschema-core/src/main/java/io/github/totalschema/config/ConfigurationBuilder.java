@@ -81,7 +81,7 @@ public final class ConfigurationBuilder {
      * <p>If the key already exists in this builder, this method does nothing and returns this
      * builder unchanged. This is useful for providing default values that can be overridden.
      *
-     * <h2>Usage Example</h2>
+     * <p><b>Usage Example:</b>
      *
      * <pre>{@code
      * Configuration config = Configuration.builder()

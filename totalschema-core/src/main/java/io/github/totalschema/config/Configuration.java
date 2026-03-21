@@ -41,7 +41,7 @@ public interface Configuration {
      *
      * <p>This allows for creating modified copies of existing configurations using a fluent API.
      *
-     * <h2>Usage Example</h2>
+     * <h4>Usage Example</h4>
      *
      * <pre>{@code
      * Configuration original = Configuration.builder()
