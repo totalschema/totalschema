@@ -23,38 +23,40 @@ import static org.testng.Assert.*;
 import io.github.totalschema.spi.sql.SqlDialect;
 import org.testng.annotations.Test;
 
-public class DefaultSqlDialectFactoryTest {
+public class DefaultSqlDialectComponentFactoryTest {
 
     @Test
-    public void testGetSqlDialect() {
-        DefaultSqlDialectFactory factory = new DefaultSqlDialectFactory();
+    public void testFactoryMetadata() {
+        DefaultSqlDialectComponentFactory factory = new DefaultSqlDialectComponentFactory();
 
-        SqlDialect dialect = factory.getSqlDialect();
+        assertFalse(factory.isLazy(), "Factory should be eager (not lazy)");
+        assertEquals(factory.getConstructedClass(), SqlDialect.class);
+        assertEquals(factory.getQualifier(), "default");
+        assertNotNull(factory.getRequiredContextTypes());
+        assertTrue(factory.getRequiredContextTypes().isEmpty());
+    }
+
+    @Test
+    public void testNewComponent() {
+        DefaultSqlDialectComponentFactory factory = new DefaultSqlDialectComponentFactory();
+
+        // Context can be null since factory doesn't use it
+        SqlDialect dialect = factory.newComponent(null);
 
         assertNotNull(dialect);
         assertTrue(dialect instanceof DefaultSqlDialect);
     }
 
     @Test
-    public void testGetSqlDialectCreatesNewInstances() {
-        DefaultSqlDialectFactory factory = new DefaultSqlDialectFactory();
+    public void testNewComponentCreatesNewInstances() {
+        DefaultSqlDialectComponentFactory factory = new DefaultSqlDialectComponentFactory();
 
-        SqlDialect dialect1 = factory.getSqlDialect();
-        SqlDialect dialect2 = factory.getSqlDialect();
+        SqlDialect dialect1 = factory.newComponent(null);
+        SqlDialect dialect2 = factory.newComponent(null);
 
         assertNotNull(dialect1);
         assertNotNull(dialect2);
         // Each call should create a new instance
         assertNotSame(dialect1, dialect2);
-    }
-
-    @Test
-    public void testGetSqlDialectWithNullContext() {
-        DefaultSqlDialectFactory factory = new DefaultSqlDialectFactory();
-
-        // Should work even with null context since DefaultSqlDialect doesn't use it
-        SqlDialect dialect = factory.getSqlDialect();
-
-        assertNotNull(dialect);
     }
 }

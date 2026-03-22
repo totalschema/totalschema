@@ -39,11 +39,14 @@ public class DatabaseStateRecordRepositoryFactory extends ComponentFactory<State
                 context.get(Configuration.class)
                         .getPrefixNamespace(StateConstants.CONFIG_PROPERTY_NAMESPACE);
 
-        SqlDialect sqlDialect = context.get(SqlDialect.class);
+        Configuration dbConfig = stateConfig.getPrefixNamespace("database");
+
+        // Get SQL dialect from configuration, or use "default"
+        String dialectType = dbConfig.getString("dialect").orElse("default");
+        SqlDialect sqlDialect = getSqlDialect(context, dialectType);
+
         ChangeFileFactory changeFileFactory = context.get(ChangeFileFactory.class);
         int changeFileNameMaxLength = changeFileFactory.getChangeFileNameMaxLength();
-
-        Configuration dbConfig = stateConfig.getPrefixNamespace("database");
 
         // Create JdbcDatabase instance with logSql configuration defaulting to false
         Configuration configWithLogSqlSet =
@@ -63,5 +66,14 @@ public class DatabaseStateRecordRepositoryFactory extends ComponentFactory<State
         repository.init();
 
         return repository;
+    }
+
+    private static SqlDialect getSqlDialect(Context context, String dialectType) {
+        try {
+            return context.get(SqlDialect.class, dialectType);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException(
+                    String.format("SQL Dialect '%s' not found", dialectType), e);
+        }
     }
 }

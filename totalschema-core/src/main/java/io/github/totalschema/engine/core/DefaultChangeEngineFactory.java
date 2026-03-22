@@ -44,8 +44,6 @@ import io.github.totalschema.spi.hash.HashServiceFactory;
 import io.github.totalschema.spi.lock.LockService;
 import io.github.totalschema.spi.secrets.SecretManagerFactory;
 import io.github.totalschema.spi.secrets.SecretsManager;
-import io.github.totalschema.spi.sql.SqlDialect;
-import io.github.totalschema.spi.sql.SqlDialectFactory;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,8 +133,6 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
 
         builder.withComponent(EnvironmentFactory.class, EnvironmentFactory.getInstance());
         builder.withComponent(ConnectorManager.class, ConnectorManager.getInstance());
-
-        builder.withComponent(SqlDialect.class, SqlDialectFactory.getInstance().getSqlDialect());
 
         getHashService(configuration)
                 .ifPresent(hashService -> builder.withComponent(HashService.class, hashService));

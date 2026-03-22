@@ -6,3 +6,4 @@ io.github.totalschema.engine.internal.lock.database.repository.impl.DefaultLockS
 io.github.totalschema.engine.internal.lock.database.service.DefaultLockServiceFactory
 io.github.totalschema.engine.internal.script.SqlScriptExecutorComponentFactory
 io.github.totalschema.jdbc.JdbcDatabaseComponentFactory
+io.github.totalschema.engine.services.sql.DefaultSqlDialectComponentFactory

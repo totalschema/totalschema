@@ -61,14 +61,4 @@ public class DefaultSqlDialectTest {
         String result = dialect.timestampColumnExpression();
         assertEquals(result, "TIMESTAMP");
     }
-
-    @Test
-    public void testDefaultSqlDialectFactory() {
-        DefaultSqlDialectFactory factory = new DefaultSqlDialectFactory();
-        DefaultSqlDialect createdDialect = (DefaultSqlDialect) factory.getSqlDialect();
-
-        assertNotNull(createdDialect);
-        assertEquals(createdDialect.timestampColumnExpression(), "TIMESTAMP");
-        assertEquals(createdDialect.variableCharacterColumnExpression(100), "VARCHAR(100)");
-    }
 }

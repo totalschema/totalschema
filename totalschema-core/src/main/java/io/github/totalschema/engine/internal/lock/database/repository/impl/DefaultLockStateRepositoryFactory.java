@@ -54,7 +54,10 @@ public final class DefaultLockStateRepositoryFactory
         Configuration configuration =
                 context.get(Configuration.class).getPrefixNamespace("lock.database");
 
-        SqlDialect sqlDialect = context.get(SqlDialect.class);
+        // Get SQL dialect from configuration, or use "default"
+        String dialectType = configuration.getString("dialect").orElse("default");
+
+        SqlDialect sqlDialect = getSqlDialect(context, dialectType);
 
         // Create JdbcDatabase instance with logSql configuration
         Configuration configWithLogSqlSet =
@@ -69,5 +72,14 @@ public final class DefaultLockStateRepositoryFactory
         repository.init();
 
         return repository;
+    }
+
+    private static SqlDialect getSqlDialect(Context context, String dialectType) {
+        try {
+            return context.get(SqlDialect.class, dialectType);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException(
+                    String.format("SQL Dialect '%s' not found", dialectType), e);
+        }
     }
 }

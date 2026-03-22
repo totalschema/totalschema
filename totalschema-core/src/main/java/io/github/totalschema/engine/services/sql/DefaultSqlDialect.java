@@ -31,4 +31,8 @@ public class DefaultSqlDialect implements SqlDialect {
     public String timestampColumnExpression() {
         return "TIMESTAMP";
     }
+
+    public String toString() {
+        return "DefaultSqlDialect";
+    }
 }

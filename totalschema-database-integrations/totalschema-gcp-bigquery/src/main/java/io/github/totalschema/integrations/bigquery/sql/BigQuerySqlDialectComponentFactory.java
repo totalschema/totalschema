@@ -18,13 +18,43 @@
 
 package io.github.totalschema.integrations.bigquery.sql;
 
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.ComponentFactory;
 import io.github.totalschema.spi.sql.SqlDialect;
-import io.github.totalschema.spi.sql.SqlDialectFactory;
+import java.util.List;
 
-public final class BigQuerySqlDialectFactory implements SqlDialectFactory {
+/**
+ * ComponentFactory for BigQuery SQL dialect implementation.
+ *
+ * <p>This factory creates the BigQuery-specific SQL dialect which handles BigQuery's unique syntax
+ * requirements such as STRING type instead of VARCHAR.
+ *
+ * <p>Usage: {@code context.get(SqlDialect.class, "bigquery")}
+ */
+public final class BigQuerySqlDialectComponentFactory extends ComponentFactory<SqlDialect> {
 
     @Override
-    public SqlDialect getSqlDialect() {
+    public boolean isLazy() {
+        return false; // Eager initialization
+    }
+
+    @Override
+    public Class<SqlDialect> getConstructedClass() {
+        return SqlDialect.class;
+    }
+
+    @Override
+    public String getQualifier() {
+        return "bigquery";
+    }
+
+    @Override
+    public List<Class<?>> getRequiredContextTypes() {
+        return List.of();
+    }
+
+    @Override
+    public SqlDialect newComponent(Context context, Object... arguments) {
         return BigQuerySqlDialect.INSTANCE;
     }
 }
