@@ -49,15 +49,15 @@ public class LockTemplateTest {
     }
 
     @Test(
-            expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = ".*cannot be negative or zero.*")
+            expectedExceptions = IllegalArgumentException.class,
+            expectedExceptionsMessageRegExp = ".*must be positive.*")
     public void testConstructorWithZeroTimeout() {
         new LockTemplate(0, TimeUnit.SECONDS, mockLock);
     }
 
     @Test(
-            expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = ".*cannot be negative or zero.*")
+            expectedExceptions = IllegalArgumentException.class,
+            expectedExceptionsMessageRegExp = ".*must be positive.*")
     public void testConstructorWithNegativeTimeout() {
         new LockTemplate(-5, TimeUnit.SECONDS, mockLock);
     }
@@ -86,8 +86,8 @@ public class LockTemplateTest {
     }
 
     @Test(
-            expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = "Failed to acquire lock")
+            expectedExceptions = LockAcquisitionException.class,
+            expectedExceptionsMessageRegExp = "Failed to acquire lock within.*")
     public void testWithTryLockVoidCallbackFailedToAcquireLock() throws Exception {
         expect(mockLock.tryLock(10, TimeUnit.SECONDS)).andReturn(false);
 
@@ -136,8 +136,8 @@ public class LockTemplateTest {
     }
 
     @Test(
-            expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = "Failed to acquire lock")
+            expectedExceptions = LockAcquisitionException.class,
+            expectedExceptionsMessageRegExp = "Failed to acquire lock within.*")
     public void testWithTryLockReturningValueFailedToAcquireLock() throws Exception {
         expect(mockLock.tryLock(10, TimeUnit.SECONDS)).andReturn(false);
 
@@ -167,8 +167,8 @@ public class LockTemplateTest {
     }
 
     @Test(
-            expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = "Failed to acquire lock")
+            expectedExceptions = LockAcquisitionException.class,
+            expectedExceptionsMessageRegExp = "Failed to acquire lock within.*")
     public void testWithTryLockWithCustomTimeoutFailedToAcquireLock() throws Exception {
         expect(mockLock.tryLock(3, TimeUnit.MILLISECONDS)).andReturn(false);
 
@@ -221,8 +221,8 @@ public class LockTemplateTest {
     }
 
     @Test(
-            expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = "Failed to acquire lock")
+            expectedExceptions = LockAcquisitionException.class,
+            expectedExceptionsMessageRegExp = "Failed to acquire lock within.*")
     public void testWithTryLockInterruptibleVoidCallbackFailedToAcquireLock() throws Exception {
         expect(mockLock.tryLock(10, TimeUnit.SECONDS)).andReturn(false);
 
@@ -264,8 +264,8 @@ public class LockTemplateTest {
     }
 
     @Test(
-            expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = "Failed to acquire lock")
+            expectedExceptions = LockAcquisitionException.class,
+            expectedExceptionsMessageRegExp = "Failed to acquire lock within.*")
     public void testWithTryLockInterruptibleReturningValueFailedToAcquireLock() throws Exception {
         expect(mockLock.tryLock(10, TimeUnit.SECONDS)).andReturn(false);
 
@@ -296,8 +296,8 @@ public class LockTemplateTest {
     }
 
     @Test(
-            expectedExceptions = RuntimeException.class,
-            expectedExceptionsMessageRegExp = "Failed to acquire lock")
+            expectedExceptions = LockAcquisitionException.class,
+            expectedExceptionsMessageRegExp = "Failed to acquire lock within.*")
     public void testWithTryLockInterruptibleWithCustomTimeoutFailedToAcquireLock()
             throws Exception {
         expect(mockLock.tryLock(100, TimeUnit.NANOSECONDS)).andReturn(false);
