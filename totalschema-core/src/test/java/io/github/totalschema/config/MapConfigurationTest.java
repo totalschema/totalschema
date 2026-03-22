@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class MapConfigurationTest {
@@ -140,6 +141,7 @@ public class MapConfigurationTest {
                         Map.of(
                                 "foo.bar", "baz",
                                 "foo.qux", "quux",
+                                "foo.nested.deep", "deepValue",
                                 "other.key", "value",
                                 "foo", "fooValue"));
 
@@ -155,8 +157,18 @@ public class MapConfigurationTest {
         // It should NOT contain the exact prefix key "foo" itself
         assertEquals(prefixConfig.getString("foo"), Optional.empty());
 
-        // And verify we only have the expected keys
-        assertEquals(prefixConfig.getKeys(), Set.of("bar", "qux"));
+        // Test nested key behavior (similar to testGetPrefixNamespaceFromFile)
+        // Should contain the full nested key
+        Assert.assertTrue(prefixConfig.getKeys().contains("nested.deep"));
+        Assert.assertTrue(prefixConfig.getString("nested.deep").isPresent());
+        assertEquals(prefixConfig.getString("nested.deep").orElse(null), "deepValue");
+
+        // Should NOT contain intermediate keys when there are nested keys under them
+        Assert.assertFalse(prefixConfig.getKeys().contains("nested"));
+        Assert.assertFalse(prefixConfig.getString("nested").isPresent());
+
+        // And verify we have the expected keys (leaf keys only)
+        assertEquals(prefixConfig.getKeys(), Set.of("bar", "qux", "nested.deep"));
     }
 
     @Test

@@ -21,15 +21,9 @@ package io.github.totalschema.config;
 import io.github.totalschema.concurrent.LockTemplate;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import org.yaml.snakeyaml.Yaml;
 
@@ -40,7 +34,7 @@ public class YamlFileConfiguration extends AbstractConfiguration {
     private final LockTemplate lockTemplate =
             new LockTemplate(1, TimeUnit.MINUTES, new ReentrantLock());
 
-    private Map<String, Object> yamlData;
+    private Map<String, String> config;
 
     /**
      * Creates a YamlFileConfiguration with an injectable strategy for opening input streams.
@@ -62,97 +56,96 @@ public class YamlFileConfiguration extends AbstractConfiguration {
 
     @Override
     public Optional<String> getString(String key) {
-        return withYamlData(
-                data -> {
-                    Object value = getNestedValue(data, key);
-                    return value != null ? Optional.of(value.toString()) : Optional.empty();
-                });
+        ensureLoaded();
+        return Optional.ofNullable(config.get(key));
     }
 
     @Override
     public Set<String> getKeys() {
-        return withYamlData(data -> flattenKeys(data, ""));
+        ensureLoaded();
+        return Collections.unmodifiableSet(config.keySet());
     }
 
-    private <R> R withYamlData(Function<Map<String, Object>, R> action) {
-        return lockTemplate.withTryLock(() -> withYamlDataLoaded(action));
+    private void ensureLoaded() {
+        lockTemplate.withTryLock(this::loadAndFlattenYaml);
     }
 
-    private <R> R withYamlDataLoaded(Function<Map<String, Object>, R> action) {
-        if (yamlData == null) {
-            yamlData = new LinkedHashMap<>();
+    private void loadAndFlattenYaml() {
+        if (config != null) {
+            return;
+        }
 
+        Optional<InputStream> inputStreamOptional = inputStreamProvider.get();
+
+        if (inputStreamOptional.isPresent()) {
             try {
-                Optional<InputStream> inputStreamOptional = inputStreamProvider.get();
+                try (InputStream inputStream = inputStreamOptional.get()) {
+                    Yaml yaml = new Yaml();
 
-                if (inputStreamOptional.isPresent()) {
-                    InputStream inputStream = inputStreamOptional.get();
-                    try (inputStream) {
-                        Yaml yaml = new Yaml();
-                        Object loaded = yaml.load(inputStream);
+                    Map<String, Object> loadedMap = yaml.loadAs(inputStream, Map.class);
 
-                        if (loaded instanceof Map) {
-                            @SuppressWarnings("unchecked")
-                            Map<String, Object> loadedMap = (Map<String, Object>) loaded;
-                            yamlData.putAll(loadedMap);
-                        }
+                    if (loadedMap != null) {
+                        config = flattenMapToStringValues(loadedMap);
+                    } else {
+                        config = Collections.emptyMap();
                     }
                 }
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read: " + this, e);
             }
+        } else {
+            config = Collections.emptyMap();
         }
-
-        return action.apply(yamlData);
     }
 
     /**
-     * Gets a nested value from the YAML data using dot notation. For example: "database.host" will
-     * retrieve the "host" value from the "database" map.
+     * Flattens nested YAML structure into dot-notation keys at load time. For example: {database:
+     * {host: "localhost"}} becomes "database.host" = "localhost". Only leaf values (non-Map) are
+     * included.
+     *
+     * @param source the nested YAML data structure
+     * @return a flattened map with dot-notation keys
      */
-    private Object getNestedValue(Map<String, Object> data, String key) {
-        if (key == null || key.isEmpty()) {
-            return null;
+    private static Map<String, String> flattenMapToStringValues(Map<String, Object> source) {
+        Map<String, String> result = new LinkedHashMap<>();
+        java.util.Deque<MapEntry> stack = new java.util.ArrayDeque<>();
+
+        // Initialize stack with root entries
+        for (Map.Entry<String, Object> entry : source.entrySet()) {
+            stack.push(new MapEntry(entry.getKey(), entry.getValue(), ""));
         }
 
-        String[] parts = key.split("\\.");
-        Object current = data;
+        while (!stack.isEmpty()) {
+            MapEntry current = stack.pop();
+            String key =
+                    current.prefix.isEmpty() ? current.key : current.prefix + "." + current.key;
 
-        for (String part : parts) {
-            if (current instanceof Map) {
+            if (current.value instanceof Map) {
+                // Push nested entries onto stack, don't add the intermediate key itself
                 @SuppressWarnings("unchecked")
-                Map<String, Object> map = (Map<String, Object>) current;
-                current = map.get(part);
-            } else {
-                return null;
+                Map<String, Object> nestedMap = (Map<String, Object>) current.value;
+                for (Map.Entry<String, Object> entry : nestedMap.entrySet()) {
+                    stack.push(new MapEntry(entry.getKey(), entry.getValue(), key));
+                }
+            } else if (current.value != null) {
+                // Only add leaf keys (non-Map values) as strings
+                result.put(key, current.value.toString());
             }
         }
 
-        return current;
+        return result;
     }
 
-    /**
-     * Flattens nested YAML structure into dot-notation keys. For example: {database: {host:
-     * "localhost"}} becomes "database.host"
-     */
-    private Set<String> flattenKeys(Map<String, Object> data, String prefix) {
-        if (data == null || data.isEmpty()) {
-            return Collections.emptySet();
+    /** Helper class for iterative map traversal. */
+    private static final class MapEntry {
+        final String key;
+        final Object value;
+        final String prefix;
+
+        MapEntry(String key, Object value, String prefix) {
+            this.key = key;
+            this.value = value;
+            this.prefix = prefix;
         }
-
-        Set<String> keys = new java.util.HashSet<>();
-
-        for (Map.Entry<String, Object> entry : data.entrySet()) {
-            String key = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
-            keys.add(key);
-
-            if (entry.getValue() instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> nestedMap = (Map<String, Object>) entry.getValue();
-                keys.addAll(flattenKeys(nestedMap, key));
-            }
-        }
-
-        return keys;
     }
 }
