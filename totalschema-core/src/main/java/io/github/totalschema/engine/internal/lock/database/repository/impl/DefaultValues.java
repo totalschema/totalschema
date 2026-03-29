@@ -24,12 +24,6 @@ final class DefaultValues {
 
     static final String LOCK_TABLE_NAME = String.format("%s_lock_v1", PROJECT_SYSTEM_NAME);
 
-    static final String CREATE_TABLE_SQL =
-            "CREATE TABLE %s ("
-                    + "lock_id VARCHAR(255), "
-                    + "lock_expiration TIMESTAMP, "
-                    + "locked_by VARCHAR(255))";
-
     static final String DROP_TABLE_SQL = "DROP TABLE %s";
 
     static final String INSERT_RECORD_SQL =
