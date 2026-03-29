@@ -23,26 +23,26 @@ public final class ArgumentValidator {
      * @param arguments The arguments to validate
      * @param specs The argument specifications
      * @param factoryName The name of the factory (for error messages)
-     * @return The validated arguments array (same as input if valid)
+     * @return The validated arguments list (same as input if valid)
      * @throws IllegalArgumentException if validation fails
      */
-    public static Object[] validate(
-            Object[] arguments, List<ArgumentSpecification<?>> specs, String factoryName) {
+    public static List<Object> validate(
+            List<Object> arguments, List<ArgumentSpecification<?>> specs, String factoryName) {
 
         if (specs == null || specs.isEmpty()) {
-            if (arguments != null && arguments.length > 0) {
+            if (arguments != null && !arguments.isEmpty()) {
                 throw new IllegalArgumentException(
                         "Factory "
                                 + factoryName
                                 + " expects no arguments, but "
-                                + arguments.length
+                                + arguments.size()
                                 + " were provided");
             }
-            return new Object[0];
+            return List.of();
         }
 
         int expectedCount = specs.size();
-        int providedCount = (arguments == null) ? 0 : arguments.length;
+        int providedCount = (arguments == null) ? 0 : arguments.size();
 
         if (providedCount != expectedCount) {
             throw new IllegalArgumentException(
@@ -60,7 +60,7 @@ public final class ArgumentValidator {
         // Validate each argument type
         for (int i = 0; i < expectedCount; i++) {
             ArgumentSpecification<?> spec = specs.get(i);
-            Object value = arguments[i];
+            Object value = arguments.get(i);
 
             validateSingleArgument(value, spec, i);
         }

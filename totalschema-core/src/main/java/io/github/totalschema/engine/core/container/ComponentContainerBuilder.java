@@ -100,7 +100,7 @@ public final class ComponentContainerBuilder {
                 .stream()
                 .filter(specs -> specs.size() == 1)
                 .map(specs -> specs.get(0))
-                .filter(spec -> spec.getQualifier() != null)
+                .filter(spec -> spec.getQualifier() != null) // Still using String internally
                 .forEach(
                         spec -> {
                             ObjectSpecification defaultSpec = spec.withQualifier(null);
@@ -115,7 +115,7 @@ public final class ComponentContainerBuilder {
                 .stream()
                 .filter(specs -> specs.size() == 1)
                 .map(specs -> specs.get(0))
-                .filter(spec -> spec.getQualifier() != null)
+                .filter(spec -> spec.getQualifier() != null) // Still using String internally
                 .forEach(
                         spec -> {
                             FactorySpecification defaultSpec = spec.withQualifier(null);

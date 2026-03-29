@@ -6,7 +6,7 @@ import java.util.Objects;
 public final class FactorySpecification {
 
     public static FactorySpecification from(ComponentFactory<?> factory) {
-        return from(factory.getComponentType(), factory.getQualifier());
+        return from(factory.getComponentType(), factory.getQualifier().orElse(null));
     }
 
     public static FactorySpecification from(ObjectSpecification objectSpecification) {

@@ -137,7 +137,7 @@ public class DefaultChangeServiceTest {
         context.setValue(ConnectorManager.class, mockConnectorManager);
         context.setValue(Environment.class, environment);
 
-        DefaultChangeService service = (DefaultChangeService) factory.newComponent(context);
+        DefaultChangeService service = (DefaultChangeService) factory.createComponent(context);
         assertNotNull(service);
     }
 }

@@ -24,11 +24,13 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MissingConfigurationKeyException;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.event.EventDispatcher;
+import io.github.totalschema.spi.ArgumentSpecification;
 import io.github.totalschema.spi.ComponentFactory;
 import io.github.totalschema.spi.hash.HashService;
 import io.github.totalschema.spi.state.StateRepository;
 import io.github.totalschema.spi.state.StateService;
 import java.util.List;
+import java.util.Optional;
 
 public class DefaultStateServiceFactory extends ComponentFactory<StateService> {
 
@@ -43,8 +45,8 @@ public class DefaultStateServiceFactory extends ComponentFactory<StateService> {
     }
 
     @Override
-    public String getQualifier() {
-        return null;
+    public Optional<String> getQualifier() {
+        return Optional.empty();
     }
 
     @Override
@@ -53,7 +55,12 @@ public class DefaultStateServiceFactory extends ComponentFactory<StateService> {
     }
 
     @Override
-    public StateService newComponent(Context context, Object... arguments) {
+    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+        return List.of();
+    }
+
+    @Override
+    public StateService createComponent(Context context, List<Object> arguments) {
         try {
             Configuration configuration = context.get(Configuration.class);
 

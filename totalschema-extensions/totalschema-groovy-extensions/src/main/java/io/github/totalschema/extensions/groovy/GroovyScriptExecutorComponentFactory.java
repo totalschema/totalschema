@@ -23,10 +23,12 @@ import static io.github.totalschema.spi.ArgumentSpecification.*;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.jdbc.JdbcDatabase;
+import io.github.totalschema.spi.ArgumentHandler;
 import io.github.totalschema.spi.ArgumentSpecification;
 import io.github.totalschema.spi.ComponentFactory;
 import io.github.totalschema.spi.script.ScriptExecutor;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * ComponentFactory for creating Groovy script executors.
@@ -38,10 +40,30 @@ import java.util.List;
  */
 public final class GroovyScriptExecutorComponentFactory extends ComponentFactory<ScriptExecutor> {
 
-    private static final ArgumentSpecification<String> NAME_ARGUMENT =
-            string("name").withConstraint(notBlank());
-    private static final ArgumentSpecification<Configuration> CONFIGURATION_ARGUMENT =
-            configuration("configuration");
+    /**
+     * ArgumentHandler for GroovyScriptExecutor creation arguments. Encapsulates argument
+     * specifications and provides type-safe accessors.
+     */
+    static class Arguments extends ArgumentHandler {
+        private static final ArgumentSpecification<String> NAME =
+                string("name").withConstraint(notBlank());
+        private static final ArgumentSpecification<Configuration> CONFIGURATION =
+                configuration("configuration");
+
+        public Arguments() {
+            super(NAME, CONFIGURATION);
+        }
+
+        public String getName(List<Object> args) {
+            return getArgument(NAME, args);
+        }
+
+        public Configuration getConfiguration(List<Object> args) {
+            return getArgument(CONFIGURATION, args);
+        }
+    }
+
+    private static final Arguments ARGUMENTS = new Arguments();
 
     @Override
     public boolean isLazy() {
@@ -54,8 +76,8 @@ public final class GroovyScriptExecutorComponentFactory extends ComponentFactory
     }
 
     @Override
-    public String getQualifier() {
-        return "groovy";
+    public Optional<String> getQualifier() {
+        return Optional.of("groovy");
     }
 
     @Override
@@ -65,13 +87,15 @@ public final class GroovyScriptExecutorComponentFactory extends ComponentFactory
 
     @Override
     public List<ArgumentSpecification<?>> getArgumentSpecifications() {
-        return List.of(NAME_ARGUMENT, CONFIGURATION_ARGUMENT);
+        return ARGUMENTS.getSpecifications();
     }
 
     @Override
-    public ScriptExecutor newComponent(Context context, Object... arguments) {
-        String name = getArgument(NAME_ARGUMENT, arguments, 0);
-        Configuration configuration = getArgument(CONFIGURATION_ARGUMENT, arguments, 1);
+    public ScriptExecutor createComponent(Context context, List<Object> arguments) {
+        ARGUMENTS.validateStructure(arguments, getClass().getSimpleName());
+
+        String name = ARGUMENTS.getName(arguments);
+        Configuration configuration = ARGUMENTS.getConfiguration(arguments);
 
         // Get JdbcDatabase from IoC container - container manages lifecycle
         JdbcDatabase jdbcDatabase = context.get(JdbcDatabase.class, null, name, configuration);

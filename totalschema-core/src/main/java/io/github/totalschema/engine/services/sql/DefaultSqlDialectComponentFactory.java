@@ -19,9 +19,11 @@
 package io.github.totalschema.engine.services.sql;
 
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.ArgumentSpecification;
 import io.github.totalschema.spi.ComponentFactory;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * ComponentFactory for the default SQL dialect implementation.
@@ -45,8 +47,8 @@ public final class DefaultSqlDialectComponentFactory extends ComponentFactory<Sq
     }
 
     @Override
-    public String getQualifier() {
-        return "default";
+    public Optional<String> getQualifier() {
+        return Optional.of("default");
     }
 
     @Override
@@ -55,7 +57,12 @@ public final class DefaultSqlDialectComponentFactory extends ComponentFactory<Sq
     }
 
     @Override
-    public SqlDialect newComponent(Context context, Object... arguments) {
+    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+        return List.of();
+    }
+
+    @Override
+    public SqlDialect createComponent(Context context, List<Object> arguments) {
         return new DefaultSqlDialect();
     }
 }

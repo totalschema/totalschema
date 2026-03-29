@@ -2,10 +2,12 @@ package io.github.totalschema.engine.internal.state.csv;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.ArgumentSpecification;
 import io.github.totalschema.spi.ComponentFactory;
 import io.github.totalschema.spi.state.StateConstants;
 import io.github.totalschema.spi.state.StateRepository;
 import java.util.List;
+import java.util.Optional;
 
 public class CsvFileStateRecordRepositoryFactory extends ComponentFactory<StateRepository> {
 
@@ -20,8 +22,8 @@ public class CsvFileStateRecordRepositoryFactory extends ComponentFactory<StateR
     }
 
     @Override
-    public String getQualifier() {
-        return "csv";
+    public Optional<String> getQualifier() {
+        return Optional.of("csv");
     }
 
     @Override
@@ -30,7 +32,12 @@ public class CsvFileStateRecordRepositoryFactory extends ComponentFactory<StateR
     }
 
     @Override
-    public StateRepository newComponent(Context context, Object... arguments) {
+    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+        return List.of();
+    }
+
+    @Override
+    public StateRepository createComponent(Context context, List<Object> arguments) {
 
         Configuration stateConfig =
                 context.get(Configuration.class)

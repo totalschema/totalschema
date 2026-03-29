@@ -147,7 +147,7 @@ public final class ComponentContainer implements Closeable, Context {
         }
 
         // Component doesn't exist, need to create it.
-        // We cannot use computeIfAbsent because the factory's newComponent() method
+        // We cannot use computeIfAbsent because the factory's createComponent() method
         // may call context.get() to resolve dependencies, which would trigger
         // a nested computeIfAbsent call on the same ConcurrentHashMap.
         // This causes "Recursive update" IllegalStateException.
@@ -216,13 +216,10 @@ public final class ComponentContainer implements Closeable, Context {
         validateRequiredDependencies(factory, objectSpecification);
 
         if (objectSpecification.getArguments().isEmpty()) {
-            newComponent = (R) factory.newComponent(this);
+            newComponent = (R) factory.createComponent(this, List.of());
         } else {
             List<Object> argumentsList = objectSpecification.getArguments().get();
-
-            Object[] array = argumentsList.toArray();
-
-            newComponent = (R) factory.newComponent(this, array);
+            newComponent = (R) factory.createComponent(this, argumentsList);
         }
 
         Objects.requireNonNull(

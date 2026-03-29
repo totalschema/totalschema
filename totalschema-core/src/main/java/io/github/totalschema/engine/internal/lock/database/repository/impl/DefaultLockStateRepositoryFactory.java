@@ -23,8 +23,10 @@ import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.lock.database.LockingComponentFactory;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
 import io.github.totalschema.jdbc.JdbcDatabase;
+import io.github.totalschema.spi.ArgumentSpecification;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.List;
+import java.util.Optional;
 
 public final class DefaultLockStateRepositoryFactory
         extends LockingComponentFactory<LockStateRepository> {
@@ -40,8 +42,8 @@ public final class DefaultLockStateRepositoryFactory
     }
 
     @Override
-    public String getQualifier() {
-        return null;
+    public Optional<String> getQualifier() {
+        return Optional.empty();
     }
 
     @Override
@@ -50,7 +52,12 @@ public final class DefaultLockStateRepositoryFactory
     }
 
     @Override
-    public LockStateRepository newComponent(Context context, Object... arguments) {
+    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+        return List.of();
+    }
+
+    @Override
+    public LockStateRepository createComponent(Context context, List<Object> arguments) {
         Configuration configuration =
                 context.get(Configuration.class).getPrefixNamespace("lock.database");
 

@@ -19,9 +19,11 @@
 package io.github.totalschema.integrations.bigquery.sql;
 
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.ArgumentSpecification;
 import io.github.totalschema.spi.ComponentFactory;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * ComponentFactory for BigQuery SQL dialect implementation.
@@ -44,8 +46,8 @@ public final class BigQuerySqlDialectComponentFactory extends ComponentFactory<S
     }
 
     @Override
-    public String getQualifier() {
-        return "bigquery";
+    public Optional<String> getQualifier() {
+        return Optional.of("bigquery");
     }
 
     @Override
@@ -54,7 +56,12 @@ public final class BigQuerySqlDialectComponentFactory extends ComponentFactory<S
     }
 
     @Override
-    public SqlDialect newComponent(Context context, Object... arguments) {
-        return BigQuerySqlDialect.INSTANCE;
+    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+        return List.of();
+    }
+
+    @Override
+    public SqlDialect createComponent(Context context, List<Object> arguments) {
+        return new BigQuerySqlDialect();
     }
 }

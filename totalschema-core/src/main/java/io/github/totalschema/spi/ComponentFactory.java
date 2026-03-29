@@ -5,6 +5,7 @@ import io.github.totalschema.engine.core.container.FactorySpecification;
 import io.github.totalschema.engine.core.container.ObjectSpecification;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Abstract factory for creating components within the TotalSchema IoC container.
@@ -42,7 +43,7 @@ import java.util.Map;
  *     public Class<StateRepository> getComponentType() { return StateRepository.class; }
  *
  *     @Override
- *     public String getQualifier() { return "csv"; }
+ *     public Optional<String> getQualifier() { return Optional.of("csv"); }
  *
  *     @Override
  *     public List<Class<?>> getRequiredContextTypes() { return List.of(Configuration.class); }
@@ -51,7 +52,7 @@ import java.util.Map;
  *     public List<ArgumentSpecification<?>> getArgumentSpecifications() { return List.of(); }
  *
  *     @Override
- *     public StateRepository newComponent(Context context, Object... arguments) {
+ *     public StateRepository createComponent(Context context, List<Object> arguments) {
  *         Configuration config = context.get(Configuration.class);
  *         return new CsvStateRepository(config);
  *     }
@@ -62,32 +63,48 @@ import java.util.Map;
  *
  * <pre>{@code
  * public class ServerFactory extends ComponentFactory<Server> {
- *     private static final ArgumentSpecification<String> HOST_ARG = string("host", 1, 255);
- *     private static final ArgumentSpecification<Integer> PORT_ARG = integer("port", 1, 65535);
+ *     // ArgumentHandler subclass encapsulates all argument specifications
+ *     static class Arguments extends ArgumentHandler {
+ *         private static final ArgumentSpecification<String> HOST = string("host", 1, 255);
+ *         private static final ArgumentSpecification<Integer> PORT = integer("port", 1, 65535);
+ *
+ *         public Arguments() {
+ *             super(HOST, PORT);
+ *         }
+ *
+ *         public String getHost(List<Object> args) {
+ *             return getArgument(HOST, args);
+ *         }
+ *
+ *         public Integer getPort(List<Object> args) {
+ *             return getArgument(PORT, args);
+ *         }
+ *     }
  *
  *     @Override
  *     public boolean isLazy() { return false; }
  *
- *     @Override
- *     public Class<Server> getComponentType() { return Server.class; }
+ * @Override
+ * public Class<Server> getComponentType() { return Server.class; }
  *
  *     @Override
- *     public String getQualifier() { return null; }
+ *     public Optional<String> getQualifier() { return Optional.empty(); }
  *
  *     @Override
  *     public List<Class<?>> getRequiredContextTypes() { return List.of(Configuration.class); }
  *
  *     @Override
  *     public List<ArgumentSpecification<?>> getArgumentSpecifications() {
- *         return List.of(HOST_ARG, PORT_ARG);
+ *         return new Arguments().getSpecifications();
  *     }
  *
  *     @Override
- *     public Server newComponent(Context context, Object... arguments) {
- *         validateArguments(arguments);  // Validate structure once
+ *     public Server createComponent(Context context, List<Object> arguments) {
+ *         Arguments args = new Arguments();
+ *         args.validateStructure(arguments, getClass().getSimpleName());
  *
- *         String host = getArgument(HOST_ARG, arguments, 0);  // Validates 1-255 length
- *         Integer port = getArgument(PORT_ARG, arguments, 1); // Validates 1-65535 range
+ *         String host = args.getHost(arguments);
+ *         Integer port = args.getPort(arguments);
  *
  *         Configuration config = context.get(Configuration.class);
  *         return new DefaultServer(config, host, port);
@@ -174,10 +191,10 @@ public abstract class ComponentFactory<T> {
      * <p>When retrieving components with qualifiers, use {@link Context#get(Class, String,
      * Object...)} with the appropriate qualifier string.
      *
-     * @return The qualifier string (e.g., "jdbc", "csv", "database"), or {@code null} if no
-     *     qualifier is needed
+     * @return An Optional containing the qualifier string (e.g., "jdbc", "csv", "database"), or
+     *     {@code Optional.empty()} if no qualifier is needed
      */
-    public abstract String getQualifier();
+    public abstract Optional<String> getQualifier();
 
     /**
      * Returns the list of component types that must be available in the container before this
@@ -194,7 +211,7 @@ public abstract class ComponentFactory<T> {
     public abstract List<Class<?>> getRequiredContextTypes();
 
     /**
-     * Returns the specification of arguments expected by {@link #newComponent(Context, Object...)}.
+     * Returns the specification of arguments expected by {@link #createComponent(Context, List)}.
      *
      * <p>This method declares what arguments the factory expects when creating components. Each
      * {@link ArgumentSpecification} defines the type and name of a required argument. If this
@@ -227,8 +244,10 @@ public abstract class ComponentFactory<T> {
      * @see ArgumentSpecification
      * @see ArgumentValidator
      */
-    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
-        return List.of();
+    public abstract List<ArgumentSpecification<?>> getArgumentSpecifications();
+
+    public final T createComponent(Context context) {
+        return createComponent(context, List.of());
     }
 
     /**
@@ -238,159 +257,23 @@ public abstract class ComponentFactory<T> {
      * can retrieve dependencies from the provided context and use the supplied arguments to
      * configure the component.
      *
-     * <p><b>WARNING - Varargs Pitfall:</b> When calling this method, pass arguments individually,
-     * NOT as an array. Due to Java varargs behavior:
+     * <p><b>Best Practice:</b> Use the {@link ArgumentHandler} pattern for type-safe argument
+     * access:
      *
      * <pre>{@code
-     * // WRONG - creates nested array
-     * Object[] myArgs = new Object[]{"name", config};
-     * factory.newComponent(context, myArgs);
-     *
-     * // CORRECT - pass individually
-     * factory.newComponent(context, "name", config);
-     * }</pre>
-     *
-     * <p><b>Best Practice:</b> Call {@link #validateArguments(Object...)} once at the beginning of
-     * this method to validate argument structure, then use {@link
-     * #getArgument(ArgumentSpecification, Object[], int)} to retrieve and validate individual
-     * arguments:
-     *
-     * <pre>{@code
-     * @Override
-     * public MyComponent newComponent(Context context, Object... arguments) {
-     *     validateArguments(arguments);  // Validate structure once
-     *
-     *     String name = getArgument(NAME_ARG, arguments, 0);
-     *     Integer port = getArgument(PORT_ARG, arguments, 1);
-     *
-     *     return new MyComponentImpl(name, port);
-     * }
+     * ArgumentHandler handler = new ArgumentHandler(getArgumentSpecifications());
+     * handler.validateStructure(arguments, getClass().getSimpleName());
+     * String name = handler.getArgument(NAME_ARG, arguments);
+     * Integer port = handler.getArgument(PORT_ARG, arguments);
      * }</pre>
      *
      * @param context The IoC container context for retrieving dependencies (never {@code null})
      * @param arguments Runtime arguments passed from {@link Context#get(Class, String, Object...)}.
-     *     The number and types should match what {@link #getArgumentSpecifications()} declares. May
-     *     be empty if no arguments are required.
+     *     The number and types should match what {@link #getArgumentSpecifications()} declares.
+     *     Will be an empty list if no arguments are required.
      * @return A new instance of the component (never {@code null})
      * @throws RuntimeException if component creation fails due to missing dependencies, invalid
      *     arguments, or other errors
      */
-    public abstract T newComponent(Context context, Object... arguments);
-
-    /**
-     * Retrieves and validates a specific argument from the arguments array.
-     *
-     * <p>This method performs validation in two stages:
-     *
-     * <ol>
-     *   <li><b>Type checking</b>: Ensures the argument is of the correct type as specified by the
-     *       {@link ArgumentSpecification}
-     *   <li><b>Constraint validation</b>: Applies any custom constraints defined in the
-     *       specification (e.g., string length, numeric ranges, patterns)
-     * </ol>
-     *
-     * <p><b>Important:</b> Callers should call {@link #validateArguments(Object...)} once at the
-     * beginning of {@link #newComponent(Context, Object...)} to validate the argument count and
-     * basic structure. This method then validates the specific argument's type and constraints.
-     *
-     * <p><b>Example Usage:</b>
-     *
-     * <pre>{@code
-     * private static final ArgumentSpecification<String> NAME_ARG = string("name");
-     * private static final ArgumentSpecification<Integer> PORT_ARG = integer("port", 1, 65535);
-     *
-     * @Override
-     * public Server newComponent(Context context, Object... arguments) {
-     *     validateArguments(arguments);
-     *
-     *     String name = getArgument(NAME_ARG, arguments, 0);  // Type + constraint validation
-     *     Integer port = getArgument(PORT_ARG, arguments, 1); // Validates port is 1-65535
-     *
-     *     return new DefaultServer(name, port);
-     * }
-     * }</pre>
-     *
-     * @param spec The specification for this argument (defines type and constraints)
-     * @param args The full arguments array
-     * @param index The index of the argument to retrieve
-     * @param <R> The expected type of the argument
-     * @return The validated and type-cast argument value
-     * @throws IllegalArgumentException if the argument index is out of bounds, the type is
-     *     incorrect, or any constraint validation fails
-     */
-    protected <R> R getArgument(ArgumentSpecification<R> spec, Object[] args, int index) {
-        // Bounds check
-        if (index < 0 || index >= args.length) {
-            throw new IllegalArgumentException(
-                    "Argument index " + index + " out of bounds (array size: " + args.length + ")");
-        }
-
-        Object value = args[index];
-
-        // Type check with clear error message
-        if (!spec.getType().isInstance(value)) {
-            throw new IllegalArgumentException(
-                    "Argument at index "
-                            + index
-                            + " ('"
-                            + spec.getName()
-                            + "') has incorrect type. "
-                            + "Expected: "
-                            + spec.getType().getName()
-                            + ", but got: "
-                            + (value == null ? "null" : value.getClass().getName()));
-        }
-
-        // Safe cast using Class.cast()
-        R typedValue = spec.getType().cast(value);
-
-        // Apply custom constraints (e.g., string length, numeric ranges, etc.)
-        spec.validateValue(typedValue);
-
-        return typedValue;
-    }
-
-    /**
-     * Validates the provided arguments according to the specifications returned by {@link
-     * #getArgumentSpecifications()}.
-     *
-     * <p>This method performs <b>structural validation only</b>:
-     *
-     * <ul>
-     *   <li>The number of provided arguments matches the number of specifications
-     *   <li>Each argument is of the correct type
-     *   <li>No argument is null
-     * </ul>
-     *
-     * <p><b>Does NOT validate custom constraints</b> such as string length, numeric ranges,
-     * patterns, etc. Those constraints are validated per-argument when calling {@link
-     * #getArgument(ArgumentSpecification, Object[], int)}.
-     *
-     * <p><b>Usage Pattern:</b> Call this method <b>once</b> at the beginning of {@link
-     * #newComponent(Context, Object...)} to validate structure, then use {@link
-     * #getArgument(ArgumentSpecification, Object[], int)} to retrieve and validate individual
-     * arguments with their constraints.
-     *
-     * <p><b>Example:</b>
-     *
-     * <pre>{@code
-     * @Override
-     * public MyComponent newComponent(Context context, Object... arguments) {
-     *     validateArguments(arguments);  // Validate structure once at the start
-     *
-     *     String name = getArgument(NAME_ARG, arguments, 0);
-     *     Integer port = getArgument(PORT_ARG, arguments, 1);
-     *
-     *     return new MyComponentImpl(name, port);
-     * }
-     * }</pre>
-     *
-     * @param arguments The arguments to validate
-     * @throws IllegalArgumentException if validation fails
-     * @see ArgumentValidator
-     */
-    protected final void validateArguments(Object... arguments) {
-        ArgumentValidator.validate(
-                arguments, getArgumentSpecifications(), getClass().getSimpleName());
-    }
+    public abstract T createComponent(Context context, List<Object> arguments);
 }

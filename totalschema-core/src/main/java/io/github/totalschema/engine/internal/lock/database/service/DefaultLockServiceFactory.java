@@ -23,8 +23,10 @@ import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.lock.database.LockingComponentFactory;
 import io.github.totalschema.engine.internal.lock.database.LockingConstants;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
+import io.github.totalschema.spi.ArgumentSpecification;
 import io.github.totalschema.spi.lock.LockService;
 import java.util.List;
+import java.util.Optional;
 
 public class DefaultLockServiceFactory extends LockingComponentFactory<LockService> {
 
@@ -39,8 +41,8 @@ public class DefaultLockServiceFactory extends LockingComponentFactory<LockServi
     }
 
     @Override
-    public String getQualifier() {
-        return null;
+    public Optional<String> getQualifier() {
+        return Optional.empty();
     }
 
     @Override
@@ -49,7 +51,12 @@ public class DefaultLockServiceFactory extends LockingComponentFactory<LockServi
     }
 
     @Override
-    public LockService newComponent(Context context, Object... arguments) {
+    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+        return List.of();
+    }
+
+    @Override
+    public LockService createComponent(Context context, List<Object> arguments) {
 
         Configuration lockConfig =
                 context.get(Configuration.class)

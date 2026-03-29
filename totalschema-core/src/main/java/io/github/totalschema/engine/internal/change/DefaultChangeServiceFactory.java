@@ -21,9 +21,11 @@ package io.github.totalschema.engine.internal.change;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.ArgumentSpecification;
 import io.github.totalschema.spi.ConditionalComponentFactory;
 import io.github.totalschema.spi.change.ChangeService;
 import java.util.List;
+import java.util.Optional;
 
 public final class DefaultChangeServiceFactory extends ConditionalComponentFactory<ChangeService> {
 
@@ -38,8 +40,8 @@ public final class DefaultChangeServiceFactory extends ConditionalComponentFacto
     }
 
     @Override
-    public String getQualifier() {
-        return null;
+    public Optional<String> getQualifier() {
+        return Optional.empty();
     }
 
     @Override
@@ -48,7 +50,12 @@ public final class DefaultChangeServiceFactory extends ConditionalComponentFacto
     }
 
     @Override
-    public ChangeService newComponent(Context context, Object... arguments) {
+    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+        return List.of();
+    }
+
+    @Override
+    public ChangeService createComponent(Context context, List<Object> arguments) {
 
         ConnectorManager connectorManager = context.get(ConnectorManager.class);
         Environment environment = context.get(Environment.class);

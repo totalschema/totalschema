@@ -21,6 +21,8 @@ package io.github.totalschema.engine.services.sql;
 import static org.testng.Assert.*;
 
 import io.github.totalschema.spi.sql.SqlDialect;
+import java.util.List;
+import java.util.Optional;
 import org.testng.annotations.Test;
 
 public class DefaultSqlDialectComponentFactoryTest {
@@ -31,28 +33,28 @@ public class DefaultSqlDialectComponentFactoryTest {
 
         assertFalse(factory.isLazy(), "Factory should be eager (not lazy)");
         assertEquals(factory.getComponentType(), SqlDialect.class);
-        assertEquals(factory.getQualifier(), "default");
+        assertEquals(factory.getQualifier(), Optional.of("default"));
         assertNotNull(factory.getRequiredContextTypes());
         assertTrue(factory.getRequiredContextTypes().isEmpty());
     }
 
     @Test
-    public void testNewComponent() {
+    public void testCreateComponent() {
         DefaultSqlDialectComponentFactory factory = new DefaultSqlDialectComponentFactory();
 
         // Context can be null since factory doesn't use it
-        SqlDialect dialect = factory.newComponent(null);
+        SqlDialect dialect = factory.createComponent(null, List.of());
 
         assertNotNull(dialect);
         assertTrue(dialect instanceof DefaultSqlDialect);
     }
 
     @Test
-    public void testNewComponentCreatesNewInstances() {
+    public void testNewComponentCreatesCreateInstances() {
         DefaultSqlDialectComponentFactory factory = new DefaultSqlDialectComponentFactory();
 
-        SqlDialect dialect1 = factory.newComponent(null);
-        SqlDialect dialect2 = factory.newComponent(null);
+        SqlDialect dialect1 = factory.createComponent(null, List.of());
+        SqlDialect dialect2 = factory.createComponent(null, List.of());
 
         assertNotNull(dialect1);
         assertNotNull(dialect2);
