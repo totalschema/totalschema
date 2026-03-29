@@ -18,7 +18,7 @@
 
 package io.github.totalschema.integrations.bigquery.sql;
 
-import io.github.totalschema.engine.services.sql.DefaultSqlDialect;
+import io.github.totalschema.engine.internal.sql.DefaultSqlDialect;
 
 final class BigQuerySqlDialect extends DefaultSqlDialect {
 

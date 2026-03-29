@@ -242,7 +242,7 @@ public final class ComponentContainer implements Closeable, Context {
     private void validateRequiredDependencies(
             ComponentFactory<?> componentFactory, ObjectSpecification objectSpecification) {
 
-        List<Class<?>> requiredTypes = componentFactory.getRequiredContextTypes();
+        List<Class<?>> requiredTypes = componentFactory.getDependencies();
         if (requiredTypes == null || requiredTypes.isEmpty()) {
             return;
         }

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.services.sql;
+package io.github.totalschema.engine.internal.sql;
 
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.spi.factory.ArgumentSpecification;
@@ -52,7 +52,7 @@ public final class DefaultSqlDialectComponentFactory extends ComponentFactory<Sq
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of();
     }
 

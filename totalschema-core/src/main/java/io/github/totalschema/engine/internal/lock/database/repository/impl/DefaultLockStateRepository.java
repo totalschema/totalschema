@@ -21,7 +21,7 @@ package io.github.totalschema.engine.internal.lock.database.repository.impl;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.internal.common.repository.AbstractJdbcTableRepository;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
-import io.github.totalschema.engine.services.sql.CreateTableBuilder;
+import io.github.totalschema.engine.internal.sql.CreateTableBuilder;
 import io.github.totalschema.jdbc.*;
 import io.github.totalschema.model.LockRecord;
 import io.github.totalschema.spi.sql.SqlDialect;

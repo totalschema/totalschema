@@ -37,7 +37,7 @@ public class JdbcDatabaseComponentFactory extends ComponentFactory<JdbcDatabase>
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of();
     }
 

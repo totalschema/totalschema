@@ -16,10 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.services.sql;
+package io.github.totalschema.engine.sql;
 
 import static org.testng.Assert.*;
 
+import io.github.totalschema.engine.internal.sql.DefaultSqlDialect;
+import io.github.totalschema.engine.internal.sql.DefaultSqlDialectComponentFactory;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.List;
 import java.util.Optional;
@@ -34,8 +36,8 @@ public class DefaultSqlDialectComponentFactoryTest {
         assertFalse(factory.isLazy(), "Factory should be eager (not lazy)");
         assertEquals(factory.getComponentType(), SqlDialect.class);
         assertEquals(factory.getQualifier(), Optional.of("default"));
-        assertNotNull(factory.getRequiredContextTypes());
-        assertTrue(factory.getRequiredContextTypes().isEmpty());
+        assertNotNull(factory.getDependencies());
+        assertTrue(factory.getDependencies().isEmpty());
     }
 
     @Test

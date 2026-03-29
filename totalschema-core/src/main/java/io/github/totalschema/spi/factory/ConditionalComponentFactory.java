@@ -32,7 +32,7 @@ public abstract class ConditionalComponentFactory<T> extends ComponentFactory<T>
         classesKnownInContext.addAll(providedObjectsClasses);
         classesKnownInContext.addAll(factoryContributedClasses);
 
-        List<Class<?>> requiredContextTypes = getRequiredContextTypes();
+        List<Class<?>> requiredContextTypes = getDependencies();
 
         for (Class<?> requiredClass : requiredContextTypes) {
             if (!classesKnownInContext.contains(requiredClass)) {

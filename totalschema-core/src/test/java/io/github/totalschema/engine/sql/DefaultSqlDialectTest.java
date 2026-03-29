@@ -16,10 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.services.sql;
+package io.github.totalschema.engine.sql;
 
 import static org.testng.Assert.*;
 
+import io.github.totalschema.engine.internal.sql.DefaultSqlDialect;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

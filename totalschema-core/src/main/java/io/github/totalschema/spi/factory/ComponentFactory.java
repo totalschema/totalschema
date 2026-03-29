@@ -153,8 +153,8 @@ public abstract class ComponentFactory<T> {
      * an {@code UnsupportedOperationException}. The implementation must not mutate the container
      * state in any way.
      *
-     * <p>For automatic dependency checking based on {@link #getRequiredContextTypes()}, consider
-     * extending {@link ConditionalComponentFactory} instead of overriding this method directly.
+     * <p>For automatic dependency checking based on {@link #getDependencies()}, consider extending
+     * {@link ConditionalComponentFactory} instead of overriding this method directly.
      *
      * @param objects An unmodifiable view of object instances already registered in the container
      * @param factories An unmodifiable view of all factories registered in the container
@@ -194,7 +194,7 @@ public abstract class ComponentFactory<T> {
      *
      * @return An immutable list of required component types (never {@code null}, but may be empty)
      */
-    public abstract List<Class<?>> getRequiredContextTypes();
+    public abstract List<Class<?>> getDependencies();
 
     /**
      * Returns the specification of arguments expected by {@link #createComponent(Context, List)}.

@@ -31,7 +31,7 @@ public class ArgumentHandlerTest {
         }
 
         @Override
-        public List<Class<?>> getRequiredContextTypes() {
+        public List<Class<?>> getDependencies() {
             return List.of();
         }
 

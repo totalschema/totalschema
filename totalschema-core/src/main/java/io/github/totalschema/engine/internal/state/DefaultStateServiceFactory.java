@@ -50,7 +50,7 @@ public class DefaultStateServiceFactory extends ComponentFactory<StateService> {
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of(Configuration.class, StateRepository.class, EventDispatcher.class);
     }
 

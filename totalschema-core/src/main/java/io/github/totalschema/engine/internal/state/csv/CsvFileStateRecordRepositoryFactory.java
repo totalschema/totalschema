@@ -27,7 +27,7 @@ public class CsvFileStateRecordRepositoryFactory extends ComponentFactory<StateR
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of(Configuration.class);
     }
 

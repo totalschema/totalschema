@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.services.sql;
+package io.github.totalschema.engine.internal.sql;
 
 import java.util.Objects;
 

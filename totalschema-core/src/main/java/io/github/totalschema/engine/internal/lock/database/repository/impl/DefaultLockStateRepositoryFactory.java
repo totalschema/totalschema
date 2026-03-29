@@ -47,7 +47,7 @@ public final class DefaultLockStateRepositoryFactory
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of(Configuration.class, SqlDialect.class);
     }
 

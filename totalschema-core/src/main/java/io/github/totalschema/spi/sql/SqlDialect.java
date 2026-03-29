@@ -18,7 +18,7 @@
 
 package io.github.totalschema.spi.sql;
 
-import io.github.totalschema.engine.services.sql.CreateTableBuilder;
+import io.github.totalschema.engine.internal.sql.CreateTableBuilder;
 
 /**
  * SQL dialect interface for database-specific SQL syntax. Provides methods for generating

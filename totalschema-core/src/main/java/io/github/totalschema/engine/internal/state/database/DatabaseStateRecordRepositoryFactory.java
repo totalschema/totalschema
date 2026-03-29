@@ -30,7 +30,7 @@ public class DatabaseStateRecordRepositoryFactory extends ComponentFactory<State
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of(Configuration.class, SqlDialect.class, ChangeFileFactory.class);
     }
 

@@ -66,7 +66,7 @@ public final class SqlScriptExecutorComponentFactory extends ComponentFactory<Sc
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of(JdbcDatabase.class);
     }
 

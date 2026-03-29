@@ -67,7 +67,7 @@ public abstract class AbstractConnectorComponentFactory extends ComponentFactory
     }
 
     @Override
-    public final List<Class<?>> getRequiredContextTypes() {
+    public final List<Class<?>> getDependencies() {
         return List.of();
     }
 

@@ -46,7 +46,7 @@ public class DefaultLockServiceFactory extends LockingComponentFactory<LockServi
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of(Configuration.class);
     }
 

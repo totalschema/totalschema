@@ -21,7 +21,7 @@ package io.github.totalschema.engine.internal.state.database;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.engine.internal.common.repository.AbstractJdbcTableRepository;
-import io.github.totalschema.engine.services.sql.CreateTableBuilder;
+import io.github.totalschema.engine.internal.sql.CreateTableBuilder;
 import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.jdbc.Parameter;
 import io.github.totalschema.jdbc.TypeConversions;

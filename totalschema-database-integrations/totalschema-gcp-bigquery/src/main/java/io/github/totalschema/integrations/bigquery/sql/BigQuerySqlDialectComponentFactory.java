@@ -51,7 +51,7 @@ public final class BigQuerySqlDialectComponentFactory extends ComponentFactory<S
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of();
     }
 

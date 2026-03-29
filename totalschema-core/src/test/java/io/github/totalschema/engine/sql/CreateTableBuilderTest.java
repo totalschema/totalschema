@@ -16,12 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.services.sql;
+package io.github.totalschema.engine.sql;
 
 import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.engine.internal.sql.CreateTableBuilder;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.Optional;
 import org.testng.annotations.BeforeMethod;

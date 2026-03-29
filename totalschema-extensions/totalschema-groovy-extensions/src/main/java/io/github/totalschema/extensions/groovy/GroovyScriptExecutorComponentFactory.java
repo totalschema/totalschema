@@ -65,7 +65,7 @@ public final class GroovyScriptExecutorComponentFactory extends ComponentFactory
     }
 
     @Override
-    public List<Class<?>> getRequiredContextTypes() {
+    public List<Class<?>> getDependencies() {
         return List.of(JdbcDatabase.class);
     }
 
