@@ -15,21 +15,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package io.github.totalschema.connector.jdbc;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.connector.AbstractConnectorComponentFactory;
 import io.github.totalschema.connector.Connector;
-import io.github.totalschema.connector.ConnectorFactory;
+import java.util.Optional;
 
-/** Factory for JDBC connectors. */
-public class JdbcConnectorFactory implements ConnectorFactory {
+/**
+ * ComponentFactory for creating JDBC connectors.
+ *
+ * <p>This factory creates {@link Connector} instances with qualifier "jdbc" that can execute SQL
+ * scripts against JDBC databases.
+ *
+ * <p>Usage: {@code context.get(Connector.class, "jdbc", connectorName, configuration)}
+ */
+public final class JdbcConnectorFactory extends AbstractConnectorComponentFactory {
+
     @Override
-    public String getConnectorType() {
-        return JdbcConnector.CONNECTOR_TYPE;
+    public Optional<String> getQualifier() {
+        return Optional.of("jdbc");
     }
 
     @Override
-    public Connector createConnector(String name, Configuration configuration) {
-        return new JdbcConnector(name, configuration);
+    protected Connector createConnector(String connectorName, Configuration configuration) {
+        return new JdbcConnector(connectorName, configuration);
     }
 }

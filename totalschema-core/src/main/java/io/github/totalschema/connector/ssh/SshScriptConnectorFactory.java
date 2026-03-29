@@ -19,19 +19,27 @@
 package io.github.totalschema.connector.ssh;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.connector.AbstractConnectorComponentFactory;
 import io.github.totalschema.connector.Connector;
-import io.github.totalschema.connector.ConnectorFactory;
+import java.util.Optional;
 
-/** Factory for SSH script connectors. */
-public class SshScriptConnectorFactory implements ConnectorFactory {
+/**
+ * ComponentFactory for creating SSH script connectors.
+ *
+ * <p>This factory creates {@link Connector} instances with qualifier "ssh-script" that can upload
+ * and execute shell scripts on remote servers via SSH.
+ *
+ * <p>Usage: {@code context.get(Connector.class, "ssh-script", connectorName, configuration)}
+ */
+public final class SshScriptConnectorFactory extends AbstractConnectorComponentFactory {
 
     @Override
-    public String getConnectorType() {
-        return SshScriptConnector.CONNECTOR_TYPE;
+    public Optional<String> getQualifier() {
+        return Optional.of(SshScriptConnector.CONNECTOR_TYPE);
     }
 
     @Override
-    public Connector createConnector(String name, Configuration configuration) {
-        return new SshScriptConnector(name, configuration);
+    protected Connector createConnector(String connectorName, Configuration configuration) {
+        return new SshScriptConnector(connectorName, configuration);
     }
 }

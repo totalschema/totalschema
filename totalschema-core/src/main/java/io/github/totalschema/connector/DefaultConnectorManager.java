@@ -20,15 +20,8 @@ package io.github.totalschema.connector;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
-import io.github.totalschema.engine.core.command.api.CommandContext;
-import io.github.totalschema.engine.core.event.ChangeEngineCloseEvent;
-import io.github.totalschema.engine.core.event.CloseResourceChangeEngineCloseListener;
-import io.github.totalschema.engine.core.event.EventDispatcher;
-import io.github.totalschema.spi.ServiceLoaderFactory;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.core.container.FactoryNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,53 +36,8 @@ public class DefaultConnectorManager implements ConnectorManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultConnectorManager.class);
 
-    private final Map<String, ConnectorFactory> connectorFactories;
-
-    private final ConcurrentHashMap<String, Connector> connectorCache = new ConcurrentHashMap<>();
-
-    public DefaultConnectorManager() {
-        this.connectorFactories = loadConnectorFactories();
-    }
-
-    /**
-     * Load all available connector factories via ServiceLoader API.
-     *
-     * @return a map of connector type to factory
-     */
-    private Map<String, ConnectorFactory> loadConnectorFactories() {
-
-        List<ConnectorFactory> factories =
-                ServiceLoaderFactory.getAllServices(ConnectorFactory.class);
-        Map<String, ConnectorFactory> factoryMap = new HashMap<>();
-
-        for (ConnectorFactory factory : factories) {
-            String type = factory.getConnectorType();
-            if (factoryMap.containsKey(type)) {
-                logger.warn(
-                        "Duplicate connector factory for type '{}'. Using first found: {}",
-                        type,
-                        factoryMap.get(type).getClass().getName());
-            } else {
-                factoryMap.put(type, factory);
-                logger.debug(
-                        "Registered connector factory for type '{}': {}",
-                        type,
-                        factory.getClass().getName());
-            }
-        }
-
-        logger.debug(
-                "Loaded {} connector factory(ies): {}", factoryMap.size(), factoryMap.keySet());
-        return factoryMap;
-    }
-
     @Override
-    public final Connector getConnectorByName(String connectorName, CommandContext context) {
-        return connectorCache.computeIfAbsent(
-                connectorName, (name) -> createConnector(connectorName, context));
-    }
-
-    private Connector createConnector(String connectorName, CommandContext context) {
+    public final Connector getConnectorByName(String connectorName, Context context) {
 
         Configuration configurationOfTheConnector =
                 getConfigurationOfTheConnector(connectorName, context);
@@ -108,37 +56,44 @@ public class DefaultConnectorManager implements ConnectorManager {
                                                 "No type is specified for connector: "
                                                         + connectorName));
 
-        Connector connector =
-                instantiateConnector(connectorType, connectorName, configurationOfTheConnector);
+        try {
 
-        EventDispatcher eventDispatcher = context.get(EventDispatcher.class);
-        eventDispatcher.subscribe(
-                ChangeEngineCloseEvent.class,
-                CloseResourceChangeEngineCloseListener.create(connector));
+            Connector connector =
+                    context.get(
+                            Connector.class,
+                            connectorType,
+                            connectorName,
+                            configurationOfTheConnector);
 
-        logger.info("Created: {}", connector);
+            logger.info("Created: {}", connector);
 
-        return connector;
+            return connector;
+
+        } catch (FactoryNotFoundException ex) {
+            throw new IllegalArgumentException(
+                    String.format("No such connector: '%s'", connectorName), ex);
+        }
     }
 
-    private Configuration getConfigurationOfTheConnector(
-            String connectorName, CommandContext context) {
+    private Configuration getConfigurationOfTheConnector(String connectorName, Context context) {
 
         Configuration connectorsConfig =
-                getConnectorsConfiguration(context.get(Configuration.class), context);
+                getConnectorsConfiguration(
+                        context.get(Configuration.class),
+                        context.getOptional(Environment.class).orElse(null));
 
         return connectorsConfig.getPrefixNamespace(connectorName);
     }
 
     private Configuration getConnectorsConfiguration(
-            Configuration configuration, CommandContext context) {
+            Configuration configuration, Environment environment) {
 
         Configuration connectorsConfig = configuration.getPrefixNamespace("connectors");
 
         logger.debug("Global connector configuration: {}", connectorsConfig);
 
-        if (context.has(Environment.class)) {
-            String environmentName = context.get(Environment.class).getName();
+        if (environment != null) {
+            String environmentName = environment.getName();
 
             Configuration environmentSpecificConnectorConfig =
                     configuration.getPrefixNamespace("environments", environmentName, "connectors");
@@ -154,19 +109,5 @@ public class DefaultConnectorManager implements ConnectorManager {
         logger.debug("Applicable connector configuration: {}", connectorsConfig);
 
         return connectorsConfig;
-    }
-
-    protected Connector instantiateConnector(
-            String type, String name, Configuration connectorConfiguration) {
-
-        ConnectorFactory factory = connectorFactories.get(type);
-
-        if (factory == null) {
-            throw new IllegalArgumentException("Unknown connector type: " + type);
-        }
-
-        logger.debug(
-                "Using connector factory for type '{}': {}", type, factory.getClass().getName());
-        return factory.createConnector(name, connectorConfiguration);
     }
 }

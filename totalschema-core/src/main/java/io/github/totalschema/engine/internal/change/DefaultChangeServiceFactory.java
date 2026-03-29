@@ -46,7 +46,7 @@ public final class DefaultChangeServiceFactory extends ConditionalComponentFacto
 
     @Override
     public List<Class<?>> getRequiredContextTypes() {
-        return List.of(ConnectorManager.class, Environment.class);
+        return List.of(Environment.class);
     }
 
     @Override

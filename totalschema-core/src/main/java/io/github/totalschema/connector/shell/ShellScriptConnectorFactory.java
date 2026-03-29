@@ -19,19 +19,27 @@
 package io.github.totalschema.connector.shell;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.connector.AbstractConnectorComponentFactory;
 import io.github.totalschema.connector.Connector;
-import io.github.totalschema.connector.ConnectorFactory;
+import java.util.Optional;
 
-/** Factory for shell script connectors. */
-public class ShellScriptConnectorFactory implements ConnectorFactory {
+/**
+ * ComponentFactory for creating shell script connectors.
+ *
+ * <p>This factory creates {@link Connector} instances with qualifier "shell" that execute shell
+ * scripts on the local machine.
+ *
+ * <p>Usage: {@code context.get(Connector.class, "shell", connectorName, configuration)}
+ */
+public final class ShellScriptConnectorFactory extends AbstractConnectorComponentFactory {
 
     @Override
-    public String getConnectorType() {
-        return ShellScriptConnector.CONNECTOR_TYPE;
+    public Optional<String> getQualifier() {
+        return Optional.of(ShellScriptConnector.CONNECTOR_TYPE);
     }
 
     @Override
-    public Connector createConnector(String name, Configuration configuration) {
-        return new ShellScriptConnector(name, configuration);
+    protected Connector createConnector(String connectorName, Configuration configuration) {
+        return new ShellScriptConnector(connectorName, configuration);
     }
 }

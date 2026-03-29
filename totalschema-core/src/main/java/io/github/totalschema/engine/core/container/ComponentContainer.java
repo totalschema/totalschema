@@ -207,7 +207,7 @@ public final class ComponentContainer implements Closeable, Context {
 
         ComponentFactory<?> factory = factories.get(factorySpecification);
         if (factory == null) {
-            throw new IllegalStateException(
+            throw new FactoryNotFoundException(
                     "No factory found for specification: " + factorySpecification);
         }
 

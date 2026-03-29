@@ -16,25 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.connector;
+package io.github.totalschema.engine.core.container;
 
-import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.spi.ServiceLoaderFactory;
+public class FactoryNotFoundException extends ComponentCreationException {
 
-/** Manager for creating and caching connector instances. */
-public interface ConnectorManager {
-
-    static ConnectorManager getInstance() {
-        return ServiceLoaderFactory.getSingleService(ConnectorManager.class)
-                .orElseGet(DefaultConnectorManager::new);
+    public FactoryNotFoundException(String message) {
+        super(message);
     }
 
-    /**
-     * Get or create a connector by name.
-     *
-     * @param name the connector name from configuration
-     * @param context the command context
-     * @return the connector instance
-     */
-    Connector getConnectorByName(String name, Context context);
+    public FactoryNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

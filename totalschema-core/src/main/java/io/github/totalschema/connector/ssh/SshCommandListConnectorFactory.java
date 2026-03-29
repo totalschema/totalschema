@@ -19,19 +19,27 @@
 package io.github.totalschema.connector.ssh;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.connector.AbstractConnectorComponentFactory;
 import io.github.totalschema.connector.Connector;
-import io.github.totalschema.connector.ConnectorFactory;
+import java.util.Optional;
 
-/** Factory for SSH command list connectors. */
-public class SshCommandListConnectorFactory implements ConnectorFactory {
+/**
+ * ComponentFactory for creating SSH command list connectors.
+ *
+ * <p>This factory creates {@link Connector} instances with qualifier "ssh-commands" that execute
+ * commands line-by-line from a file on remote servers via SSH.
+ *
+ * <p>Usage: {@code context.get(Connector.class, "ssh-commands", connectorName, configuration)}
+ */
+public final class SshCommandListConnectorFactory extends AbstractConnectorComponentFactory {
 
     @Override
-    public String getConnectorType() {
-        return SshCommandListConnector.CONNECTOR_TYPE;
+    public Optional<String> getQualifier() {
+        return Optional.of(SshCommandListConnector.CONNECTOR_TYPE);
     }
 
     @Override
-    public Connector createConnector(String name, Configuration configuration) {
-        return new SshCommandListConnector(name, configuration);
+    protected Connector createConnector(String connectorName, Configuration configuration) {
+        return new SshCommandListConnector(connectorName, configuration);
     }
 }

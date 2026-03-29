@@ -18,7 +18,9 @@
 
 package io.github.totalschema.config;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -207,6 +209,21 @@ public abstract class AbstractConfiguration implements Configuration {
         } else {
             return Optional.of(map);
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+
+        AbstractConfiguration that = (AbstractConfiguration) obj;
+
+        return Objects.equals(this.asMap(), that.asMap());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(asMap());
     }
 
     @Override

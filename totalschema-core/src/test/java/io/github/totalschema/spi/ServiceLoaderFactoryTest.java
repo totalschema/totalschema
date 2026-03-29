@@ -20,7 +20,7 @@ package io.github.totalschema.spi;
 
 import static org.testng.Assert.*;
 
-import io.github.totalschema.connector.ConnectorFactory;
+import io.github.totalschema.spi.factory.ComponentFactory;
 import java.util.List;
 import org.testng.annotations.Test;
 
@@ -28,9 +28,9 @@ public class ServiceLoaderFactoryTest {
 
     @Test
     public void testGetSingleServiceWithMultipleImplementations() {
-        // ConnectorFactory has multiple implementations, should throw exception
+        // ComponentFactory has multiple implementations, should throw exception
         try {
-            ServiceLoaderFactory.getSingleService(ConnectorFactory.class);
+            ServiceLoaderFactory.getSingleService(ComponentFactory.class);
             fail("Expected IllegalStateException for multiple services");
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("Multiple ServiceLoader services found"));
@@ -39,18 +39,18 @@ public class ServiceLoaderFactoryTest {
 
     @Test
     public void testGetAllServicesWithMultipleImplementations() {
-        List<ConnectorFactory> services =
-                ServiceLoaderFactory.getAllServices(ConnectorFactory.class);
+        List<ComponentFactory> services =
+                ServiceLoaderFactory.getAllServices(ComponentFactory.class);
 
         assertNotNull(services);
         assertFalse(services.isEmpty());
-        assertTrue(services.size() >= 4, "Expected at least 4 connector factories");
+        assertTrue(services.size() >= 10, "Expected at least 10 component factories");
     }
 
     @Test
     public void testGetAllServicesReturnsUnmodifiableList() {
-        List<ConnectorFactory> services =
-                ServiceLoaderFactory.getAllServices(ConnectorFactory.class);
+        List<ComponentFactory> services =
+                ServiceLoaderFactory.getAllServices(ComponentFactory.class);
 
         try {
             services.add(null);
@@ -63,10 +63,10 @@ public class ServiceLoaderFactoryTest {
     @Test
     public void testGetAllServicesCaching() {
         // Call twice to test caching
-        List<ConnectorFactory> services1 =
-                ServiceLoaderFactory.getAllServices(ConnectorFactory.class);
-        List<ConnectorFactory> services2 =
-                ServiceLoaderFactory.getAllServices(ConnectorFactory.class);
+        List<ComponentFactory> services1 =
+                ServiceLoaderFactory.getAllServices(ComponentFactory.class);
+        List<ComponentFactory> services2 =
+                ServiceLoaderFactory.getAllServices(ComponentFactory.class);
 
         // Should return same list instance due to caching
         assertSame(services1, services2);

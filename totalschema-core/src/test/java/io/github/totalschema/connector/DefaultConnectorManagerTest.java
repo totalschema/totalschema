@@ -23,7 +23,10 @@ import static org.testng.Assert.*;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MapConfiguration;
 import io.github.totalschema.config.environment.Environment;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.connector.jdbc.JdbcConnectorFactory;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.core.container.ComponentContainer;
+import io.github.totalschema.engine.core.container.ComponentContainerBuilder;
 import io.github.totalschema.engine.core.event.EventDispatcher;
 import java.util.Map;
 import org.testng.annotations.BeforeMethod;
@@ -32,13 +35,10 @@ import org.testng.annotations.Test;
 public class DefaultConnectorManagerTest {
 
     private DefaultConnectorManager connectorManager;
-    private CommandContext context;
 
     @BeforeMethod
     public void setUp() {
         connectorManager = new DefaultConnectorManager();
-        context = new CommandContext();
-        context.setValue(EventDispatcher.class, new EventDispatcher());
     }
 
     @Test
@@ -52,7 +52,7 @@ public class DefaultConnectorManagerTest {
                                 "jdbc:h2:mem:test",
                                 "connectors.my_db.jdbc.driver.class",
                                 "org.h2.Driver"));
-        context.setValue(Configuration.class, config);
+        Context context = getContext(config);
 
         Connector connector = connectorManager.getConnectorByName("my_db", context);
 
@@ -62,7 +62,8 @@ public class DefaultConnectorManagerTest {
     @Test(expectedExceptions = RuntimeException.class)
     public void testGetConnectorByNameWithMissingConfiguration() {
         Configuration config = new MapConfiguration(Map.of());
-        context.setValue(Configuration.class, config);
+
+        Context context = getContext(config);
 
         connectorManager.getConnectorByName("non_existent", context);
     }
@@ -76,7 +77,8 @@ public class DefaultConnectorManagerTest {
                                 "jdbc:h2:mem:test",
                                 "connectors.my_db.jdbc.driver.class",
                                 "org.h2.Driver"));
-        context.setValue(Configuration.class, config);
+
+        Context context = getContext(config);
 
         connectorManager.getConnectorByName("my_db", context);
     }
@@ -86,7 +88,8 @@ public class DefaultConnectorManagerTest {
         Configuration config =
                 new MapConfiguration(
                         Map.of("connectors.my_db.type", "invalid_type_that_does_not_exist"));
-        context.setValue(Configuration.class, config);
+
+        Context context = getContext(config);
 
         connectorManager.getConnectorByName("my_db", context);
     }
@@ -102,8 +105,8 @@ public class DefaultConnectorManagerTest {
                                 "jdbc:h2:mem:default",
                                 "environments.DEV.connectors.my_db.jdbc.url",
                                 "jdbc:h2:mem:dev"));
-        context.setValue(Configuration.class, config);
-        context.setValue(Environment.class, new Environment("DEV"));
+
+        Context context = getContext(config, new Environment("DEV"));
 
         Connector connector = connectorManager.getConnectorByName("my_db", context);
 
@@ -119,11 +122,31 @@ public class DefaultConnectorManagerTest {
                                 "jdbc",
                                 "connectors.my_db.jdbc.url",
                                 "jdbc:h2:mem:test"));
-        context.setValue(Configuration.class, config);
+
+        Context context = getContext(config);
 
         Connector connector1 = connectorManager.getConnectorByName("my_db", context);
         Connector connector2 = connectorManager.getConnectorByName("my_db", context);
 
         assertSame(connector1, connector2, "Connector should be cached");
+    }
+
+    private static Context getContext(Configuration config) {
+        return getContext(config, null);
+    }
+
+    private static Context getContext(Configuration config, Environment env) {
+        ComponentContainerBuilder builder =
+                ComponentContainer.builder()
+                        .withComponent(Configuration.class, config)
+                        .withComponent(EventDispatcher.class, new EventDispatcher());
+
+        if (env != null) {
+            builder.withComponent(Environment.class, env);
+        }
+
+        return builder.withFactory(new JdbcConnectorFactory())
+                .allowUnqualifiedAccessToSingleComponents(true)
+                .build();
     }
 }

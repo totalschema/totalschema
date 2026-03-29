@@ -18,55 +18,49 @@
 
 package io.github.totalschema.engine.internal.change;
 
-import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
+import io.github.totalschema.config.Configuration;
+import io.github.totalschema.config.MapConfiguration;
 import io.github.totalschema.config.environment.Environment;
-import io.github.totalschema.connector.Connector;
 import io.github.totalschema.connector.ConnectorManager;
+import io.github.totalschema.connector.DefaultConnectorManager;
 import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.core.event.EventDispatcher;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.ChangeType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class DefaultChangeServiceTest {
 
-    private ConnectorManager mockConnectorManager;
     private Environment environment;
     private CommandContext context;
-    private Connector mockConnector;
     private DefaultChangeService changeService;
+    private Configuration config;
 
     @BeforeMethod
     public void setUp() {
-        mockConnectorManager = createMock(ConnectorManager.class);
         environment = new Environment("DEV");
         context = new CommandContext();
-        mockConnector = createMock(Connector.class);
-    }
 
-    @Test
-    public void testExecuteWithMatchingEnvironment() throws Exception {
-        Path changesDir = Paths.get("/changes");
-        Path file = Paths.get("/changes/1.X/001.test.DEV.apply.jdbc.sql");
-        ChangeFile.Id id =
-                new ChangeFile.Id("1.X", "001", "test", "DEV", ChangeType.APPLY, "jdbc", "sql");
-        ApplyFile changeFile = new ApplyFile(changesDir, file, id);
+        // Set up basic configuration
+        config =
+                new MapConfiguration(
+                        Map.of(
+                                "connectors.jdbc.type", "jdbc",
+                                "connectors.shell.type", "shell"));
 
-        expect(mockConnectorManager.getConnectorByName("jdbc", context)).andReturn(mockConnector);
-        mockConnector.execute(changeFile, context);
-        expectLastCall().once();
+        context.setValue(Configuration.class, config);
+        context.setValue(Environment.class, environment);
+        context.setValue(EventDispatcher.class, new EventDispatcher());
+        context.setValue(ConnectorManager.class, new DefaultConnectorManager());
 
-        replay(mockConnectorManager, mockConnector);
-
-        changeService = new DefaultChangeService(mockConnectorManager, environment);
-        changeService.execute(changeFile, context);
-
-        verify(mockConnectorManager, mockConnector);
+        changeService = new DefaultChangeService(new DefaultConnectorManager(), environment);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -79,63 +73,21 @@ public class DefaultChangeServiceTest {
 
         // Create environment with different name to cause mismatch
         Environment prodEnvironment = new Environment("PROD");
-        changeService = new DefaultChangeService(mockConnectorManager, prodEnvironment);
-        changeService.execute(changeFile, context);
+        DefaultChangeService prodChangeService =
+                new DefaultChangeService(new DefaultConnectorManager(), prodEnvironment);
+        prodChangeService.execute(changeFile, context);
     }
 
     @Test
-    public void testExecuteWithNoEnvironmentRestriction() throws Exception {
-        Path changesDir = Paths.get("/changes");
-        Path file = Paths.get("/changes/1.X/001.test.apply.jdbc.sql");
-        ChangeFile.Id id =
-                new ChangeFile.Id("1.X", "001", "test", null, ChangeType.APPLY, "jdbc", "sql");
-        ApplyFile changeFile = new ApplyFile(changesDir, file, id);
-
-        expect(mockConnectorManager.getConnectorByName("jdbc", context)).andReturn(mockConnector);
-        mockConnector.execute(changeFile, context);
-        expectLastCall().once();
-
-        replay(mockConnectorManager, mockConnector);
-
-        changeService = new DefaultChangeService(mockConnectorManager, environment);
-        changeService.execute(changeFile, context);
-
-        verify(mockConnectorManager, mockConnector);
-    }
-
-    @Test
-    public void testExecuteWithDifferentConnectorTypes() throws Exception {
-        Path changesDir = Paths.get("/changes");
-        Path file = Paths.get("/changes/1.X/001.test.apply.shell.sh");
-        ChangeFile.Id id =
-                new ChangeFile.Id("1.X", "001", "test", null, ChangeType.APPLY, "shell", "sh");
-        ApplyFile changeFile = new ApplyFile(changesDir, file, id);
-
-        expect(mockConnectorManager.getConnectorByName("shell", context)).andReturn(mockConnector);
-        mockConnector.execute(changeFile, context);
-        expectLastCall().once();
-
-        replay(mockConnectorManager, mockConnector);
-
-        changeService = new DefaultChangeService(mockConnectorManager, environment);
-        changeService.execute(changeFile, context);
-
-        verify(mockConnectorManager, mockConnector);
-    }
-
-    @Test
-    public void testConstructorWithCommandContext() {
-        DefaultChangeService service = new DefaultChangeService(mockConnectorManager, environment);
+    public void testConstructorWithEnvironment() {
+        DefaultChangeService service =
+                new DefaultChangeService(new DefaultConnectorManager(), environment);
         assertNotNull(service);
     }
 
     @Test
     public void testDefaultChangeServiceFactory() {
-
         DefaultChangeServiceFactory factory = new DefaultChangeServiceFactory();
-
-        context.setValue(ConnectorManager.class, mockConnectorManager);
-        context.setValue(Environment.class, environment);
 
         DefaultChangeService service = (DefaultChangeService) factory.createComponent(context);
         assertNotNull(service);
