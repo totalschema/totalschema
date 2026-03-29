@@ -35,7 +35,7 @@ public final class DefaultLockStateRepositoryFactory
     }
 
     @Override
-    public Class<LockStateRepository> getConstructedClass() {
+    public Class<LockStateRepository> getComponentType() {
         return LockStateRepository.class;
     }
 

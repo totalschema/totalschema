@@ -118,7 +118,7 @@ public final class ComponentContainer implements Closeable, Context {
 
     private boolean isAnyFactoryFoundThatCouldCreateClass(Class<?> clazz) {
         for (ComponentFactory<?> factory : factories.values()) {
-            if (clazz.isAssignableFrom(factory.getConstructedClass())) {
+            if (clazz.isAssignableFrom(factory.getComponentType())) {
                 return true;
             }
         }

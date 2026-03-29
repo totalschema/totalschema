@@ -40,7 +40,7 @@ public final class DefaultSqlDialectComponentFactory extends ComponentFactory<Sq
     }
 
     @Override
-    public Class<SqlDialect> getConstructedClass() {
+    public Class<SqlDialect> getComponentType() {
         return SqlDialect.class;
     }
 

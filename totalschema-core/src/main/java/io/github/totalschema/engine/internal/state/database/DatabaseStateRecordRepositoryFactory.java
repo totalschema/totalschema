@@ -18,7 +18,7 @@ public class DatabaseStateRecordRepositoryFactory extends ComponentFactory<State
     }
 
     @Override
-    public Class<StateRepository> getConstructedClass() {
+    public Class<StateRepository> getComponentType() {
         return StateRepository.class;
     }
 

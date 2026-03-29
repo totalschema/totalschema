@@ -48,7 +48,7 @@ public final class GroovyScriptExecutorComponentFactory extends ComponentFactory
     }
 
     @Override
-    public Class<ScriptExecutor> getConstructedClass() {
+    public Class<ScriptExecutor> getComponentType() {
         return ScriptExecutor.class;
     }
 

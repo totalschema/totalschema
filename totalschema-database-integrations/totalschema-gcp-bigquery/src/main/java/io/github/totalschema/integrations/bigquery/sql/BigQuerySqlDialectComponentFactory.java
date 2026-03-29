@@ -39,7 +39,7 @@ public final class BigQuerySqlDialectComponentFactory extends ComponentFactory<S
     }
 
     @Override
-    public Class<SqlDialect> getConstructedClass() {
+    public Class<SqlDialect> getComponentType() {
         return SqlDialect.class;
     }
 

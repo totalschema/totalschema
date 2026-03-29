@@ -34,7 +34,7 @@ public class DefaultLockServiceFactory extends LockingComponentFactory<LockServi
     }
 
     @Override
-    public Class<LockService> getConstructedClass() {
+    public Class<LockService> getComponentType() {
         return LockService.class;
     }
 

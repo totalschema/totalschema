@@ -20,7 +20,7 @@ public class JdbcDatabaseComponentFactory extends ComponentFactory<JdbcDatabase>
     }
 
     @Override
-    public Class<JdbcDatabase> getConstructedClass() {
+    public Class<JdbcDatabase> getComponentType() {
         return JdbcDatabase.class;
     }
 

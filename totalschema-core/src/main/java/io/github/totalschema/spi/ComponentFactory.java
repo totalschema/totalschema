@@ -16,7 +16,7 @@ import java.util.Map;
  * <p>Each factory is identified by:
  *
  * <ul>
- *   <li>The component type it creates ({@link #getConstructedClass()})
+ *   <li>The component type it creates ({@link #getComponentType()})
  *   <li>An optional qualifier for disambiguation ({@link #getQualifier()})
  * </ul>
  *
@@ -98,7 +98,7 @@ public abstract class ComponentFactory<T> {
      * @return The service interface or base class type used for component lookup (never {@code
      *     null})
      */
-    public abstract Class<T> getConstructedClass();
+    public abstract Class<T> getComponentType();
 
     /**
      * Determines whether this factory should be enabled based on the current container state.

@@ -38,7 +38,7 @@ public class DefaultStateServiceFactory extends ComponentFactory<StateService> {
     }
 
     @Override
-    public Class<StateService> getConstructedClass() {
+    public Class<StateService> getComponentType() {
         return StateService.class;
     }
 

@@ -15,7 +15,7 @@ public class CsvFileStateRecordRepositoryFactory extends ComponentFactory<StateR
     }
 
     @Override
-    public Class<StateRepository> getConstructedClass() {
+    public Class<StateRepository> getComponentType() {
         return StateRepository.class;
     }
 

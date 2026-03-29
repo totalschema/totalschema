@@ -33,7 +33,7 @@ public final class DefaultChangeServiceFactory extends ConditionalComponentFacto
     }
 
     @Override
-    public Class<ChangeService> getConstructedClass() {
+    public Class<ChangeService> getComponentType() {
         return ChangeService.class;
     }
 

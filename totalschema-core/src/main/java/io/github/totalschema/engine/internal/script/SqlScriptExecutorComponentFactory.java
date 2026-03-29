@@ -48,7 +48,7 @@ public final class SqlScriptExecutorComponentFactory extends ComponentFactory<Sc
     }
 
     @Override
-    public Class<ScriptExecutor> getConstructedClass() {
+    public Class<ScriptExecutor> getComponentType() {
         return ScriptExecutor.class;
     }
 

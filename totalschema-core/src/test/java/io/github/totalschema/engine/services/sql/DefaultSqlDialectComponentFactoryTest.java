@@ -30,7 +30,7 @@ public class DefaultSqlDialectComponentFactoryTest {
         DefaultSqlDialectComponentFactory factory = new DefaultSqlDialectComponentFactory();
 
         assertFalse(factory.isLazy(), "Factory should be eager (not lazy)");
-        assertEquals(factory.getConstructedClass(), SqlDialect.class);
+        assertEquals(factory.getComponentType(), SqlDialect.class);
         assertEquals(factory.getQualifier(), "default");
         assertNotNull(factory.getRequiredContextTypes());
         assertTrue(factory.getRequiredContextTypes().isEmpty());
