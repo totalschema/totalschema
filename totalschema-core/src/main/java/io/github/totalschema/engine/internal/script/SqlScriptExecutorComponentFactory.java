@@ -40,28 +40,15 @@ import java.util.Optional;
  */
 public final class SqlScriptExecutorComponentFactory extends ComponentFactory<ScriptExecutor> {
 
-    /**
-     * ArgumentHandler for SqlScriptExecutor creation arguments. Encapsulates argument
-     * specifications and provides type-safe accessors.
-     */
-    static class Arguments extends ArgumentHandler {
-        private static final ArgumentSpecification<String> NAME =
-                string("name").withConstraint(notBlank());
-        private static final ArgumentSpecification<Configuration> CONFIGURATION =
-                configuration("configuration");
+    private static final ArgumentSpecification<String> NAME =
+            string("name").withConstraint(notBlank());
 
-        public Arguments() {
-            super(NAME, CONFIGURATION);
-        }
+    private static final ArgumentSpecification<Configuration> CONFIGURATION =
+            configuration("configuration");
 
-        public String getName(List<Object> args) {
-            return getArgument(NAME, args);
-        }
-
-        public Configuration getConfiguration(List<Object> args) {
-            return getArgument(CONFIGURATION, args);
-        }
-    }
+    private static final ArgumentHandler ARGUMENTS =
+            ArgumentHandler.getInstance(
+                    SqlScriptExecutorComponentFactory.class, NAME, CONFIGURATION);
 
     @Override
     public boolean isLazy() {
@@ -85,16 +72,15 @@ public final class SqlScriptExecutorComponentFactory extends ComponentFactory<Sc
 
     @Override
     public List<ArgumentSpecification<?>> getArgumentSpecifications() {
-        return new Arguments().getSpecifications();
+        return ARGUMENTS.getSpecifications();
     }
 
     @Override
     public ScriptExecutor createComponent(Context context, List<Object> arguments) {
-        Arguments args = new Arguments();
-        args.validateStructure(arguments, getClass().getSimpleName());
+        ARGUMENTS.validateStructure(arguments);
 
-        String name = args.getName(arguments);
-        Configuration configuration = args.getConfiguration(arguments);
+        String name = ARGUMENTS.getArgument(NAME, arguments);
+        Configuration configuration = ARGUMENTS.getArgument(CONFIGURATION, arguments);
 
         // Get JdbcDatabase from IoC container - container manages lifecycle
         JdbcDatabase jdbcDatabase = context.get(JdbcDatabase.class, null, name, configuration);

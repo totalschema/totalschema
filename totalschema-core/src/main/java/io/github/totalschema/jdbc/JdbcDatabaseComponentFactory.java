@@ -12,32 +12,14 @@ import java.util.Optional;
 
 public class JdbcDatabaseComponentFactory extends ComponentFactory<JdbcDatabase> {
 
-    /**
-     * ArgumentHandler for JdbcDatabase creation arguments. Encapsulates argument specifications and
-     * provides type-safe accessors.
-     */
-    static class Arguments extends ArgumentHandler {
+    private static final ArgumentSpecification<String> NAME =
+            string("name").withConstraint(notBlank());
 
-        private static final ArgumentSpecification<String> NAME =
-                string("name").withConstraint(notBlank());
+    private static final ArgumentSpecification<Configuration> CONFIGURATION =
+            configuration("configuration");
 
-        private static final ArgumentSpecification<Configuration> CONFIGURATION =
-                configuration("configuration");
-
-        Arguments() {
-            super(NAME, CONFIGURATION);
-        }
-
-        String getName(List<Object> args) {
-            return getArgument(NAME, args);
-        }
-
-        Configuration getConfiguration(List<Object> args) {
-            return getArgument(CONFIGURATION, args);
-        }
-    }
-
-    private static final Arguments ARGUMENTS = new Arguments();
+    private static final ArgumentHandler ARGUMENTS =
+            ArgumentHandler.getInstance(JdbcDatabaseComponentFactory.class, NAME, CONFIGURATION);
 
     @Override
     public boolean isLazy() {
@@ -67,10 +49,10 @@ public class JdbcDatabaseComponentFactory extends ComponentFactory<JdbcDatabase>
     @Override
     public JdbcDatabase createComponent(Context context, List<Object> arguments) {
 
-        ARGUMENTS.validateStructure(arguments, getClass().getSimpleName());
+        ARGUMENTS.validateStructure(arguments);
 
-        String name = ARGUMENTS.getName(arguments);
-        Configuration configuration = ARGUMENTS.getConfiguration(arguments);
+        String name = ARGUMENTS.getArgument(NAME, arguments);
+        Configuration configuration = ARGUMENTS.getArgument(CONFIGURATION, arguments);
 
         return DefaultJdbcDatabase.newInstance(name, configuration);
     }

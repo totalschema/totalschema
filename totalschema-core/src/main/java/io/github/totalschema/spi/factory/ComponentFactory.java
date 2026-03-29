@@ -63,29 +63,16 @@ import java.util.Optional;
  *
  * <pre>{@code
  * public class ServerFactory extends ComponentFactory<Server> {
- *     // ArgumentHandler subclass encapsulates all argument specifications
- *     static class Arguments extends ArgumentHandler {
- *         private static final ArgumentSpecification<String> HOST = string("host", 1, 255);
- *         private static final ArgumentSpecification<Integer> PORT = integer("port", 1, 65535);
- *
- *         public Arguments() {
- *             super(HOST, PORT);
- *         }
- *
- *         public String getHost(List<Object> args) {
- *             return getArgument(HOST, args);
- *         }
- *
- *         public Integer getPort(List<Object> args) {
- *             return getArgument(PORT, args);
- *         }
- *     }
+ *     // Define argument specifications as static constants
+ *     private static final ArgumentSpecification<String> HOST = string("host", 1, 255);
+ *     private static final ArgumentSpecification<Integer> PORT = integer("port", 1, 65535);
+ *     private static final ArgumentHandler ARGUMENTS = ArgumentHandler.of(ServerFactory.class, HOST, PORT);
  *
  *     @Override
  *     public boolean isLazy() { return false; }
  *
- * @Override
- * public Class<Server> getComponentType() { return Server.class; }
+ *     @Override
+ *     public Class<Server> getComponentType() { return Server.class; }
  *
  *     @Override
  *     public Optional<String> getQualifier() { return Optional.empty(); }
@@ -95,16 +82,15 @@ import java.util.Optional;
  *
  *     @Override
  *     public List<ArgumentSpecification<?>> getArgumentSpecifications() {
- *         return new Arguments().getSpecifications();
+ *         return ARGUMENTS.getSpecifications();
  *     }
  *
  *     @Override
  *     public Server createComponent(Context context, List<Object> arguments) {
- *         Arguments args = new Arguments();
- *         args.validateStructure(arguments, getClass().getSimpleName());
+ *         ARGUMENTS.validateStructure(arguments);
  *
- *         String host = args.getHost(arguments);
- *         Integer port = args.getPort(arguments);
+ *         String host = ARGUMENTS.getArgument(HOST, arguments);
+ *         Integer port = ARGUMENTS.getArgument(PORT, arguments);
  *
  *         Configuration config = context.get(Configuration.class);
  *         return new DefaultServer(config, host, port);
@@ -261,10 +247,14 @@ public abstract class ComponentFactory<T> {
      * access:
      *
      * <pre>{@code
-     * ArgumentHandler handler = new ArgumentHandler(getArgumentSpecifications());
-     * handler.validateStructure(arguments, getClass().getSimpleName());
-     * String name = handler.getArgument(NAME_ARG, arguments);
-     * Integer port = handler.getArgument(PORT_ARG, arguments);
+     * private static final ArgumentSpecification<String> NAME = string("name");
+     * private static final ArgumentSpecification<Integer> PORT = integer("port");
+     * private static final ArgumentHandler ARGUMENTS = ArgumentHandler.of(getClass(), NAME, PORT);
+     *
+     * // In createComponent:
+     * ARGUMENTS.validateStructure(arguments);
+     * String name = ARGUMENTS.getArgument(NAME, arguments);
+     * Integer port = ARGUMENTS.getArgument(PORT, arguments);
      * }</pre>
      *
      * @param context The IoC container context for retrieving dependencies (never {@code null})

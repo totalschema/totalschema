@@ -40,30 +40,14 @@ import java.util.Optional;
  */
 public final class GroovyScriptExecutorComponentFactory extends ComponentFactory<ScriptExecutor> {
 
-    /**
-     * ArgumentHandler for GroovyScriptExecutor creation arguments. Encapsulates argument
-     * specifications and provides type-safe accessors.
-     */
-    static class Arguments extends ArgumentHandler {
-        private static final ArgumentSpecification<String> NAME =
-                string("name").withConstraint(notBlank());
-        private static final ArgumentSpecification<Configuration> CONFIGURATION =
-                configuration("configuration");
+    private static final ArgumentSpecification<String> NAME =
+            string("name").withConstraint(notBlank());
+    private static final ArgumentSpecification<Configuration> CONFIGURATION =
+            configuration("configuration");
 
-        public Arguments() {
-            super(NAME, CONFIGURATION);
-        }
-
-        public String getName(List<Object> args) {
-            return getArgument(NAME, args);
-        }
-
-        public Configuration getConfiguration(List<Object> args) {
-            return getArgument(CONFIGURATION, args);
-        }
-    }
-
-    private static final Arguments ARGUMENTS = new Arguments();
+    private static final ArgumentHandler ARGUMENTS =
+            ArgumentHandler.getInstance(
+                    GroovyScriptExecutorComponentFactory.class, NAME, CONFIGURATION);
 
     @Override
     public boolean isLazy() {
@@ -92,10 +76,10 @@ public final class GroovyScriptExecutorComponentFactory extends ComponentFactory
 
     @Override
     public ScriptExecutor createComponent(Context context, List<Object> arguments) {
-        ARGUMENTS.validateStructure(arguments, getClass().getSimpleName());
+        ARGUMENTS.validateStructure(arguments);
 
-        String name = ARGUMENTS.getName(arguments);
-        Configuration configuration = ARGUMENTS.getConfiguration(arguments);
+        String name = ARGUMENTS.getArgument(NAME, arguments);
+        Configuration configuration = ARGUMENTS.getArgument(CONFIGURATION, arguments);
 
         // Get JdbcDatabase from IoC container - container manages lifecycle
         JdbcDatabase jdbcDatabase = context.get(JdbcDatabase.class, null, name, configuration);

@@ -32,12 +32,12 @@ import java.util.Map;
  * private static final ArgumentSpecification<Integer> PORT = integer("port", 1, 65535);
  *
  * @Override
- * § * public MyComponent createComponent(Context context, List<Object> arguments) {
- *     // Create handler from specifications
- *     ArgumentHandler handler = new ArgumentHandler(getArgumentSpecifications());
+ * public MyComponent createComponent(Context context, List<Object> arguments) {
+ *     // Create handler from specifications (pass factory class for error reporting)
+ *     ArgumentHandler handler = new ArgumentHandler(getClass(), HOST, PORT);
  *
- *     // Validate structure
- *     handler.validateStructure(arguments, getClass().getSimpleName());
+ *     // Validate structure (no need to pass factory name)
+ *     handler.validateStructure(arguments);
  *
  *     // Retrieve arguments safely
  *     String host = handler.getArgument(HOST, arguments);
@@ -54,6 +54,71 @@ public class ArgumentHandler {
 
     private final List<ArgumentSpecification<?>> specifications;
     private final Map<ArgumentSpecification<?>, Integer> indexMap;
+    private final Class<?> factoryClass;
+
+    /**
+     * Creates a new argument handler for the given specifications.
+     *
+     * <p>This static factory method is the recommended way to create ArgumentHandler instances. It
+     * enforces that at least one specification must be provided at compile-time, eliminating the
+     * possibility of creating a handler with no specifications.
+     *
+     * <p>The handler builds an internal index map for O(1) argument lookup and stores the factory
+     * class for error reporting.
+     *
+     * <p><b>Typical Usage Pattern:</b>
+     *
+     * <pre>{@code
+     * public class MyFactory extends ComponentFactory<MyComponent> {
+     *
+     *     // Define argument specifications as static constants
+     *     private static final ArgumentSpecification<String> NAME = string("name").withConstraint(notBlank());
+     *     private static final ArgumentSpecification<Integer> PORT = integer("port", 1, 65535);
+     *
+     *     // Create a single shared ArgumentHandler instance
+     *     private static final ArgumentHandler ARGUMENTS = ArgumentHandler.getInstance(MyFactory.class, NAME, PORT);
+     *
+     *     @Override
+     *     public List<ArgumentSpecification<?>> getArgumentSpecifications() {
+     *         return ARGUMENTS.getSpecifications();
+     *     }
+     *
+     *     @Override
+     *     public MyComponent createComponent(Context context, List<Object> arguments) {
+     *         // Validate structure
+     *         ARGUMENTS.validateStructure(arguments);
+     *
+     *         // Retrieve arguments using static constants
+     *         String name = ARGUMENTS.getArgument(NAME, arguments);
+     *         Integer port = ARGUMENTS.getArgument(PORT, arguments);
+     *
+     *         return new MyComponentImpl(name, port);
+     *     }
+     * }
+     * }</pre>
+     *
+     * <p><b>Key Benefits:</b>
+     *
+     * <ul>
+     *   <li>No need for nested subclasses - just use static constants
+     *   <li>Factory class is captured for error reporting
+     *   <li>Single ArgumentHandler instance shared across all component creations
+     *   <li>Type-safe argument retrieval using the specification constants
+     * </ul>
+     *
+     * @param factoryClass The factory class that will use this handler (used in validation error
+     *     messages). Must extend ComponentFactory.
+     * @param first The first (required) argument specification
+     * @param rest Additional argument specifications in the order they appear in the arguments list
+     * @return A new ArgumentHandler instance configured for the specified arguments
+     */
+    public static ArgumentHandler getInstance(
+            Class<? extends ComponentFactory<?>> factoryClass,
+            ArgumentSpecification<?> first,
+            ArgumentSpecification<?>... rest) {
+
+        return new ArgumentHandler(factoryClass, first, rest);
+    }
 
     /**
      * Creates a new argument handler for the given specifications.
@@ -63,10 +128,15 @@ public class ArgumentHandler {
      * <p>This constructor enforces that at least one specification must be provided at
      * compile-time, eliminating the possibility of creating a handler with no specifications.
      *
+     * @param factoryClass The factory class for error reporting (used in validation messages)
      * @param first The first (required) argument specification
      * @param rest Additional argument specifications in the order they appear in the arguments list
      */
-    public ArgumentHandler(ArgumentSpecification<?> first, ArgumentSpecification<?>... rest) {
+    private ArgumentHandler(
+            Class<?> factoryClass,
+            ArgumentSpecification<?> first,
+            ArgumentSpecification<?>... rest) {
+        this.factoryClass = factoryClass;
         this.specifications = List.copyOf(buildSpecificationsList(first, rest));
         this.indexMap = buildIndexMap(this.specifications);
     }
@@ -122,11 +192,10 @@ public class ArgumentHandler {
      * #getArgument(ArgumentSpecification, List)}.
      *
      * @param arguments The arguments list to validate
-     * @param factoryName The name of the factory (for error messages)
      * @throws IllegalArgumentException if validation fails
      */
-    public void validateStructure(List<Object> arguments, String factoryName) {
-        ArgumentValidator.validate(arguments, specifications, factoryName);
+    public void validateStructure(List<Object> arguments) {
+        ArgumentValidator.validate(arguments, specifications, factoryClass.getSimpleName());
     }
 
     /**
