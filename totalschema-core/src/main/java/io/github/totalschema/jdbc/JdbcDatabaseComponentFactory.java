@@ -10,7 +10,8 @@ import java.util.List;
 
 public class JdbcDatabaseComponentFactory extends ComponentFactory<JdbcDatabase> {
 
-    private static final ArgumentSpecification<String> NAME_ARGUMENT = string("name");
+    private static final ArgumentSpecification<String> NAME_ARGUMENT =
+            string("name").withConstraint(notBlank());
     private static final ArgumentSpecification<Configuration> CONFIGURATION_ARGUMENT =
             configuration("configuration");
 
