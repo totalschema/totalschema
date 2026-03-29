@@ -1,8 +1,10 @@
 package io.github.totalschema.spi;
 
-import static io.github.totalschema.spi.ArgumentSpecification.*;
+import static io.github.totalschema.spi.factory.ArgumentSpecification.*;
 import static org.testng.Assert.*;
 
+import io.github.totalschema.spi.factory.ArgumentHandler;
+import io.github.totalschema.spi.factory.ArgumentSpecification;
 import java.util.List;
 import org.testng.annotations.Test;
 
@@ -110,10 +112,5 @@ public class ArgumentHandlerTest {
         assertEquals(handler.getSpecifications().size(), 2);
         assertEquals(handler.getSpecifications().get(0), nameSpec);
         assertEquals(handler.getSpecifications().get(1), ageSpec);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testNullSpecifications() {
-        new ArgumentHandler((ArgumentSpecification<?>[]) null);
     }
 }

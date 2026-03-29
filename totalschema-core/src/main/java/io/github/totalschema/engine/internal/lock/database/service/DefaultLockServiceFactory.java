@@ -23,7 +23,7 @@ import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.lock.database.LockingComponentFactory;
 import io.github.totalschema.engine.internal.lock.database.LockingConstants;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
-import io.github.totalschema.spi.ArgumentSpecification;
+import io.github.totalschema.spi.factory.ArgumentSpecification;
 import io.github.totalschema.spi.lock.LockService;
 import java.util.List;
 import java.util.Optional;

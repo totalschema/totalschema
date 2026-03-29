@@ -21,9 +21,9 @@ package io.github.totalschema.engine.internal.change;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.spi.ArgumentSpecification;
-import io.github.totalschema.spi.ConditionalComponentFactory;
 import io.github.totalschema.spi.change.ChangeService;
+import io.github.totalschema.spi.factory.ArgumentSpecification;
+import io.github.totalschema.spi.factory.ConditionalComponentFactory;
 import java.util.List;
 import java.util.Optional;
 

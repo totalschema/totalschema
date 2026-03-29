@@ -23,7 +23,7 @@ import static io.github.totalschema.engine.internal.lock.database.LockingConstan
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.core.container.FactorySpecification;
 import io.github.totalschema.engine.core.container.ObjectSpecification;
-import io.github.totalschema.spi.ComponentFactory;
+import io.github.totalschema.spi.factory.ComponentFactory;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

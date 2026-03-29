@@ -19,8 +19,8 @@
 package io.github.totalschema.integrations.bigquery.sql;
 
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.spi.ArgumentSpecification;
-import io.github.totalschema.spi.ComponentFactory;
+import io.github.totalschema.spi.factory.ArgumentSpecification;
+import io.github.totalschema.spi.factory.ComponentFactory;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.List;
 import java.util.Optional;

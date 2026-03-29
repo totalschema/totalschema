@@ -1,8 +1,10 @@
 package io.github.totalschema.spi;
 
-import static io.github.totalschema.spi.ArgumentSpecification.*;
+import static io.github.totalschema.spi.factory.ArgumentSpecification.*;
 import static org.testng.Assert.*;
 
+import io.github.totalschema.spi.factory.ArgumentSpecification;
+import io.github.totalschema.spi.factory.Constraint;
 import org.testng.annotations.Test;
 
 /** Tests for ArgumentSpecification constraint validation functionality. */

@@ -18,14 +18,14 @@
 
 package io.github.totalschema.engine.internal.script;
 
-import static io.github.totalschema.spi.ArgumentSpecification.*;
+import static io.github.totalschema.spi.factory.ArgumentSpecification.*;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.jdbc.JdbcDatabase;
-import io.github.totalschema.spi.ArgumentHandler;
-import io.github.totalschema.spi.ArgumentSpecification;
-import io.github.totalschema.spi.ComponentFactory;
+import io.github.totalschema.spi.factory.ArgumentHandler;
+import io.github.totalschema.spi.factory.ArgumentSpecification;
+import io.github.totalschema.spi.factory.ComponentFactory;
 import io.github.totalschema.spi.script.ScriptExecutor;
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +51,7 @@ public final class SqlScriptExecutorComponentFactory extends ComponentFactory<Sc
                 configuration("configuration");
 
         public Arguments() {
-            super(List.of(NAME, CONFIGURATION));
+            super(NAME, CONFIGURATION);
         }
 
         public String getName(List<Object> args) {

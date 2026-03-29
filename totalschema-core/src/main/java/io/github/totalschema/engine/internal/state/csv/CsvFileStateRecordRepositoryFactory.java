@@ -2,8 +2,8 @@ package io.github.totalschema.engine.internal.state.csv;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.spi.ArgumentSpecification;
-import io.github.totalschema.spi.ComponentFactory;
+import io.github.totalschema.spi.factory.ArgumentSpecification;
+import io.github.totalschema.spi.factory.ComponentFactory;
 import io.github.totalschema.spi.state.StateConstants;
 import io.github.totalschema.spi.state.StateRepository;
 import java.util.List;

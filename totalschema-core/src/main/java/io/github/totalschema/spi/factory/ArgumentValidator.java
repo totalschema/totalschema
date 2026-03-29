@@ -1,4 +1,4 @@
-package io.github.totalschema.spi;
+package io.github.totalschema.spi.factory;
 
 import java.util.List;
 

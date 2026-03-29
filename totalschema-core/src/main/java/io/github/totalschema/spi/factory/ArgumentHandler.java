@@ -1,6 +1,7 @@
-package io.github.totalschema.spi;
+package io.github.totalschema.spi.factory;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -59,34 +60,35 @@ public class ArgumentHandler {
      *
      * <p>The handler builds an internal index map for O(1) argument lookup.
      *
-     * @param specifications The argument specifications in the order they appear in the arguments
-     *     array (never {@code null}, must not be empty)
-     * @throws IllegalArgumentException if specifications is null or empty
+     * <p>This constructor enforces that at least one specification must be provided at
+     * compile-time, eliminating the possibility of creating a handler with no specifications.
+     *
+     * @param first The first (required) argument specification
+     * @param rest Additional argument specifications in the order they appear in the arguments list
      */
-    public ArgumentHandler(ArgumentSpecification<?>... specifications) {
-        if (specifications == null || specifications.length == 0) {
-            throw new IllegalArgumentException("specifications cannot be null or empty");
-        }
-        this.specifications = List.of(specifications);
+    public ArgumentHandler(ArgumentSpecification<?> first, ArgumentSpecification<?>... rest) {
+        this.specifications = List.copyOf(buildSpecificationsList(first, rest));
         this.indexMap = buildIndexMap(this.specifications);
     }
 
     /**
-     * Creates a new argument handler for the given specifications.
+     * Combines the first specification with the rest into a single immutable list.
      *
-     * <p>This constructor accepts a List and is provided for compatibility with dynamic
-     * specification building scenarios.
-     *
-     * @param specifications The list of argument specifications in the order they appear in the
-     *     arguments array (never {@code null}, must not be empty)
-     * @throws IllegalArgumentException if specifications is null or empty
+     * @param first The first specification
+     * @param rest The remaining specifications
+     * @return An immutable list containing all specifications
      */
-    public ArgumentHandler(List<ArgumentSpecification<?>> specifications) {
-        if (specifications == null || specifications.isEmpty()) {
-            throw new IllegalArgumentException("specifications cannot be null or empty");
+    private static List<ArgumentSpecification<?>> buildSpecificationsList(
+            ArgumentSpecification<?> first, ArgumentSpecification<?>... rest) {
+        if (rest == null || rest.length == 0) {
+            return List.of(first);
         }
-        this.specifications = List.copyOf(specifications);
-        this.indexMap = buildIndexMap(this.specifications);
+
+        LinkedList<ArgumentSpecification<?>> all = new LinkedList<>();
+        all.add(first);
+        all.addAll(List.of(rest));
+
+        return all;
     }
 
     /**

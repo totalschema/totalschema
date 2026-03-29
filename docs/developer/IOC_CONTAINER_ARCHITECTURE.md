@@ -101,7 +101,7 @@ public class JdbcDatabaseComponentFactory extends ComponentFactory<JdbcDatabase>
 
 ### 3. ServiceLoader Registration
 
-**Location:** `totalschema-core/src/main/resources/META-INF/services/io.github.totalschema.spi.ComponentFactory`
+**Location:** `totalschema-core/src/main/resources/META-INF/services/io.github.totalschema.spi.factory.ComponentFactory`
 
 Factories are discovered using Java's built-in `ServiceLoader` mechanism:
 
@@ -538,7 +538,7 @@ public class MyServiceFactory extends ComponentFactory<MyService> {
 
 4. **Register via ServiceLoader:**
 ```
-# src/main/resources/META-INF/services/io.github.totalschema.spi.ComponentFactory
+# src/main/resources/META-INF/services/io.github.totalschema.spi.factory.ComponentFactory
 com.mycompany.MyServiceFactory
 ```
 
@@ -548,12 +548,12 @@ External modules can provide implementations without modifying core:
 
 ```
 totalschema-core/
-  META-INF/services/io.github.totalschema.spi.ComponentFactory
+  META-INF/services/io.github.totalschema.spi.factory.ComponentFactory
     - DefaultStateServiceFactory
     - CsvFileStateRecordRepositoryFactory
 
 totalschema-database-integrations/totalschema-gcp-bigquery/
-  META-INF/services/io.github.totalschema.spi.ComponentFactory
+  META-INF/services/io.github.totalschema.spi.factory.ComponentFactory
     - BigQueryRepositoryFactory
     - BigQueryClientFactory
 ```
@@ -687,7 +687,7 @@ Potential improvements to the container (not yet implemented):
 - **ComponentContainer:** `totalschema-core/src/main/java/io/github/totalschema/engine/core/container/ComponentContainer.java`
 - **ComponentFactory:** `totalschema-core/src/main/java/io/github/totalschema/spi/ComponentFactory.java`
 - **ComponentContainerBuilder:** `totalschema-core/src/main/java/io/github/totalschema/engine/core/container/ComponentContainerBuilder.java`
-- **ServiceLoader Registration:** `totalschema-core/src/main/resources/META-INF/services/io.github.totalschema.spi.ComponentFactory`
+- **ServiceLoader Registration:** `totalschema-core/src/main/resources/META-INF/services/io.github.totalschema.spi.factory.ComponentFactory`
 - **Example Factory:** `totalschema-core/src/main/java/io/github/totalschema/jdbc/JdbcDatabaseComponentFactory.java`
 
 ## Related Documentation

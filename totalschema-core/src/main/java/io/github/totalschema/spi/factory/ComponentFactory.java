@@ -1,4 +1,4 @@
-package io.github.totalschema.spi;
+package io.github.totalschema.spi.factory;
 
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.container.FactorySpecification;

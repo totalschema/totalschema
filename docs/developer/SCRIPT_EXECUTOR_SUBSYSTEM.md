@@ -230,14 +230,15 @@ public final class PythonScriptExecutor implements ScriptExecutor {
 ```java
 package com.example.totalschema.python;
 
-import static io.github.totalschema.spi.ArgumentSpecification.*;
+import static io.github.totalschema.spi.factory.ArgumentSpecification.*;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.jdbc.JdbcDatabase;
-import io.github.totalschema.spi.ArgumentSpecification;
-import io.github.totalschema.spi.ComponentFactory;
+import io.github.totalschema.spi.factory.ArgumentSpecification;
+import io.github.totalschema.spi.factory.ComponentFactory;
 import io.github.totalschema.spi.script.ScriptExecutor;
+
 import java.util.List;
 
 /**
@@ -301,7 +302,7 @@ public final class PythonScriptExecutorFactory extends ComponentFactory<ScriptEx
 
 #### Step 3: Register via ServiceLoader
 
-Create file: `src/main/resources/META-INF/services/io.github.totalschema.spi.ComponentFactory`
+Create file: `src/main/resources/META-INF/services/io.github.totalschema.spi.factory.ComponentFactory`
 
 ```
 com.example.totalschema.python.PythonScriptExecutorFactory
@@ -348,7 +349,7 @@ totalschema-python-extension/
 │   │   └── resources/
 │   │       └── META-INF/
 │   │           └── services/
-│   │               └── io.github.totalschema.spi.ComponentFactory
+│   │               └── io.github.totalschema.spi.factory.ComponentFactory
 │   └── test/
 │       └── java/
 │           └── com/example/totalschema/python/
@@ -679,7 +680,7 @@ IllegalStateException: No component factory found for: ScriptExecutor with quali
 ```
 
 **Solution:**
-- Verify factory is in `META-INF/services/io.github.totalschema.spi.ComponentFactory`
+- Verify factory is in `META-INF/services/io.github.totalschema.spi.factory.ComponentFactory`
 - Check qualifier matches file extension (lowercase)
 - Ensure extension module is on classpath
 
@@ -750,7 +751,7 @@ The Script Executor subsystem provides a clean, extensible way to add support fo
 
 1. **Implement** `ScriptExecutor` interface
 2. **Extend** `ComponentFactory<ScriptExecutor>` with qualifier
-3. **Register** via `META-INF/services/io.github.totalschema.spi.ComponentFactory`
+3. **Register** via `META-INF/services/io.github.totalschema.spi.factory.ComponentFactory`
 4. **Deploy** as extension module or user_libs JAR
 
 The IoC container handles discovery, lifecycle, and dependency injection automatically.

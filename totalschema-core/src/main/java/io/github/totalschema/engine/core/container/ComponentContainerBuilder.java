@@ -18,8 +18,8 @@
 
 package io.github.totalschema.engine.core.container;
 
-import io.github.totalschema.spi.ArgumentSpecification;
-import io.github.totalschema.spi.ComponentFactory;
+import io.github.totalschema.spi.factory.ArgumentSpecification;
+import io.github.totalschema.spi.factory.ComponentFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;

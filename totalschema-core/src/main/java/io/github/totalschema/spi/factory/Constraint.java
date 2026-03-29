@@ -1,4 +1,4 @@
-package io.github.totalschema.spi;
+package io.github.totalschema.spi.factory;
 
 /**
  * A validation constraint that can be applied to factory arguments.

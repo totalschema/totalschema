@@ -1,12 +1,12 @@
 package io.github.totalschema.jdbc;
 
-import static io.github.totalschema.spi.ArgumentSpecification.*;
+import static io.github.totalschema.spi.factory.ArgumentSpecification.*;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.spi.ArgumentHandler;
-import io.github.totalschema.spi.ArgumentSpecification;
-import io.github.totalschema.spi.ComponentFactory;
+import io.github.totalschema.spi.factory.ArgumentHandler;
+import io.github.totalschema.spi.factory.ArgumentSpecification;
+import io.github.totalschema.spi.factory.ComponentFactory;
 import java.util.List;
 import java.util.Optional;
 

@@ -1,6 +1,6 @@
 package io.github.totalschema.engine.core.container;
 
-import io.github.totalschema.spi.ComponentFactory;
+import io.github.totalschema.spi.factory.ComponentFactory;
 import java.util.Objects;
 
 public final class FactorySpecification {
