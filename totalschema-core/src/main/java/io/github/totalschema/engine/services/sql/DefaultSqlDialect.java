@@ -23,12 +23,12 @@ import io.github.totalschema.spi.sql.SqlDialect;
 public class DefaultSqlDialect implements SqlDialect {
 
     @Override
-    public String variableCharacterColumnExpression(int length) {
+    public String varchar(int length) {
         return String.format("VARCHAR(%s)", length);
     }
 
     @Override
-    public String timestampColumnExpression() {
+    public String timestamp() {
         return "TIMESTAMP";
     }
 

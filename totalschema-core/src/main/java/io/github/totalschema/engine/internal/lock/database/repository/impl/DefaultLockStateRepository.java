@@ -21,6 +21,7 @@ package io.github.totalschema.engine.internal.lock.database.repository.impl;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.internal.common.repository.AbstractJdbcTableRepository;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
+import io.github.totalschema.engine.services.sql.CreateTableBuilder;
 import io.github.totalschema.jdbc.*;
 import io.github.totalschema.model.LockRecord;
 import io.github.totalschema.spi.sql.SqlDialect;
@@ -48,11 +49,18 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
         @Override
         public String getDefaultCreateSql(
                 Configuration configuration, SqlDialect sqlDialect, String tableNameExpression) {
-            return String.format(
-                    configuration
-                            .getString("table.sql.create")
-                            .orElse(DefaultValues.CREATE_TABLE_SQL),
-                    tableNameExpression);
+            // Check if user provided custom SQL
+            if (configuration.getString("table.sql.create").isPresent()) {
+                return String.format(
+                        configuration.getString("table.sql.create").get(), tableNameExpression);
+            }
+
+            // Use builder for default SQL generation
+            return CreateTableBuilder.create(sqlDialect, tableNameExpression, configuration)
+                    .column("lock_id", dialect -> dialect.varchar(255))
+                    .column("lock_expiration", SqlDialect::timestamp)
+                    .column("locked_by", dialect -> dialect.varchar(255))
+                    .build();
         }
     }
 

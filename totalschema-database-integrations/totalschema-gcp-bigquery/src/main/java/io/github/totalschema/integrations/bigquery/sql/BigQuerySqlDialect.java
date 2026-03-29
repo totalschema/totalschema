@@ -25,7 +25,7 @@ final class BigQuerySqlDialect extends DefaultSqlDialect {
     static final BigQuerySqlDialect INSTANCE = new BigQuerySqlDialect();
 
     @Override
-    public String variableCharacterColumnExpression(int length) {
+    public String varchar(int length) {
         return "STRING";
     }
 

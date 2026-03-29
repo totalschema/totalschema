@@ -21,6 +21,7 @@ package io.github.totalschema.engine.internal.state.database;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.engine.internal.common.repository.AbstractJdbcTableRepository;
+import io.github.totalschema.engine.services.sql.CreateTableBuilder;
 import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.jdbc.Parameter;
 import io.github.totalschema.jdbc.TypeConversions;
@@ -55,82 +56,23 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
         @Override
         public String getDefaultCreateSql(
                 Configuration configuration, SqlDialect sqlDialect, String tableNameExpression) {
-            var createSqlBuilder =
-                    new StringBuilder("CREATE TABLE ")
-                            .append(tableNameExpression)
-                            .append(" ")
-                            .append("(");
-
-            createSqlBuilder
-                    .append("change_file_id ")
-                    .append(
-                            getColumnType(
-                                    configuration,
-                                    "change_file_id",
-                                    getChangeFieldIdColumnType(sqlDialect)))
-                    .append(", ");
-
-            createSqlBuilder
-                    .append("file_hash ")
-                    .append(
-                            getColumnType(
-                                    configuration, "file_hash", getFileHashColumnType(sqlDialect)))
-                    .append(", ");
-
-            createSqlBuilder
-                    .append("apply_timestamp ")
-                    .append(
-                            getColumnType(
-                                    configuration,
-                                    "apply_timestamp",
-                                    getApplyTimestampColumnType(sqlDialect)))
-                    .append(", ");
-
-            createSqlBuilder
-                    .append("applied_by ")
-                    .append(
-                            getColumnType(
-                                    configuration,
-                                    "applied_by",
-                                    getAppliedByColumnType(sqlDialect)));
-
-            if (!configuration.getBoolean("table.primaryKeyClause.omit").orElse(false)) {
-                createSqlBuilder
-                        .append(", ")
-                        .append(
-                                configuration
-                                        .getString("table.primaryKeyClause.definition")
-                                        .orElse("PRIMARY KEY(change_file_id)"));
-            }
-
-            createSqlBuilder.append(")");
-
-            return createSqlBuilder.toString();
-        }
-
-        private String getColumnType(
-                Configuration configuration, String columnName, String defaultType) {
-            return configuration
-                    .getString("table.columns." + columnName + ".type")
-                    .orElse(defaultType);
-        }
-
-        private String getChangeFieldIdColumnType(SqlDialect sqlDialect) {
-            return sqlDialect.variableCharacterColumnExpression(changeFileNameMaxLength);
-        }
-
-        private String getFileHashColumnType(SqlDialect sqlDialect) {
-            return sqlDialect.variableCharacterColumnExpression(
-                    JdbcDatabaseStateRecordRepositoryDefaultValues.HASH_COLUMN_LENGTH);
-        }
-
-        private String getApplyTimestampColumnType(SqlDialect sqlDialect) {
-            return sqlDialect.timestampColumnExpression();
-        }
-
-        private String getAppliedByColumnType(SqlDialect sqlDialect) {
-            return sqlDialect.variableCharacterColumnExpression(
-                    JdbcDatabaseStateRecordRepositoryDefaultValues.APPLIED_BY_COLUMN_LENGTH);
+            return CreateTableBuilder.create(sqlDialect, tableNameExpression, configuration)
+                    .column("change_file_id", dialect -> dialect.varchar(changeFileNameMaxLength))
+                    .column(
+                            "file_hash",
+                            d ->
+                                    d.varchar(
+                                            JdbcDatabaseStateRecordRepositoryDefaultValues
+                                                    .HASH_COLUMN_LENGTH))
+                    .column("apply_timestamp", SqlDialect::timestamp)
+                    .column(
+                            "applied_by",
+                            dialect ->
+                                    dialect.varchar(
+                                            JdbcDatabaseStateRecordRepositoryDefaultValues
+                                                    .APPLIED_BY_COLUMN_LENGTH))
+                    .primaryKey("change_file_id")
+                    .build();
         }
     }
 

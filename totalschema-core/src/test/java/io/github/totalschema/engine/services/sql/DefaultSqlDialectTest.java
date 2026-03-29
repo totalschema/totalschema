@@ -34,31 +34,31 @@ public class DefaultSqlDialectTest {
 
     @Test
     public void testVariableCharacterColumnExpressionWithLength50() {
-        String result = dialect.variableCharacterColumnExpression(50);
+        String result = dialect.varchar(50);
         assertEquals(result, "VARCHAR(50)");
     }
 
     @Test
     public void testVariableCharacterColumnExpressionWithLength255() {
-        String result = dialect.variableCharacterColumnExpression(255);
+        String result = dialect.varchar(255);
         assertEquals(result, "VARCHAR(255)");
     }
 
     @Test
     public void testVariableCharacterColumnExpressionWithLength1() {
-        String result = dialect.variableCharacterColumnExpression(1);
+        String result = dialect.varchar(1);
         assertEquals(result, "VARCHAR(1)");
     }
 
     @Test
     public void testVariableCharacterColumnExpressionWithLargeLength() {
-        String result = dialect.variableCharacterColumnExpression(4000);
+        String result = dialect.varchar(4000);
         assertEquals(result, "VARCHAR(4000)");
     }
 
     @Test
     public void testTimestampColumnExpression() {
-        String result = dialect.timestampColumnExpression();
+        String result = dialect.timestamp();
         assertEquals(result, "TIMESTAMP");
     }
 }

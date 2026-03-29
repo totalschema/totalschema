@@ -18,8 +18,28 @@
 
 package io.github.totalschema.spi.sql;
 
-public interface SqlDialect {
-    String variableCharacterColumnExpression(int length);
+import io.github.totalschema.engine.services.sql.CreateTableBuilder;
 
-    String timestampColumnExpression();
+/**
+ * SQL dialect interface for database-specific SQL syntax. Provides methods for generating
+ * database-specific column type definitions.
+ *
+ * <p>This interface is focused solely on SQL type mappings and does not handle SQL statement
+ * construction. For building CREATE TABLE statements, use {@link CreateTableBuilder}.
+ */
+public interface SqlDialect {
+    /**
+     * Returns the VARCHAR column type definition for this dialect.
+     *
+     * @param length the maximum length of the varchar column
+     * @return the VARCHAR type definition (e.g., "VARCHAR(255)")
+     */
+    String varchar(int length);
+
+    /**
+     * Returns the TIMESTAMP column type definition for this dialect.
+     *
+     * @return the TIMESTAMP type definition (e.g., "TIMESTAMP")
+     */
+    String timestamp();
 }
