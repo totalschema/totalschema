@@ -2,7 +2,11 @@
 
 ## Project Overview
 
-TotalSchema is a **multi-connector deployment orchestration tool** for data engineering, managing deployments across databases, SSH servers, and infrastructure—not just a database migration tool. Key insight: **connectors** (not tables) are the unit of deployment.
+TotalSchema is a **multi-connector deployment orchestration tool** for data engineering, managing deployments across databases, SSH servers, and infrastructure—not just a database migration tool. 
+Key insight: **connectors** allow deployments to a wide variety of asset, not just databases.
+Unlike other toolkits, TotalSchema does not force the notion of version: the user can opt for 
+selecting an arbitrary subset of changes to deploy via wildcards.
+
 
 ## Architecture
 
