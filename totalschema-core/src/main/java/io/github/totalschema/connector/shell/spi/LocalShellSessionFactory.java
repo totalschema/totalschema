@@ -16,15 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.shell.direct.local.spi;
+package io.github.totalschema.connector.shell.spi;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.internal.shell.direct.local.impl.DefaultShellScriptSession;
+import io.github.totalschema.connector.shell.impl.DefaultLocalShellSessionFactory;
+import io.github.totalschema.spi.ServiceLoaderFactory;
 
-public class DefaultLocalShellSessionFactory implements LocalShellSessionFactory {
+public interface LocalShellSessionFactory {
 
-    @Override
-    public ShellScriptSession getLocalShellSession(String name, Configuration configuration) {
-        return new DefaultShellScriptSession(name, configuration);
+    static LocalShellSessionFactory getInstance() {
+        return ServiceLoaderFactory.getSingleService(LocalShellSessionFactory.class)
+                .orElseGet(DefaultLocalShellSessionFactory::new);
     }
+
+    ShellScriptSession getLocalShellSession(String name, Configuration configuration);
 }

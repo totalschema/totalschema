@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.shell.direct.local.impl;
+package io.github.totalschema.connector.shell.impl;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.connector.shell.spi.ShellScriptSession;
 import io.github.totalschema.engine.internal.shell.ExternalProcessTerminalSession;
-import io.github.totalschema.engine.internal.shell.direct.local.spi.ShellScriptSession;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;

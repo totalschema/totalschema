@@ -20,8 +20,8 @@ package io.github.totalschema.connector.shell;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.AbstractTerminalConnector;
+import io.github.totalschema.connector.shell.spi.LocalShellSessionFactory;
 import io.github.totalschema.engine.core.command.api.CommandContext;
-import io.github.totalschema.engine.internal.shell.direct.local.spi.LocalShellSessionFactory;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;

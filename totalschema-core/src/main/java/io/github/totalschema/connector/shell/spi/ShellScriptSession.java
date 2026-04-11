@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.shell.direct.local.spi;
+package io.github.totalschema.connector.shell.spi;
 
 import io.github.totalschema.engine.internal.shell.direct.TerminalSession;
 import java.util.List;

@@ -100,11 +100,11 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
     }
 
     protected void acceptStandardOut(String line) {
-        System.out.format("[SHELL:O] %s%n", line);
+        System.out.format("[StdOut] %s%n", line);
     }
 
     protected void acceptStandardError(String line) {
-        System.err.format("[SHELL:E] %s%n", line);
+        System.err.format("[StdErr] %s%n", line);
     }
 
     @Override

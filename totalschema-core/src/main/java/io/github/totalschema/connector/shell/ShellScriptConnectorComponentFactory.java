@@ -31,7 +31,7 @@ import java.util.Optional;
  *
  * <p>Usage: {@code context.get(Connector.class, "shell", connectorName, configuration)}
  */
-public final class ShellScriptConnectorFactory extends AbstractConnectorComponentFactory {
+public final class ShellScriptConnectorComponentFactory extends AbstractConnectorComponentFactory {
 
     @Override
     public Optional<String> getQualifier() {
