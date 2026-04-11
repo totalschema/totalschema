@@ -46,7 +46,6 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
             return process.getInputStream();
         }
 
-
         public int waitFor() throws InterruptedException {
             return process.waitFor();
         }
@@ -55,14 +54,15 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
     @Override
     public void execute(List<String> command) {
 
-        log.info("Executing command: {}", command);
+        List<String> actualCommand = buildActualCommand(command);
 
-        try (AutoCloseableProcess process = new AutoCloseableProcess(startProcess(command))) {
+        log.info("Executing command: {}", actualCommand);
+
+        try (AutoCloseableProcess process = new AutoCloseableProcess(startProcess(actualCommand))) {
 
             // stderr is merged into stdout by startProcess(); a single reader thread is
             // sufficient and preserves the exact chronological order of all process output.
-            Future<?> outReader =
-                    submitReaderTask(process.getInputStream(), this::acceptOutput);
+            Future<?> outReader = submitReaderTask(process.getInputStream(), this::acceptOutput);
 
             outReader.get();
 
@@ -88,21 +88,15 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
     /**
      * Starts the OS process for the given command.
      *
-     * <p>This method is {@code final} to guarantee that {@link
-     * ProcessBuilder#redirectErrorStream(boolean) redirectErrorStream(true)} is always set.
-     * Merging stderr into stdout at the OS level is the only reliable way to preserve the
-     * chronological ordering of all output: two independent reader threads draining separate pipes
-     * would race each other and cannot guarantee order. Subclasses that need to transform the
-     * command tokens should override {@link #buildCommand(List)} instead.
+     * @param command the command to execute, as a list of tokens (e.g. {@code ["sh",
+     *     "/opt/changes/0001.setup.sh"]})
      */
-    protected final Process startProcess(List<String> command) throws IOException {
+    private Process startProcess(List<String> command) throws IOException {
 
         ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream(true);
 
-        List<String> actualCommand = buildCommand(command);
-
-        builder.command(actualCommand);
+        builder.command(command);
 
         return builder.start();
     }
@@ -111,10 +105,10 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
      * Transforms the logical command into the actual OS-level token list passed to {@link
      * ProcessBuilder}.
      *
-     * <p>The default implementation returns the command unchanged. Subclasses may override this
-     * to, for example, prepend an interpreter prefix.
+     * <p>The default implementation returns the command unchanged. Subclasses may override this to,
+     * for example, prepend an interpreter prefix.
      */
-    protected List<String> buildCommand(List<String> command) {
+    protected List<String> buildActualCommand(List<String> command) {
         return command;
     }
 

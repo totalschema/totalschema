@@ -24,7 +24,9 @@ import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunnerFactory;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
+import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Objects;
 
 /**
  * Connector for executing shell scripts on the local machine.
@@ -120,11 +122,21 @@ public class ShellScriptConnector extends Connector {
     @Override
     public void execute(ChangeFile changeFile, CommandContext context) throws InterruptedException {
 
-        String fileName = changeFile.getFile().getFileName().toString();
+        Path file = changeFile.getFile();
+        Objects.requireNonNull(file, "file is null");
 
-        try (ShellScriptRunner runner = runnerFactory.getRunner(name, configuration, fileName)) {
-            runner.execute(
-                    Collections.singletonList(changeFile.getFile().toAbsolutePath().toString()));
+        Path fileName = file.getFileName();
+        Objects.requireNonNull(fileName, "fileName is null");
+
+        String fileNameAsString = fileName.toString();
+
+        try (ShellScriptRunner runner =
+                runnerFactory.getRunner(name, configuration, fileNameAsString)) {
+
+            Path absolutePath = file.toAbsolutePath();
+            Objects.requireNonNull(absolutePath, "absolutePath is null");
+
+            runner.execute(Collections.singletonList(absolutePath.toString()));
         }
     }
 

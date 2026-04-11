@@ -37,6 +37,9 @@ import java.util.Optional;
  */
 public final class ShellScriptConnectorComponentFactory extends AbstractConnectorComponentFactory {
 
+    /** Creates a new {@code ShellScriptConnectorComponentFactory}. */
+    public ShellScriptConnectorComponentFactory() {}
+
     /**
      * Returns the qualifier that binds this factory to the {@code "shell"} connector type.
      *

@@ -20,7 +20,6 @@ package io.github.totalschema.connector.shell.impl;
 
 import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.engine.internal.shell.ExternalProcessTerminalSession;
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -61,11 +60,11 @@ public class DefaultShellScriptRunner extends ExternalProcessTerminalSession
      */
     public DefaultShellScriptRunner(String name, List<String> commandPrefix) {
         this.name = name;
-        this.commandPrefix = commandPrefix;
+        this.commandPrefix = List.copyOf(commandPrefix);
     }
 
     @Override
-    protected List<String> buildCommand(List<String> command) {
+    protected List<String> buildActualCommand(List<String> command) {
         LinkedList<String> fullCommand = new LinkedList<>(commandPrefix);
         fullCommand.addAll(command);
         return fullCommand;

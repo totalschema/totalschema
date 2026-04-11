@@ -34,7 +34,7 @@ import java.util.Locale;
  * its extension and the current OS. All interpreter-detection logic lives here, keeping individual
  * runner implementations simple and focused.
  *
- * <h3>Selection rules (in priority order)</h3>
+ * <h2>Selection rules (in priority order)</h2>
  *
  * <ol>
  *   <li><b>{@code start.command} configured</b> — the comma-separated value in the connector
@@ -53,6 +53,9 @@ import java.util.Locale;
  * registered via Java {@link java.util.ServiceLoader}.
  */
 public class DefaultShellScriptRunnerFactory implements ShellScriptRunnerFactory {
+
+    /** Creates a new {@code DefaultShellScriptRunnerFactory}. */
+    public DefaultShellScriptRunnerFactory() {}
 
     /**
      * Returns a {@link DefaultShellScriptRunner} configured with the interpreter prefix appropriate
@@ -117,8 +120,8 @@ public class DefaultShellScriptRunnerFactory implements ShellScriptRunnerFactory
      * the OS-specific separator ({@code ;} on Windows, {@code :} on Unix) without requiring
      * explicit platform detection.
      *
-     * @return {@code true} if {@code pwsh} (or {@code pwsh.exe} on Windows) is found in any
-     *     {@code PATH} directory; {@code false} otherwise
+     * @return {@code true} if {@code pwsh} (or {@code pwsh.exe} on Windows) is found in any {@code
+     *     PATH} directory; {@code false} otherwise
      */
     private static boolean isPwshAvailable() {
         String pathEnv = System.getenv("PATH");
