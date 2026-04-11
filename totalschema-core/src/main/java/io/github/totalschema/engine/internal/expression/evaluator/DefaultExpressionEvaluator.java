@@ -21,7 +21,7 @@ package io.github.totalschema.engine.internal.expression.evaluator;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.lookup.ExpressionLookup;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -58,17 +58,8 @@ final class DefaultExpressionEvaluator implements ExpressionEvaluator {
     @Override
     public String evaluate(String expressionString, Configuration variablesConfiguration) {
 
-        Map<String, String> valuesMap = new HashMap<>();
-
-        for (String key : variablesConfiguration.getKeys()) {
-
-            String value =
-                    variablesConfiguration
-                            .getString(key)
-                            .orElseThrow(() -> new IllegalStateException("Could not find: " + key));
-
-            valuesMap.put(key, value);
-        }
+        Map<String, String> valuesMap =
+                variablesConfiguration.asMap().orElse(Collections.emptyMap());
 
         return evaluate(expressionString, valuesMap);
     }

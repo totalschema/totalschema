@@ -153,7 +153,7 @@ public interface Configuration {
 
     /**
      * Returns an {@link Optional} that describes a {@link Properties} object with configuration
-     * entries copied from this configuration, or, if this configuration is empty an empty {@code
+     * entries copied from this configuration, or, if this configuration is empty, an empty {@code
      * Optional} instance is returned.
      *
      * <p>NOTE: The {@code Properties} returned (if the configuration was not empty), will be a copy
@@ -161,7 +161,8 @@ public interface Configuration {
      * this configuration.
      *
      * @return An {@link Optional} with the {@code Properties} entries copied from this
-     *     configuration; otherwise, an empty {@code Optional} instance
+     *     configuration if the configuration is not empty; otherwise, an empty {@code Optional}
+     *     instance
      */
     Optional<Properties> asProperties();
 
@@ -183,15 +184,15 @@ public interface Configuration {
 
     /**
      * Returns an {@link Optional} that describes a {@link Map} object with configuration entries
-     * copied from this configuration or, if this configuration is empty an empty {@code Optional}
+     * copied from this configuration or, if this configuration is empty, an empty {@code Optional}
      * instance is returned.
      *
      * <p>NOTE: The {@code Map} returned (if the configuration was not empty), will be a copy of
      * this configuration. Changes of the returned {@code Map} are <b>NOT</b> reflected in this
      * configuration.
      *
-     * @return An {@link Optional} with the {@code Map} entries copied from this configuration;
-     *     otherwise, an empty {@code Optional} instance
+     * @return An {@link Optional} with the {@code Map} entries copied from this configuration if
+     *     the configuration is not empty; otherwise, an empty {@code Optional} instance
      */
     Optional<Map<String, String>> asMap();
 }

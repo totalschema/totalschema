@@ -24,18 +24,24 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.variables.VariableService;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class DefaultVariableService implements VariableService {
+public final class DefaultVariableService implements VariableService {
+
+    private static final VariableCacheKey GLOBAL_VARIABLES_CACHE_KEY = new VariableCacheKey(null);
 
     private final Configuration configuration;
 
     private final ExpressionEvaluator expressionEvaluator;
+
+    private final ConcurrentHashMap<VariableCacheKey, Map<String, String>> cachedVariables =
+            new ConcurrentHashMap<>();
 
     public DefaultVariableService(
             Configuration configuration, ExpressionEvaluator expressionEvaluator) {
@@ -50,13 +56,28 @@ public class DefaultVariableService implements VariableService {
     @Override
     public Map<String, String> getVariables() {
 
-        Configuration globalVariablesConfiguration = configuration.getPrefixNamespace(VARIABLES);
-
-        return getVariables(globalVariablesConfiguration);
+        return cachedVariables.computeIfAbsent(
+                GLOBAL_VARIABLES_CACHE_KEY, k -> computeGlobalVariables());
     }
 
     @Override
     public Map<String, String> getVariablesInEnvironment(Environment environment) {
+
+        VariableCacheKey variableCacheKey = new VariableCacheKey(environment);
+
+        return cachedVariables.computeIfAbsent(
+                variableCacheKey, k -> computeEnvironmentVariables(environment));
+    }
+
+    private Map<String, String> computeGlobalVariables() {
+
+        Map<String, String> variablesConfiguration =
+                configuration.getPrefixNamespace(VARIABLES).asMap().orElse(Collections.emptyMap());
+
+        return evaluateVariables(variablesConfiguration);
+    }
+
+    private Map<String, String> computeEnvironmentVariables(Environment environment) {
 
         String environmentName = environment.getName();
 
@@ -69,30 +90,39 @@ public class DefaultVariableService implements VariableService {
         Configuration variablesConfiguration =
                 environmentSpecificVariablesConfiguration.addAll(globalVariablesConfiguration);
 
-        return getVariables(variablesConfiguration.withEntry("environment", environmentName));
+        Configuration configurationWithEnvironment =
+                variablesConfiguration.withEntry("environment", environmentName);
+
+        Map<String, String> variableConfig =
+                configurationWithEnvironment.asMap().orElse(Collections.emptyMap());
+
+        return evaluateVariables(variableConfig);
     }
 
-    private LinkedHashMap<String, String> getVariables(Configuration variablesConfiguration) {
-        Stream<String> stream = variablesConfiguration.getKeys().stream();
+    private Map<String, String> evaluateVariables(Map<String, String> variablesConfiguration) {
+        LinkedHashMap<String, String> result =
+                variablesConfiguration.keySet().stream()
+                        .collect(
+                                Collectors.toMap(
+                                        Function.identity(),
+                                        variableName ->
+                                                evaluateVariable(
+                                                        variableName, variablesConfiguration),
+                                        (firstKey, secondKey) -> firstKey,
+                                        LinkedHashMap::new));
 
-        return stream.collect(
-                Collectors.toMap(
-                        Function.identity(),
-                        variableName -> evaluateVariable(variableName, variablesConfiguration),
-                        (firstKey, secondKey) -> firstKey,
-                        LinkedHashMap::new));
+        return Collections.unmodifiableMap(result);
     }
 
-    private String evaluateVariable(String variableName, Configuration variablesConfiguration) {
+    private String evaluateVariable(
+            String variableName, Map<String, String> variablesConfiguration) {
 
-        String variableExpression =
-                variablesConfiguration
-                        .getString(variableName)
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "No value expression is found for variable: "
-                                                        + variableName));
+        String variableExpression = variablesConfiguration.get(variableName);
+        if (variableExpression == null) {
+            // should not occur
+            throw new IllegalStateException(
+                    "No value expression is found for variable: " + variableName);
+        }
 
         try {
             return expressionEvaluator.evaluate(variableExpression, variablesConfiguration);

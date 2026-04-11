@@ -24,9 +24,9 @@ import static org.testng.Assert.*;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -57,7 +57,7 @@ public class DefaultVariableServiceTest {
         Configuration emptyConfig = createMock(Configuration.class);
 
         expect(mockConfiguration.getPrefixNamespace("variables")).andReturn(emptyConfig);
-        expect(emptyConfig.getKeys()).andReturn(Set.of());
+        expect(emptyConfig.asMap()).andReturn(Optional.empty());
 
         replay(mockConfiguration, emptyConfig);
 
@@ -74,12 +74,14 @@ public class DefaultVariableServiceTest {
     public void testGetVariablesWithValues() {
         Configuration variablesConfig = createMock(Configuration.class);
 
+        Map<String, String> varMap = new HashMap<>();
+        varMap.put("var1", "expression1");
+        varMap.put("var2", "expression2");
+
         expect(mockConfiguration.getPrefixNamespace("variables")).andReturn(variablesConfig);
-        expect(variablesConfig.getKeys()).andReturn(Set.of("var1", "var2"));
-        expect(variablesConfig.getString("var1")).andReturn(Optional.of("expression1"));
-        expect(variablesConfig.getString("var2")).andReturn(Optional.of("expression2"));
-        expect(mockEvaluator.evaluate("expression1", variablesConfig)).andReturn("value1");
-        expect(mockEvaluator.evaluate("expression2", variablesConfig)).andReturn("value2");
+        expect(variablesConfig.asMap()).andReturn(Optional.of(varMap));
+        expect(mockEvaluator.evaluate("expression1", varMap)).andReturn("value1");
+        expect(mockEvaluator.evaluate("expression2", varMap)).andReturn("value2");
 
         replay(mockConfiguration, variablesConfig, mockEvaluator);
 
@@ -98,9 +100,12 @@ public class DefaultVariableServiceTest {
     public void testGetVariablesWithMissingExpression() {
         Configuration variablesConfig = createMock(Configuration.class);
 
+        // A map with an explicit null value triggers the null-check in evaluateVariable()
+        Map<String, String> varMapWithNull = new HashMap<>();
+        varMapWithNull.put("var1", null);
+
         expect(mockConfiguration.getPrefixNamespace("variables")).andReturn(variablesConfig);
-        expect(variablesConfig.getKeys()).andReturn(Set.of("var1"));
-        expect(variablesConfig.getString("var1")).andReturn(Optional.empty());
+        expect(variablesConfig.asMap()).andReturn(Optional.of(varMapWithNull));
 
         replay(mockConfiguration, variablesConfig);
 
@@ -112,10 +117,11 @@ public class DefaultVariableServiceTest {
     public void testGetVariablesWithEvaluationError() {
         Configuration variablesConfig = createMock(Configuration.class);
 
+        Map<String, String> varMap = Map.of("var1", "bad-expression");
+
         expect(mockConfiguration.getPrefixNamespace("variables")).andReturn(variablesConfig);
-        expect(variablesConfig.getKeys()).andReturn(Set.of("var1"));
-        expect(variablesConfig.getString("var1")).andReturn(Optional.of("bad-expression"));
-        expect(mockEvaluator.evaluate("bad-expression", variablesConfig))
+        expect(variablesConfig.asMap()).andReturn(Optional.of(varMap));
+        expect(mockEvaluator.evaluate("bad-expression", varMap))
                 .andThrow(new RuntimeException("Evaluation failed"));
 
         replay(mockConfiguration, variablesConfig, mockEvaluator);
@@ -132,14 +138,15 @@ public class DefaultVariableServiceTest {
         Configuration mergedConfig = createMock(Configuration.class);
         Configuration finalConfig = createMock(Configuration.class);
 
+        Map<String, String> finalVarMap = Map.of("var1", "env-expression");
+
         expect(mockConfiguration.getPrefixNamespace("variables")).andReturn(globalConfig);
         expect(mockConfiguration.getPrefixNamespace("environments", "DEV", "variables"))
                 .andReturn(envConfig);
         expect(envConfig.addAll(globalConfig)).andReturn(mergedConfig);
         expect(mergedConfig.withEntry("environment", "DEV")).andReturn(finalConfig);
-        expect(finalConfig.getKeys()).andReturn(Set.of("var1"));
-        expect(finalConfig.getString("var1")).andReturn(Optional.of("env-expression"));
-        expect(mockEvaluator.evaluate("env-expression", finalConfig)).andReturn("env-value");
+        expect(finalConfig.asMap()).andReturn(Optional.of(finalVarMap));
+        expect(mockEvaluator.evaluate("env-expression", finalVarMap)).andReturn("env-value");
 
         replay(
                 mockConfiguration,
@@ -166,13 +173,74 @@ public class DefaultVariableServiceTest {
     }
 
     @Test
+    public void testGetVariablesCachesResult() {
+        Configuration variablesConfig = createMock(Configuration.class);
+
+        Map<String, String> varMap = Map.of("var1", "expression1");
+
+        // Expectations are set up for exactly one invocation each.
+        // If the cache is bypassed on the second call, EasyMock will throw
+        // "Unexpected method call" and the test will fail.
+        expect(mockConfiguration.getPrefixNamespace("variables")).andReturn(variablesConfig);
+        expect(variablesConfig.asMap()).andReturn(Optional.of(varMap));
+        expect(mockEvaluator.evaluate("expression1", varMap)).andReturn("value1");
+
+        replay(mockConfiguration, variablesConfig, mockEvaluator);
+
+        service = new DefaultVariableService(mockConfiguration, mockEvaluator);
+        Map<String, String> first = service.getVariables();
+        Map<String, String> second = service.getVariables();
+
+        assertSame(first, second, "Expected the same cached instance on repeated calls");
+        verify(mockConfiguration, variablesConfig, mockEvaluator);
+    }
+
+    @Test
+    public void testGetVariablesInEnvironmentCachesResult() {
+        Environment environment = new Environment("DEV");
+        Configuration globalConfig = createMock(Configuration.class);
+        Configuration envConfig = createMock(Configuration.class);
+        Configuration mergedConfig = createMock(Configuration.class);
+        Configuration finalConfig = createMock(Configuration.class);
+
+        Map<String, String> finalVarMap = Map.of("var1", "env-expression");
+
+        // Expectations are set up for exactly one invocation each.
+        // If the cache is bypassed on the second call, EasyMock will throw
+        // "Unexpected method call" and the test will fail.
+        expect(mockConfiguration.getPrefixNamespace("variables")).andReturn(globalConfig);
+        expect(mockConfiguration.getPrefixNamespace("environments", "DEV", "variables"))
+                .andReturn(envConfig);
+        expect(envConfig.addAll(globalConfig)).andReturn(mergedConfig);
+        expect(mergedConfig.withEntry("environment", "DEV")).andReturn(finalConfig);
+        expect(finalConfig.asMap()).andReturn(Optional.of(finalVarMap));
+        expect(mockEvaluator.evaluate("env-expression", finalVarMap)).andReturn("env-value");
+
+        replay(
+                mockConfiguration,
+                globalConfig,
+                envConfig,
+                mergedConfig,
+                finalConfig,
+                mockEvaluator);
+
+        service = new DefaultVariableService(mockConfiguration, mockEvaluator);
+        Map<String, String> first = service.getVariablesInEnvironment(environment);
+        Map<String, String> second = service.getVariablesInEnvironment(environment);
+
+        assertSame(first, second, "Expected the same cached instance on repeated calls");
+        verify(
+                mockConfiguration,
+                globalConfig,
+                envConfig,
+                mergedConfig,
+                finalConfig,
+                mockEvaluator);
+    }
+
+    @Test
     public void testDefaultVariableServiceFactory() {
         DefaultVariableServiceFactory factory = new DefaultVariableServiceFactory();
-
-        expect(mockConfiguration.getPrefixNamespace("variables"))
-                .andReturn(mockConfiguration)
-                .anyTimes();
-        expect(mockConfiguration.getKeys()).andReturn(Set.of()).anyTimes();
 
         replay(mockConfiguration);
 
