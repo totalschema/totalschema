@@ -18,16 +18,17 @@
 
 package io.github.totalschema.connector.shell.spi;
 
-import io.github.totalschema.config.Configuration;
-import io.github.totalschema.connector.shell.impl.DefaultLocalShellSessionFactory;
-import io.github.totalschema.spi.ServiceLoaderFactory;
+import io.github.totalschema.engine.internal.shell.direct.TerminalSession;
+import java.util.List;
 
-public interface LocalShellSessionFactory {
-
-    static LocalShellSessionFactory getInstance() {
-        return ServiceLoaderFactory.getSingleService(LocalShellSessionFactory.class)
-                .orElseGet(DefaultLocalShellSessionFactory::new);
-    }
-
-    ShellScriptSession getLocalShellSession(String name, Configuration configuration);
-}
+/**
+ * A runner that executes local shell scripts as OS processes.
+ *
+ * <p>Specialises {@link TerminalSession} for a command representation of {@code List<String>},
+ * where the list holds the interpreter prefix followed by the script's absolute path.
+ *
+ * <p>The built-in implementation is {@link
+ * io.github.totalschema.connector.shell.impl.DefaultShellScriptRunner}. Custom implementations can
+ * be provided by implementing {@link ShellScriptRunnerFactory}.
+ */
+public interface ShellScriptRunner extends TerminalSession<List<String>> {}

@@ -88,7 +88,7 @@ ShellScriptConnector         SshScriptConnector           JdbcConnector
   (local process)              (SCP + SSH exec)            (delegates to ScriptExecutor)
        │                               │                         │
        ▼                               ▼                         ▼
-DefaultShellScriptSession      MinaSshdConnection         SqlScriptExecutor / GroovyExecutor
+DefaultShellScriptRunner       MinaSshdConnection         SqlScriptExecutor / GroovyExecutor
   (ExternalProcess)              (Apache MINA SSHD)          (via file extension lookup)
 ```
 
@@ -473,23 +473,25 @@ The script path is passed as an argument to the system shell.
 session.execute(Collections.singletonList(scriptFile.toAbsolutePath().toString()));
 ```
 
-`DefaultShellScriptSession` auto-detects the OS and prepends the correct shell prefix:
+`DefaultShellScriptRunner` auto-detects the interpreter per execution based on the script's file
+extension:
 
-| OS | Effective command |
-|---|---|
-| Unix/Linux/macOS | `sh -c <script_path>` |
-| Windows | `cmd.exe /c <script_path>` |
+| Script extension | OS | Effective command |
+|---|---|---|
+| `.ps1` | any (`pwsh` on PATH) | `pwsh -ExecutionPolicy Bypass -File <script_path>` |
+| `.ps1` | any (no `pwsh`) | `powershell.exe -ExecutionPolicy Bypass -File <script_path>` |
+| other | Windows | `cmd.exe /c <script_path>` |
+| other | Unix/macOS | `sh <script_path>` |
 
-A custom start command can override this:
+A custom start command can override auto-detection for all scripts in the connector
+(comma-separated in YAML):
 
 ```yaml
 connectors:
   localshell:
     type: shell
     start:
-      command:
-        - /bin/bash
-        - -c
+      command: /bin/bash
 ```
 
 **Example** (`0003.backup.apply.localshell.sh`):
@@ -529,10 +531,10 @@ totalschema-connector-ssh              ← OPTIONAL (included in CLI/release by 
 
 totalschema-connector-shell            ← OPTIONAL (included in CLI/release by default)
   ├── ShellScriptConnector + Factory
-  ├── ShellScriptSession (SPI interface)
-  ├── LocalShellSessionFactory (SPI interface)
-  ├── DefaultLocalShellSessionFactory
-  ├── DefaultShellScriptSession (auto-detects OS)
+  ├── ShellScriptRunner (SPI interface)
+  ├── ShellScriptRunnerFactory (SPI interface)
+  ├── DefaultShellScriptRunnerFactory
+  ├── DefaultShellScriptRunner (per-execution interpreter auto-detection)
   └── (ServiceLoader: ShellScriptConnectorFactory)
 ```
 
@@ -773,7 +775,7 @@ Maven plugin.
 |---|---|---|
 | `ComponentFactory<Connector>` | `META-INF/services/io.github.totalschema.spi.factory.ComponentFactory` | Register new connector types (and other IoC components) |
 | `SshConnectionFactory` | `META-INF/services/io.github.totalschema.engine.internal.shell.direct.ssh.spi.SshConnectionFactory` | Replace the SSH connection implementation (e.g. custom auth, keep-alive logic) |
-| `LocalShellSessionFactory` | `META-INF/services/io.github.totalschema.connector.shell.spi.LocalShellSessionFactory` | Replace the local shell session implementation |
+| `ShellScriptRunnerFactory` | `META-INF/services/io.github.totalschema.connector.shell.spi.ShellScriptRunnerFactory` | Replace the local shell runner implementation |
 | `ConnectorManager` | `META-INF/services/io.github.totalschema.connector.ConnectorManager` | Replace connector lifecycle management entirely |
 
 All SPI lookups use `ServiceLoaderFactory.getSingleService()` or `getAllServices()` from

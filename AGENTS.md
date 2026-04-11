@@ -143,7 +143,7 @@ Register in `META-INF/services/<interface>`:
 5. `StateRepository` → state storage backends
 6. `SecretsManager` → secret providers
 7. `SshConnectionFactory` → replace SSH connection implementation
-8. `LocalShellSessionFactory` → replace local shell session implementation
+8. `ShellScriptRunnerFactory` → replace local shell runner implementation
 
 **📖 See:** `docs/developer/CONNECTOR_ARCHITECTURE.md` for the full connector architecture, built-in types, execution flow, and custom connector guide  
 **📖 See:** `docs/developer/SCRIPT_EXECUTOR_SUBSYSTEM.md` for detailed guide on adding script executors

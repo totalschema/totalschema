@@ -24,20 +24,39 @@ import io.github.totalschema.connector.Connector;
 import java.util.Optional;
 
 /**
- * ComponentFactory for creating shell script connectors.
+ * {@link io.github.totalschema.spi.factory.ComponentFactory} for {@link ShellScriptConnector}.
  *
- * <p>This factory creates {@link Connector} instances with qualifier "shell" that execute shell
- * scripts on the local machine.
+ * <p>Registered via Java {@link java.util.ServiceLoader} in {@code
+ * META-INF/services/io.github.totalschema.spi.factory.ComponentFactory}. The IoC container calls
+ * this factory whenever a connector of type {@code "shell"} is requested.
  *
- * <p>Usage: {@code context.get(Connector.class, "shell", connectorName, configuration)}
+ * <p>Inherits all argument handling and configuration-merging logic from {@link
+ * io.github.totalschema.connector.AbstractConnectorComponentFactory}: exactly two arguments are
+ * expected — the connector name ({@code String}) and the merged connector configuration ({@link
+ * io.github.totalschema.config.Configuration}).
  */
 public final class ShellScriptConnectorComponentFactory extends AbstractConnectorComponentFactory {
 
+    /**
+     * Returns the qualifier that binds this factory to the {@code "shell"} connector type.
+     *
+     * <p>The returned value must match the {@code type} field in the connector's {@code
+     * totalschema.yml} block (e.g. {@code type: shell}).
+     *
+     * @return an {@link java.util.Optional} containing {@value ShellScriptConnector#CONNECTOR_TYPE}
+     */
     @Override
     public Optional<String> getQualifier() {
         return Optional.of(ShellScriptConnector.CONNECTOR_TYPE);
     }
 
+    /**
+     * Creates a new {@link ShellScriptConnector} for the given connector name and configuration.
+     *
+     * @param connectorName the name of the connector as declared in {@code totalschema.yml}
+     * @param configuration the merged (global + environment-specific) connector configuration
+     * @return a fully initialised {@link ShellScriptConnector}
+     */
     @Override
     protected Connector createConnector(String connectorName, Configuration configuration) {
         return new ShellScriptConnector(connectorName, configuration);
