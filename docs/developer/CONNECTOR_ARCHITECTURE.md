@@ -80,7 +80,8 @@ Change file:  0001.init.apply.mydb.sql ───┼─────────�
        ┌──────────────────────────────────┘            │
        │             ┌─────────────────────────────────┘
        ▼             ▼                    ▼
-ShellScriptConnectorFactory   SshScriptConnectorFactory   JdbcConnectorFactory
+ShellScriptConnector          SshScriptConnector          JdbcConnector
+ComponentFactory                ComponentFactory            Factory
   (qualifier="shell")           (qualifier="ssh-script")    (qualifier="jdbc")
        │                               │                         │
        ▼                               ▼                         ▼
@@ -88,8 +89,16 @@ ShellScriptConnector         SshScriptConnector           JdbcConnector
   (local process)              (SCP + SSH exec)            (delegates to ScriptExecutor)
        │                               │                         │
        ▼                               ▼                         ▼
-DefaultShellScriptSession      MinaSshdConnection         SqlScriptExecutor / GroovyExecutor
-  (ExternalProcess)              (Apache MINA SSHD)          (via file extension lookup)
+ShellScriptRunnerFactory     MinaSshdConnection         SqlScriptExecutor / GroovyExecutor
+(Default implementation)        (Apache MINA SSHD)          (via file extension lookup)
+  
+       │
+       ▼
+GenericShellScriptRunner
+  ├── ShScriptRunner       ("sh")
+  ├── PwshScriptRunner     ("pwsh -ExecutionPolicy Bypass -File")
+  ├── WindowsPowerShell    ("powershell.exe -ExecutionPolicy Bypass -File")
+  └── CmdExeScriptRunner   ("cmd.exe /c")
 ```
 
 ---
@@ -119,8 +128,11 @@ public abstract class Connector {
 
 **Package:** `io.github.totalschema.connector`
 
-Used by all shell/SSH connectors. Wraps a `TerminalSession<C>`, delegates
-`execute(ChangeFile, …)` → `execute(Path, …)` and manages session lifecycle (`Closeable`).
+Used by the **SSH connectors only**. Holds a single long-lived `TerminalSession<C>`, delegates
+`execute(ChangeFile, …)` → `execute(Path, …)`, and manages session lifecycle (`Closeable`).
+
+> **Not used by `ShellScriptConnector`**, which creates a fresh `ShellScriptRunner` per
+> execution via `ShellScriptRunnerFactory` instead of holding a persistent session.
 
 ```java
 public abstract class AbstractTerminalConnector<C> extends Connector implements Closeable {
@@ -231,17 +243,29 @@ public abstract class AbstractTerminalSession<C> implements TerminalSession<C> {
 **Package:** `io.github.totalschema.engine.internal.shell`
 
 Extends `AbstractTerminalSession<List<String>>`. Launches OS processes via `ProcessBuilder`,
-streams stdout and stderr to the console, and checks the exit code. Used by the shell connector.
+merges stderr into stdout (a single reader thread preserves the chronological order of all
+output), streams each line to `acceptOutput()`, then checks the exit code. Subclasses supply the
+interpreter prefix by overriding `buildActualCommand()`.
 
 ```java
 public abstract class ExternalProcessTerminalSession extends AbstractTerminalSession<List<String>> {
+
     @Override
-    public void execute(List<String> command) {
-        // starts process, streams output, checks exit code != 0
+    public void execute(List<String> command) throws InterruptedException {
+        List<String> actualCommand = buildActualCommand(command);
+        // starts process (stderr merged into stdout), streams output, checks exit code != 0
     }
-    protected Process startProcess(List<String> command) throws IOException { ... }
+
+    /** Transforms the logical argv into the actual OS-level token list. Default: identity. */
+    protected List<String> buildActualCommand(List<String> command) { return command; }
+
+    /** Called for every output line. Default: prints to System.out. */
+    protected void acceptOutput(String line) { ... }
 }
 ```
+
+Used by `GenericShellScriptRunner` (shell connector) and, in the SSH module, is the foundation
+for session output streaming.
 
 ---
 
@@ -264,7 +288,7 @@ Oracle, H2, BigQuery, SQL Server, …).
 
 ```java
 String extension = changeFile.getId().getExtension();   // e.g. "sql", "groovy"
-ScriptExecutor executor = context.get(ScriptExecutor.class, extension, name, config);
+ScriptExecutor executor = context.get(ScriptExecutor.class, extension, config);
 executor.execute(fileContent, context);
 ```
 
@@ -466,30 +490,66 @@ public SshConnection getSshConnection(String name, Configuration configuration) 
 | **Factory** | `io.github.totalschema.connector.shell.ShellScriptConnectorComponentFactory` |
 
 **Purpose:** Execute a shell script on the **local machine** (the machine running TotalSchema).
-The script path is passed as an argument to the system shell.
+For each script, a fresh `ShellScriptRunner` is obtained from `ShellScriptRunnerFactory` and
+closed immediately after use. No runner or OS process is held between executions.
 
 **Execution logic:**
 ```java
-session.execute(Collections.singletonList(scriptFile.toAbsolutePath().toString()));
+// Per execution — a new runner is created and discarded for each script
+try (ShellScriptRunner runner =
+        runnerFactory.getRunner(name, configuration, fileName)) {
+    runner.execute(Collections.singletonList(scriptFile.toAbsolutePath().toString()));
+}
 ```
 
-`DefaultShellScriptSession` auto-detects the OS and prepends the correct shell prefix:
+**Interpreter selection by `DefaultShellScriptRunnerFactory`** (in priority order):
 
-| OS | Effective command |
-|---|---|
-| Unix/Linux/macOS | `sh -c <script_path>` |
-| Windows | `cmd.exe /c <script_path>` |
+| Priority | Condition | Runner class | Effective command |
+|---|---|---|---|
+| 1 | `start.command` in config | `GenericShellScriptRunner` | `<tokens> <script_path>` |
+| 2 | `.sh` extension | `ShScriptRunner` | `sh <script_path>` |
+| 3 | `.ps1` extension + `pwsh` on PATH | `PwshScriptRunner` | `pwsh -ExecutionPolicy Bypass -File <script_path>` |
+| 4 | `.ps1` extension + Windows (no `pwsh`) | `WindowsPowerShellScriptRunner` | `powershell.exe -ExecutionPolicy Bypass -File <script_path>` |
+| 5 | `.ps1` extension + non-Windows (no `pwsh`) | — | `IllegalStateException` |
+| 6 | `.bat` / `.cmd` extension + Windows | `CmdExeScriptRunner` | `cmd.exe /c <script_path>` |
+| 7 | `.bat` / `.cmd` extension + non-Windows | — | `IllegalStateException` |
+| 8 | Other extension + Windows | `CmdExeScriptRunner` | `cmd.exe /c <script_path>` |
+| 9 | Other extension + Unix / macOS | `ShScriptRunner` | `sh <script_path>` |
 
-A custom start command can override this:
+OS and `pwsh` availability are determined by `RuntimeInformation` (interface), with
+`DefaultRuntimeInformation` reading `os.name` and scanning `PATH` in production. Tests inject a
+mock `RuntimeInformation` to exercise every branch without requiring a specific host OS.
+
+**Interpreter inheritance hierarchy:**
+
+```
+GenericShellScriptRunner  (extends ExternalProcessTerminalSession)
+  ├── ShScriptRunner               — prefix: ["sh"]
+  ├── CmdExeScriptRunner           — prefix: ["cmd.exe", "/c"]
+  ├── PwshScriptRunner             — prefix: ["pwsh", "-ExecutionPolicy", "Bypass", "-File"]
+  └── WindowsPowerShellScriptRunner — prefix: ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File"]
+```
+
+`GenericShellScriptRunner` can also be instantiated directly (without a subclass) when the user
+supplies `start.command` — the parsed token list becomes the prefix.
+
+**`start.command` override** — bypasses all auto-detection for every script in this connector.
+The value is a comma-separated interpreter prefix:
+
+```yaml
+connectors:
+  pwsh_scripts:
+    type: shell
+    start:
+      command: pwsh,-ExecutionPolicy,Bypass,-File
+```
+
+**Minimal configuration:**
 
 ```yaml
 connectors:
   localshell:
     type: shell
-    start:
-      command:
-        - /bin/bash
-        - -c
 ```
 
 **Example** (`0003.backup.apply.localshell.sh`):
@@ -507,7 +567,7 @@ echo "Backup complete"
 ```
 totalschema-core
   ├── Connector (abstract base class)
-  ├── AbstractTerminalConnector (terminal base)
+  ├── AbstractTerminalConnector (terminal base — used by SSH connectors only)
   ├── TerminalSession (interface)
   ├── ConnectorManager / DefaultConnectorManager
   ├── AbstractConnectorComponentFactory
@@ -519,21 +579,28 @@ totalschema-connector-common           ← shared by ssh + shell
   └── ExternalProcessTerminalSession
 
 totalschema-connector-ssh              ← OPTIONAL (included in CLI/release by default)
-  ├── SshScriptConnector + Factory
-  ├── SshCommandListConnector + Factory
+  ├── SshScriptConnector + SshScriptConnectorComponentFactory
+  ├── SshCommandListConnector + SshCommandListConnectorComponentFactory
   ├── SshConnection (SPI interface)
-  ├── SshConnectionFactory (SPI interface, caching)
+  ├── SshConnectionFactory (SPI interface, with caching in DefaultSshConnectionFactory)
   ├── MinaSshdConnection (Apache MINA SSHD impl)
   ├── DefaultSshConnectionFactory
-  └── (ServiceLoader: SshScriptConnectorFactory, SshCommandListConnectorFactory)
+  └── (ServiceLoader: SshScriptConnectorComponentFactory,
+                       SshCommandListConnectorComponentFactory)
 
 totalschema-connector-shell            ← OPTIONAL (included in CLI/release by default)
-  ├── ShellScriptConnector + Factory
-  ├── ShellScriptSession (SPI interface)
-  ├── LocalShellSessionFactory (SPI interface)
-  ├── DefaultLocalShellSessionFactory
-  ├── DefaultShellScriptSession (auto-detects OS)
-  └── (ServiceLoader: ShellScriptConnectorFactory)
+  ├── ShellScriptConnector + ShellScriptConnectorComponentFactory
+  ├── ShellScriptRunner (SPI interface)
+  ├── ShellScriptRunnerFactory (SPI interface)
+  ├── DefaultShellScriptRunnerFactory  (interpreter auto-detection via RuntimeInformation)
+  ├── RuntimeInformation (interface — OS + PATH queries, mockable)
+  ├── DefaultRuntimeInformation (production: reads os.name, scans PATH)
+  ├── GenericShellScriptRunner (ExternalProcessTerminalSession + prefix)
+  │   ├── ShScriptRunner               ("sh")
+  │   ├── CmdExeScriptRunner           ("cmd.exe /c")
+  │   ├── PwshScriptRunner             ("pwsh -ExecutionPolicy Bypass -File")
+  │   └── WindowsPowerShellScriptRunner("powershell.exe -ExecutionPolicy Bypass -File")
+  └── (ServiceLoader: ShellScriptConnectorComponentFactory)
 ```
 
 **Dependency rules:**
@@ -549,21 +616,21 @@ totalschema-connector-shell            ← OPTIONAL (included in CLI/release by 
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-core</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.1.0</version>
 </dependency>
 
 <!-- SSH connectors (optional) -->
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-ssh</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.1.0</version>
 </dependency>
 
 <!-- Shell connector (optional) -->
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-shell</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -655,9 +722,11 @@ connector.
 6. JdbcConnector.execute(changeFile, context)
    │   a. Reads file content from disk
    │   b. Extracts extension → "sql"
-   │   c. context.get(ScriptExecutor.class, "sql", "mydb", config)
-   │       → SqlScriptExecutorFactory creates SqlScriptExecutor
-   │   d. SqlScriptExecutor.execute(fileContent, context)
+   │   c. Acquires JdbcDatabase; places it in a child CommandContext
+   │   d. context.get(ScriptExecutor.class, "sql", config)
+   │       → SqlScriptExecutorComponentFactory creates SqlScriptExecutor
+   │   e. SqlScriptExecutor.execute(fileContent, context)
+   │       → optionally substitutes ${varName} placeholders
    │       → splits on ";", executes each statement via JDBC
    │
 7. Engine records the change as applied in the state table
@@ -772,8 +841,8 @@ Maven plugin.
 | SPI interface | Service file | Purpose |
 |---|---|---|
 | `ComponentFactory<Connector>` | `META-INF/services/io.github.totalschema.spi.factory.ComponentFactory` | Register new connector types (and other IoC components) |
-| `SshConnectionFactory` | `META-INF/services/io.github.totalschema.engine.internal.shell.direct.ssh.spi.SshConnectionFactory` | Replace the SSH connection implementation (e.g. custom auth, keep-alive logic) |
-| `LocalShellSessionFactory` | `META-INF/services/io.github.totalschema.connector.shell.spi.LocalShellSessionFactory` | Replace the local shell session implementation |
+| `SshConnectionFactory` | `META-INF/services/io.github.totalschema.connector.ssh.spi.SshConnectionFactory` | Replace the SSH connection implementation (e.g. custom auth, keep-alive logic) |
+| `ShellScriptRunnerFactory` | `META-INF/services/io.github.totalschema.connector.shell.spi.ShellScriptRunnerFactory` | Replace the local shell runner implementation |
 | `ConnectorManager` | `META-INF/services/io.github.totalschema.connector.ConnectorManager` | Replace connector lifecycle management entirely |
 
 All SPI lookups use `ServiceLoaderFactory.getSingleService()` or `getAllServices()` from
@@ -787,9 +856,9 @@ All SPI lookups use `ServiceLoaderFactory.getSingleService()` or `getAllServices
   by type and qualifier; required for understanding `context.get(Connector.class, "jdbc", …)`.
 - **`docs/developer/SCRIPT_EXECUTOR_SUBSYSTEM.md`** — How JDBC connectors dispatch to
   `ScriptExecutor` implementations by file extension.
-- **`docs/developer/CONNECTOR-EXTRACTION-SUMMARY.md`** — Refactoring history: why SSH/shell
-  connectors were extracted from `totalschema-core` into separate modules.
-- **`docs/developer/MODULE-CREATION-SUMMARY.md`** — Details on the `totalschema-connector-common`
-  shared infrastructure module.
+- **`docs/developer/REFACTORING-COMPLETE.md`** — Refactoring history: why SSH/shell connectors
+  were extracted from `totalschema-core` into separate modules, with full implementation details.
+- **`docs/developer/FINAL-SUMMARY.md`** — High-level summary of the connector extraction
+  refactoring: module contents, dependency flow, and backward-compatibility notes.
 - **`sample/totalschema.yml`** — Reference configuration showing a JDBC connector in practice.
 

@@ -47,7 +47,21 @@ public final class ComponentContainerBuilder {
      * @return This builder for chaining.
      */
     public <T> ComponentContainerBuilder withComponent(Class<T> type, T object) {
-        objects.put(ObjectSpecification.from(type, null), object);
+        return withComponent(type, null, object);
+    }
+
+    /**
+     * Registers a component instance of a specific type with a given qualifier (might be {@code
+     * null}).
+     *
+     * @param type The class type of the component to register.
+     * @param qualifier The qualifier of the component to register. (might be {@code null})
+     * @param object The component instance.
+     * @param <T> The type of the component.
+     * @return This builder for chaining.
+     */
+    public <T> ComponentContainerBuilder withComponent(Class<T> type, String qualifier, T object) {
+        objects.put(ObjectSpecification.from(type, qualifier), object);
         return this;
     }
 
