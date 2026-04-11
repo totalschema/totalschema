@@ -22,22 +22,15 @@ import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.config.MapConfiguration;
-import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
-import io.github.totalschema.engine.internal.expression.evaluator.DefaultExpressionEvaluatorFactory;
-import io.github.totalschema.engine.internal.secrets.DefaultSecretManagerFactory;
-import io.github.totalschema.engine.internal.variables.DefaultVariableServiceFactory;
+import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.ChangeType;
-import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.script.ScriptExecutor;
-import io.github.totalschema.spi.variables.VariableService;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import org.easymock.Capture;
 import org.easymock.CaptureType;
 import org.testng.annotations.AfterMethod;
@@ -45,30 +38,33 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
- * Unit tests for {@link JdbcConnector}, focusing on the variable-substitution opt-in behaviour.
+ * Unit tests for {@link JdbcConnector}.
  *
- * <p>The {@link ScriptExecutor} lookup is satisfied by injecting a mock {@link Context} as the
- * parent of the {@link CommandContext}. Real {@link ExpressionEvaluator} and {@link Configuration}
- * instances are placed directly into the {@code CommandContext} so that substitution logic can be
- * exercised end-to-end without touching any database.
+ * <p>Variable substitution has moved to {@link
+ * io.github.totalschema.engine.internal.script.SqlScriptExecutor}. The connector is now responsible
+ * only for:
+ *
+ * <ol>
+ *   <li>Reading the change file from disk.
+ *   <li>Acquiring the {@link JdbcDatabase} from the IoC container and exposing it through a child
+ *       context.
+ *   <li>Retrieving the appropriate {@link ScriptExecutor} via the context.
+ *   <li>Invoking the executor with the raw file content and the child context.
+ * </ol>
  */
 public class JdbcConnectorTest {
 
     private static final String CONNECTOR_NAME = "mydb";
 
-    private ExpressionEvaluator expressionEvaluator;
     private ScriptExecutor mockScriptExecutor;
+    private JdbcDatabase mockJdbcDatabase;
     private Context mockParentContext;
     private Path tempFile;
 
     @BeforeMethod
     public void setUp() {
-        expressionEvaluator =
-                new DefaultExpressionEvaluatorFactory()
-                        .getExpressionEvaluator(
-                                new DefaultSecretManagerFactory().getSecretsManager(null, null));
-
         mockScriptExecutor = createMock(ScriptExecutor.class);
+        mockJdbcDatabase = createMock(JdbcDatabase.class);
         mockParentContext = createMock(Context.class);
     }
 
@@ -96,242 +92,125 @@ public class JdbcConnectorTest {
     }
 
     // -------------------------------------------------------------------------
-    // Variable substitution — enabled for the matching extension
+    // Raw content forwarding — connector no longer does substitution
     // -------------------------------------------------------------------------
 
     @Test
-    public void testVariableSubstitutionAppliedWhenExtensionIsListed() throws Exception {
-        Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql").build();
-        Configuration fullConfig = new MapConfiguration(Map.of("variables.mySchema", "public"));
-
-        tempFile = Files.createTempFile("test-", ".sql");
-        Files.writeString(tempFile, "CREATE SCHEMA ${mySchema};");
-
-        ApplyFile applyFile = makeApplyFile(tempFile, "sql");
-
-        Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        mockScriptExecutor.execute(capture(capturedScript), anyObject());
-        expect(mockParentContext.has(Environment.class)).andReturn(false);
-        expect(
-                        mockParentContext.get(
-                                eq(ScriptExecutor.class),
-                                eq("sql"),
-                                eq(CONNECTOR_NAME),
-                                eq(connectorConfig)))
-                .andReturn(mockScriptExecutor);
-        replay(mockParentContext, mockScriptExecutor);
-
-        CommandContext context = buildContext(mockParentContext, fullConfig, null);
-
-        new JdbcConnector(CONNECTOR_NAME, connectorConfig).execute(applyFile, context);
-
-        verify(mockParentContext, mockScriptExecutor);
-        assertEquals(capturedScript.getValue(), "CREATE SCHEMA public;");
-    }
-
-    @Test
-    public void testVariableSubstitutionAppliedWithEnvironmentOverride() throws Exception {
-        Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql").build();
-        // Use an environment-only variable (no global counterpart) to avoid the known
-        // DefaultVariableService ordering issue where global values currently take
-        // precedence over environment-specific ones when both keys are identical.
-        Configuration fullConfig =
-                new MapConfiguration(Map.of("environments.DEV.variables.devSchema", "dev_schema"));
-
-        tempFile = Files.createTempFile("test-", ".sql");
-        Files.writeString(tempFile, "CREATE SCHEMA ${devSchema};");
-
-        ApplyFile applyFile = makeApplyFile(tempFile, "sql");
-
-        Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        mockScriptExecutor.execute(capture(capturedScript), anyObject());
-        expect(
-                        mockParentContext.get(
-                                eq(ScriptExecutor.class),
-                                eq("sql"),
-                                eq(CONNECTOR_NAME),
-                                eq(connectorConfig)))
-                .andReturn(mockScriptExecutor);
-        replay(mockParentContext, mockScriptExecutor);
-
-        Environment devEnv = new Environment("DEV");
-        CommandContext context = buildContext(mockParentContext, fullConfig, devEnv);
-
-        new JdbcConnector(CONNECTOR_NAME, connectorConfig).execute(applyFile, context);
-
-        verify(mockParentContext, mockScriptExecutor);
-        assertEquals(capturedScript.getValue(), "CREATE SCHEMA dev_schema;");
-    }
-
-    @Test
-    public void testMultipleVariablesAreSubstituted() throws Exception {
-        Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql").build();
-        Configuration fullConfig =
-                new MapConfiguration(
-                        Map.of("variables.schemaName", "app", "variables.userName", "svc_user"));
-
-        tempFile = Files.createTempFile("test-", ".sql");
-        Files.writeString(tempFile, "CREATE USER ${userName} IN SCHEMA ${schemaName};");
-
-        ApplyFile applyFile = makeApplyFile(tempFile, "sql");
-
-        Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        mockScriptExecutor.execute(capture(capturedScript), anyObject());
-        expect(mockParentContext.has(Environment.class)).andReturn(false);
-        expect(
-                        mockParentContext.get(
-                                eq(ScriptExecutor.class),
-                                eq("sql"),
-                                eq(CONNECTOR_NAME),
-                                eq(connectorConfig)))
-                .andReturn(mockScriptExecutor);
-        replay(mockParentContext, mockScriptExecutor);
-
-        CommandContext context = buildContext(mockParentContext, fullConfig, null);
-
-        new JdbcConnector(CONNECTOR_NAME, connectorConfig).execute(applyFile, context);
-
-        verify(mockParentContext, mockScriptExecutor);
-        assertEquals(capturedScript.getValue(), "CREATE USER svc_user IN SCHEMA app;");
-    }
-
-    // -------------------------------------------------------------------------
-    // Variable substitution — not applied when extension is not listed
-    // -------------------------------------------------------------------------
-
-    @Test
-    public void testVariableSubstitutionNotAppliedForUnlistedExtension() throws Exception {
-        // groovy is not in the extensions list
-        Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql").build();
-        Configuration fullConfig = new MapConfiguration(Map.of("variables.mySchema", "public"));
-
-        tempFile = Files.createTempFile("test-", ".groovy");
-        String originalContent = "sql.execute(\"CREATE SCHEMA ${mySchema}\")";
-        Files.writeString(tempFile, originalContent);
-
-        ApplyFile applyFile = makeApplyFile(tempFile, "groovy");
-
-        Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        mockScriptExecutor.execute(capture(capturedScript), anyObject());
-        expect(
-                        mockParentContext.get(
-                                eq(ScriptExecutor.class),
-                                eq("groovy"),
-                                eq(CONNECTOR_NAME),
-                                eq(connectorConfig)))
-                .andReturn(mockScriptExecutor);
-        replay(mockParentContext, mockScriptExecutor);
-
-        CommandContext context = buildContext(mockParentContext, fullConfig, null);
-
-        new JdbcConnector(CONNECTOR_NAME, connectorConfig).execute(applyFile, context);
-
-        verify(mockParentContext, mockScriptExecutor);
-        // Content must be passed through unchanged — no substitution on Groovy
-        assertEquals(capturedScript.getValue(), originalContent);
-    }
-
-    @Test
-    public void testVariableSubstitutionNotAppliedWhenNotConfigured() throws Exception {
-        // No variableSubstitution.extensions key at all
+    public void testRawFileContentIsForwardedToExecutor() throws Exception {
         Configuration connectorConfig = Configuration.builder().build();
-        Configuration fullConfig = new MapConfiguration(Map.of("variables.mySchema", "public"));
 
         tempFile = Files.createTempFile("test-", ".sql");
-        String originalContent = "CREATE SCHEMA ${mySchema};";
-        Files.writeString(tempFile, originalContent);
+        String rawContent = "CREATE TABLE foo (id INT);";
+        Files.writeString(tempFile, rawContent);
 
         ApplyFile applyFile = makeApplyFile(tempFile, "sql");
 
         Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        mockScriptExecutor.execute(capture(capturedScript), anyObject());
-        expect(
-                        mockParentContext.get(
-                                eq(ScriptExecutor.class),
-                                eq("sql"),
-                                eq(CONNECTOR_NAME),
-                                eq(connectorConfig)))
-                .andReturn(mockScriptExecutor);
-        replay(mockParentContext, mockScriptExecutor);
+        expectStandardMocks("sql", connectorConfig);
+        mockScriptExecutor.execute(capture(capturedScript), isA(Context.class));
+        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
 
-        CommandContext context = buildContext(mockParentContext, fullConfig, null);
+        new JdbcConnector(CONNECTOR_NAME, connectorConfig)
+                .execute(applyFile, new CommandContext(mockParentContext));
 
-        new JdbcConnector(CONNECTOR_NAME, connectorConfig).execute(applyFile, context);
-
-        verify(mockParentContext, mockScriptExecutor);
-        // Default behaviour: no substitution, original content passes through
-        assertEquals(capturedScript.getValue(), originalContent);
+        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+        assertEquals(capturedScript.getValue(), rawContent);
     }
 
-    // -------------------------------------------------------------------------
-    // Variable substitution — multiple extensions in a comma-separated list
-    // -------------------------------------------------------------------------
-
     @Test
-    public void testVariableSubstitutionAppliedForAllListedExtensions() throws Exception {
+    public void testPlaceholdersAreNotSubstitutedByConnector() throws Exception {
+        // Substitution is now the executor's concern — the connector passes raw content.
         Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql,xml").build();
-        Configuration fullConfig = new MapConfiguration(Map.of("variables.tableName", "orders"));
+                Configuration.builder().set("variableSubstitution.extensions", "sql").build();
 
-        // Test .xml extension
-        tempFile = Files.createTempFile("test-", ".xml");
-        Files.writeString(tempFile, "<table>${tableName}</table>");
+        tempFile = Files.createTempFile("test-", ".sql");
+        String rawContent = "CREATE SCHEMA ${mySchema};";
+        Files.writeString(tempFile, rawContent);
 
-        ApplyFile applyFile = makeApplyFile(tempFile, "xml");
+        ApplyFile applyFile = makeApplyFile(tempFile, "sql");
 
         Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        mockScriptExecutor.execute(capture(capturedScript), anyObject());
-        expect(mockParentContext.has(Environment.class)).andReturn(false);
-        expect(
-                        mockParentContext.get(
-                                eq(ScriptExecutor.class),
-                                eq("xml"),
-                                eq(CONNECTOR_NAME),
-                                eq(connectorConfig)))
-                .andReturn(mockScriptExecutor);
-        replay(mockParentContext, mockScriptExecutor);
+        expectStandardMocks("sql", connectorConfig);
+        mockScriptExecutor.execute(capture(capturedScript), isA(Context.class));
+        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
 
-        CommandContext context = buildContext(mockParentContext, fullConfig, null);
+        new JdbcConnector(CONNECTOR_NAME, connectorConfig)
+                .execute(applyFile, new CommandContext(mockParentContext));
 
-        new JdbcConnector(CONNECTOR_NAME, connectorConfig).execute(applyFile, context);
-
-        verify(mockParentContext, mockScriptExecutor);
-        assertEquals(capturedScript.getValue(), "<table>orders</table>");
+        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+        // Content must be passed raw — no substitution at the connector level.
+        assertEquals(capturedScript.getValue(), rawContent);
     }
 
     @Test
-    public void testExtensionNotInCommaListIsNotSubstituted() throws Exception {
-        Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql,xml").build();
-        Configuration fullConfig = new MapConfiguration(Map.of("variables.tableName", "orders"));
+    public void testGroovyContentIsForwardedUnchanged() throws Exception {
+        Configuration connectorConfig = Configuration.builder().build();
 
         tempFile = Files.createTempFile("test-", ".groovy");
-        String originalContent = "// groovy: ${tableName}";
-        Files.writeString(tempFile, originalContent);
+        String rawContent = "sql.execute(\"SELECT 1\")";
+        Files.writeString(tempFile, rawContent);
 
         ApplyFile applyFile = makeApplyFile(tempFile, "groovy");
 
         Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        mockScriptExecutor.execute(capture(capturedScript), anyObject());
-        expect(
-                        mockParentContext.get(
-                                eq(ScriptExecutor.class),
-                                eq("groovy"),
-                                eq(CONNECTOR_NAME),
-                                eq(connectorConfig)))
-                .andReturn(mockScriptExecutor);
-        replay(mockParentContext, mockScriptExecutor);
+        expectStandardMocks("groovy", connectorConfig);
+        mockScriptExecutor.execute(capture(capturedScript), isA(Context.class));
+        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
 
-        CommandContext context = buildContext(mockParentContext, fullConfig, null);
+        new JdbcConnector(CONNECTOR_NAME, connectorConfig)
+                .execute(applyFile, new CommandContext(mockParentContext));
 
-        new JdbcConnector(CONNECTOR_NAME, connectorConfig).execute(applyFile, context);
+        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+        assertEquals(capturedScript.getValue(), rawContent);
+    }
 
-        verify(mockParentContext, mockScriptExecutor);
-        assertEquals(capturedScript.getValue(), originalContent);
+    // -------------------------------------------------------------------------
+    // JdbcDatabase injection into the child context
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testJdbcDatabaseIsAvailableInContextReceivedByExecutor() throws Exception {
+        Configuration connectorConfig = Configuration.builder().build();
+
+        tempFile = Files.createTempFile("test-", ".sql");
+        Files.writeString(tempFile, "SELECT 1;");
+
+        ApplyFile applyFile = makeApplyFile(tempFile, "sql");
+
+        Capture<Context> capturedContext = newCapture(CaptureType.FIRST);
+        expectStandardMocks("sql", connectorConfig);
+        mockScriptExecutor.execute(anyString(), capture(capturedContext));
+        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+
+        new JdbcConnector(CONNECTOR_NAME, connectorConfig)
+                .execute(applyFile, new CommandContext(mockParentContext));
+
+        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+
+        // The executor receives a child context that exposes the JdbcDatabase directly.
+        assertSame(capturedContext.getValue().get(JdbcDatabase.class), mockJdbcDatabase);
+    }
+
+    @Test
+    public void testExtensionDeterminesScriptExecutorQualifier() throws Exception {
+        // Verify that the connector uses the file extension as the qualifier when looking
+        // up the ScriptExecutor.
+        Configuration connectorConfig = Configuration.builder().build();
+
+        tempFile = Files.createTempFile("test-", ".groovy");
+        Files.writeString(tempFile, "// groovy script");
+
+        ApplyFile applyFile = makeApplyFile(tempFile, "groovy");
+
+        expectStandardMocks("groovy", connectorConfig);
+        mockScriptExecutor.execute(anyString(), isA(Context.class));
+        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+
+        new JdbcConnector(CONNECTOR_NAME, connectorConfig)
+                .execute(applyFile, new CommandContext(mockParentContext));
+
+        // verify() confirms the correct "groovy" qualifier was used when getting the executor.
+        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
     }
 
     // -------------------------------------------------------------------------
@@ -339,23 +218,18 @@ public class JdbcConnectorTest {
     // -------------------------------------------------------------------------
 
     /**
-     * Builds a {@link CommandContext} backed by the given mock parent. The real {@link
-     * ExpressionEvaluator} and a {@link VariableService} built from {@code fullConfig} are always
-     * set. An optional {@link Environment} is injected when provided.
+     * Sets up the two mandatory mock expectations every test shares:
+     *
+     * <ol>
+     *   <li>JdbcDatabase lookup from the parent context.
+     *   <li>ScriptExecutor lookup with the given extension qualifier.
+     * </ol>
      */
-    private CommandContext buildContext(
-            Context parent, Configuration fullConfig, Environment environment) {
-        CommandContext context = new CommandContext(parent);
-        context.setValue(ExpressionEvaluator.class, expressionEvaluator);
-        context.setValue(Configuration.class, fullConfig);
-        VariableService variableService =
-                new DefaultVariableServiceFactory()
-                        .getVariableService(fullConfig, expressionEvaluator);
-        context.setValue(VariableService.class, variableService);
-        if (environment != null) {
-            context.setValue(Environment.class, environment);
-        }
-        return context;
+    private void expectStandardMocks(String extension, Configuration connectorConfig) {
+        expect(mockParentContext.get(JdbcDatabase.class, null, CONNECTOR_NAME, connectorConfig))
+                .andReturn(mockJdbcDatabase);
+        expect(mockParentContext.get(eq(ScriptExecutor.class), eq(extension), eq(connectorConfig)))
+                .andReturn(mockScriptExecutor);
     }
 
     private ApplyFile makeApplyFile(Path file, String extension) {

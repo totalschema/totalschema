@@ -23,8 +23,7 @@ import groovy.lang.GroovyShell;
 import groovy.sql.Sql;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
-import io.github.totalschema.engine.core.command.api.CommandContext;
-import io.github.totalschema.jdbc.ConnectionAction;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.spi.script.ScriptExecutor;
 import java.sql.Connection;
@@ -32,49 +31,56 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Executes Groovy scripts against a JDBC database.
+ *
+ * <p>The following bindings are injected into every script:
+ *
+ * <ul>
+ *   <li>{@code sql} ({@link groovy.sql.Sql}) — open database connection
+ *   <li>{@code configuration} ({@link io.github.totalschema.config.Configuration}) — connector
+ *       configuration
+ *   <li>{@code environment} ({@link io.github.totalschema.config.environment.Environment}) —
+ *       current environment, if present in the context
+ * </ul>
+ *
+ * <p>No variable substitution is applied — Groovy's own {@code ${...}} GString syntax handles
+ * dynamic values at the language level.
+ *
+ * <p>The {@link io.github.totalschema.jdbc.JdbcDatabase} is retrieved from the {@link
+ * io.github.totalschema.engine.api.Context} at execution time; it is placed there by {@link
+ * io.github.totalschema.connector.jdbc.JdbcConnector} before this executor is invoked.
+ */
 final class GroovyScriptExecutor implements ScriptExecutor {
 
     private final Logger log = LoggerFactory.getLogger(GroovyScriptExecutor.class);
 
-    private final String name;
-
-    private final JdbcDatabase jdbcDatabase;
     private final Configuration configuration;
 
     /**
-     * Constructs a GroovyScriptExecutor with the provided dependencies.
-     *
-     * @param name The name of the connector
-     * @param configuration Configuration for the script executor
-     * @param jdbcDatabase The JDBC database connection (injected via IoC container)
+     * @param configuration Configuration for the script executor (injected into Groovy binding)
      */
-    GroovyScriptExecutor(String name, Configuration configuration, JdbcDatabase jdbcDatabase) {
+    GroovyScriptExecutor(Configuration configuration) {
 
-        this.name = name;
-        this.jdbcDatabase = jdbcDatabase;
         this.configuration = configuration;
     }
 
     @Override
-    public void execute(String groovyScript, CommandContext context) throws InterruptedException {
+    public void execute(String groovyScript, Context context) throws InterruptedException {
 
-        log.info("[{}] database: Initializing Groovy Script interpreter", name);
+        log.info("Initializing Groovy Script interpreter");
+
+        JdbcDatabase jdbcDatabase = context.get(JdbcDatabase.class);
 
         try {
             jdbcDatabase.withConnection(
-                    new ConnectionAction<Void>() {
-                        @Override
-                        public Void execute(Connection connection) {
-
-                            executeGroovyScript(groovyScript, connection, context);
-
-                            return null;
-                        }
+                    connection -> {
+                        executeGroovyScript(groovyScript, connection, context);
+                        return null;
                     });
 
         } catch (SQLException | RuntimeException ex) {
-            throw new RuntimeException(
-                    "Failure executing Groovy script against the database: " + name, ex);
+            throw new RuntimeException("Failure executing Groovy script", ex);
 
         } catch (NoClassDefFoundError groovyUseError) {
 
@@ -85,36 +91,23 @@ final class GroovyScriptExecutor implements ScriptExecutor {
         }
     }
 
-    private void executeGroovyScript(
-            String groovyScript, Connection connection, CommandContext context) {
+    private void executeGroovyScript(String groovyScript, Connection connection, Context context) {
 
         Binding binding = new Binding();
+        binding.setProperty("configuration", configuration);
+
+        if (context.has(Environment.class)) {
+            binding.setProperty("environment", context.get(Environment.class));
+        }
 
         try (Sql sql = new Sql(connection)) {
             binding.setProperty("sql", sql);
-            binding.setProperty("configuration", configuration);
-
-            if (context.has(Environment.class)) {
-                Environment environment = context.get(Environment.class);
-
-                binding.setProperty("environment", environment);
-            }
-
-            GroovyShell shell = new GroovyShell(null, binding);
-            shell.evaluate(groovyScript);
+            new GroovyShell(null, binding).evaluate(groovyScript);
         }
     }
 
     @Override
     public String toString() {
-        return "GroovyScriptExecutor{"
-                + "name='"
-                + name
-                + '\''
-                + ", jdbcDatabase="
-                + jdbcDatabase
-                + ", configuration="
-                + configuration
-                + '}';
+        return "GroovyScriptExecutor{configuration=" + configuration + '}';
     }
 }

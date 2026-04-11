@@ -19,18 +19,39 @@
 package io.github.totalschema.engine.internal.script;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.config.environment.Environment;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.jdbc.JdbcDatabase;
+import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.script.ScriptExecutor;
+import io.github.totalschema.spi.variables.VariableService;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+/**
+ * Executes SQL scripts against a JDBC database.
+ *
+ * <p>Responsibilities:
+ *
+ * <ul>
+ *   <li>Optionally substitutes {@code ${varName}} placeholders when {@code "sql"} appears in the
+ *       connector's {@code variableSubstitution.extensions} list.
+ *   <li>Splits the (possibly substituted) script on the configured statement separator (default:
+ *       {@code ";"}) and executes each non-blank statement via JDBC.
+ * </ul>
+ *
+ * <p>The {@link io.github.totalschema.jdbc.JdbcDatabase} is retrieved from the {@link
+ * io.github.totalschema.engine.api.Context} at execution time; it is placed there by {@link
+ * io.github.totalschema.connector.jdbc.JdbcConnector} before this executor is invoked.
+ */
 public final class SqlScriptExecutor implements ScriptExecutor {
 
+    private final boolean variableSubstitutionEnabled;
     private final String statementSeparator;
-    private final JdbcDatabase jdbcDatabase;
 
     private static final class DefaultValues {
 
@@ -38,12 +59,15 @@ public final class SqlScriptExecutor implements ScriptExecutor {
     }
 
     /**
-     * Constructs a SqlScriptExecutor with the provided dependencies.
-     *
      * @param connectorConfiguration Configuration for the script executor
-     * @param jdbcDatabase The JDBC database connection (injected via IoC container)
      */
-    public SqlScriptExecutor(Configuration connectorConfiguration, JdbcDatabase jdbcDatabase) {
+    public SqlScriptExecutor(Configuration connectorConfiguration) {
+
+        this.variableSubstitutionEnabled =
+                connectorConfiguration
+                        .getList("variableSubstitution.extensions")
+                        .orElse(Collections.emptyList())
+                        .contains("sql");
 
         if (connectorConfiguration.getBoolean("no.statementSeparator").orElse(false)) {
             this.statementSeparator = null;
@@ -53,12 +77,16 @@ public final class SqlScriptExecutor implements ScriptExecutor {
                             .getString("statementSeparator")
                             .orElse(DefaultValues.STATEMENT_SEPARATOR);
         }
-
-        this.jdbcDatabase = jdbcDatabase;
     }
 
     @Override
-    public void execute(String script, CommandContext context) throws InterruptedException {
+    public void execute(String script, Context context) throws InterruptedException {
+
+        if (variableSubstitutionEnabled) {
+            script = substituteVariables(script, context);
+        }
+
+        JdbcDatabase jdbcDatabase = context.get(JdbcDatabase.class);
 
         List<String> statements = getStatements(script);
 
@@ -71,6 +99,27 @@ public final class SqlScriptExecutor implements ScriptExecutor {
                 throw new RuntimeException("Statement failed: " + statement, e);
             }
         }
+    }
+
+    /**
+     * Replaces {@code ${varName}} placeholders in {@code content} with the resolved variable values
+     * for the current environment.
+     *
+     * @param content raw SQL content
+     * @param context the current command context
+     * @return content with all known variable references replaced
+     */
+    private String substituteVariables(String content, Context context) {
+
+        ExpressionEvaluator expressionEvaluator = context.get(ExpressionEvaluator.class);
+        VariableService variableService = context.get(VariableService.class);
+
+        Map<String, String> variables =
+                context.getOptional(Environment.class)
+                        .map(variableService::getVariablesInEnvironment)
+                        .orElseGet(variableService::getVariables);
+
+        return expressionEvaluator.evaluate(content, variables);
     }
 
     private List<String> getStatements(String fileContent) {
@@ -95,9 +144,9 @@ public final class SqlScriptExecutor implements ScriptExecutor {
     @Override
     public String toString() {
         return "SqlScriptExecutor{"
-                + " jdbcDatabase="
-                + jdbcDatabase
-                + " ,statementSeparator='"
+                + "variableSubstitutionEnabled="
+                + variableSubstitutionEnabled
+                + ", statementSeparator='"
                 + statementSeparator
                 + '\''
                 + '}';

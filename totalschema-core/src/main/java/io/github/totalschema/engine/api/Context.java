@@ -68,7 +68,6 @@ public interface Context {
      *     null})
      * @return true if this context contains a mapping for the specified key
      * @throws NullPointerException if the clazz parameter is null
-     * @throws IllegalStateException if the context does not have an association for the given class
      */
     boolean has(Class<?> clazz);
 

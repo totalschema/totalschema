@@ -18,72 +18,20 @@
 
 package io.github.totalschema.extensions.groovy;
 
-import static io.github.totalschema.spi.factory.ArgumentSpecification.*;
-
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.jdbc.JdbcDatabase;
-import io.github.totalschema.spi.factory.ArgumentHandler;
-import io.github.totalschema.spi.factory.ArgumentSpecification;
-import io.github.totalschema.spi.factory.ComponentFactory;
+import io.github.totalschema.spi.script.AbstractScriptExecutorComponentFactory;
 import io.github.totalschema.spi.script.ScriptExecutor;
-import java.util.List;
-import java.util.Optional;
 
-/**
- * ComponentFactory for creating Groovy script executors.
- *
- * <p>This factory creates {@link ScriptExecutor} instances with qualifier "groovy" that can execute
- * Groovy scripts with database connectivity.
- *
- * <p>Usage: {@code context.get(ScriptExecutor.class, "groovy", connectorName, configuration)}
- */
-public final class GroovyScriptExecutorComponentFactory extends ComponentFactory<ScriptExecutor> {
+/** {@link ScriptExecutor} factory for {@code .groovy} files. */
+public final class GroovyScriptExecutorComponentFactory
+        extends AbstractScriptExecutorComponentFactory {
 
-    private static final ArgumentSpecification<String> NAME =
-            string("name").withConstraint(notBlank());
-    private static final ArgumentSpecification<Configuration> CONFIGURATION =
-            configuration("configuration");
-
-    private static final ArgumentHandler ARGUMENTS =
-            ArgumentHandler.getInstance(
-                    GroovyScriptExecutorComponentFactory.class, NAME, CONFIGURATION);
-
-    @Override
-    public boolean isLazy() {
-        return true; // Created on-demand with arguments
+    public GroovyScriptExecutorComponentFactory() {
+        super("groovy");
     }
 
     @Override
-    public Class<ScriptExecutor> getComponentType() {
-        return ScriptExecutor.class;
-    }
-
-    @Override
-    public Optional<String> getQualifier() {
-        return Optional.of("groovy");
-    }
-
-    @Override
-    public List<Class<?>> getDependencies() {
-        return List.of(JdbcDatabase.class);
-    }
-
-    @Override
-    public List<ArgumentSpecification<?>> getArgumentSpecifications() {
-        return ARGUMENTS.getSpecifications();
-    }
-
-    @Override
-    public ScriptExecutor createComponent(Context context, List<Object> arguments) {
-        ARGUMENTS.validateStructure(arguments);
-
-        String name = ARGUMENTS.getArgument(NAME, arguments);
-        Configuration configuration = ARGUMENTS.getArgument(CONFIGURATION, arguments);
-
-        // Get JdbcDatabase from IoC container - container manages lifecycle
-        JdbcDatabase jdbcDatabase = context.get(JdbcDatabase.class, null, name, configuration);
-
-        return new GroovyScriptExecutor(name, configuration, jdbcDatabase);
+    protected ScriptExecutor createExecutor(Configuration configuration) {
+        return new GroovyScriptExecutor(configuration);
     }
 }
