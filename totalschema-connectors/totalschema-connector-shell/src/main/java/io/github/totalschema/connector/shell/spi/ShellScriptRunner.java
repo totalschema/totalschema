@@ -21,4 +21,18 @@ package io.github.totalschema.connector.shell.spi;
 import io.github.totalschema.engine.internal.shell.direct.TerminalSession;
 import java.util.List;
 
-public interface ShellScriptSession extends TerminalSession<List<String>> {}
+/**
+ * A runner that executes local shell scripts as OS processes.
+ *
+ * <p>Specialises {@link TerminalSession} for a command of type {@code List<String>}, where the list
+ * holds the interpreter prefix followed by the script's absolute path. For example: {@code ["sh",
+ * "/opt/changes/0001.setup.sh"]} or {@code ["cmd.exe", "/c", "C:\\changes\\0001.setup.bat"]}.
+ *
+ * <p>The built-in base implementation is {@link
+ * io.github.totalschema.connector.shell.impl.GenericShellScriptRunner}. Concrete subclasses ({@code
+ * ShScriptRunner}, {@code CmdExeScriptRunner}, {@code PwshScriptRunner}, {@code
+ * WindowsPowerShellScriptRunner}) hard-code a specific interpreter. Custom implementations can be
+ * provided by registering a {@link ShellScriptRunnerFactory} via Java {@link
+ * java.util.ServiceLoader}.
+ */
+public interface ShellScriptRunner extends TerminalSession<List<String>> {}

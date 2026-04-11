@@ -46,34 +46,33 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
             return process.getInputStream();
         }
 
-        public InputStream getErrorStream() {
-            return process.getErrorStream();
-        }
-
         public int waitFor() throws InterruptedException {
             return process.waitFor();
         }
     }
 
     @Override
-    public void execute(List<String> command) {
+    public void execute(List<String> command) throws InterruptedException {
 
-        log.info("Executing command: {}", command);
+        List<String> actualCommand = buildActualCommand(command);
 
-        try (AutoCloseableProcess process = new AutoCloseableProcess(startProcess(command))) {
+        log.info("Executing command: {}", actualCommand);
 
-            Future<?> outReader =
-                    submitReaderTask(process.getInputStream(), this::acceptStandardOut);
-            Future<?> errorReader =
-                    submitReaderTask(process.getErrorStream(), this::acceptStandardError);
+        try (AutoCloseableProcess process = startProcess(actualCommand)) {
+
+            // stderr is merged into stdout by startProcess(); a single reader thread is
+            // sufficient and preserves the exact chronological order of all process output.
+            Future<?> outReader = submitReaderTask(process.getInputStream(), this::acceptOutput);
 
             outReader.get();
-            errorReader.get();
 
             int exitStatus = process.waitFor();
             if (exitStatus != 0) {
                 throw new RuntimeException(
-                        "Exit status " + exitStatus + " received for command: " + command);
+                        "Exit status "
+                                + exitStatus
+                                + " received for command: "
+                                + String.join(" ", actualCommand));
             }
 
         } catch (ExecutionException e) {
@@ -81,30 +80,46 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
 
         } catch (IOException ex) {
             throw new RuntimeException(ex);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new RuntimeException("interrupt received", e);
         }
     }
 
-    protected Process startProcess(List<String> command) throws IOException {
+    /**
+     * Starts the OS process for the given command.
+     *
+     * @param command the command to execute, as a list of tokens (e.g. {@code ["sh",
+     *     "/opt/changes/0001.setup.sh"]})
+     */
+    private AutoCloseableProcess startProcess(List<String> command) throws IOException {
 
         ProcessBuilder builder = new ProcessBuilder();
-        builder.redirectErrorStream(false);
+        builder.redirectErrorStream(true);
 
         builder.command(command);
 
-        return builder.start();
+        Process startedProcess = builder.start();
+
+        return new AutoCloseableProcess(startedProcess);
     }
 
-    protected void acceptStandardOut(String line) {
-        System.out.format("[StdOut] %s%n", line);
+    /**
+     * Transforms the logical command into the actual OS-level token list passed to {@link
+     * ProcessBuilder}.
+     *
+     * <p>The default implementation returns the command unchanged. Subclasses may override this to,
+     * for example, prepend an interpreter prefix.
+     */
+    protected List<String> buildActualCommand(List<String> command) {
+        return command;
     }
 
-    protected void acceptStandardError(String line) {
-        System.err.format("[StdErr] %s%n", line);
+    /**
+     * Called for every line of output produced by the process (stdout and stderr merged).
+     *
+     * <p>Subclasses may override this method to redirect output to a logger, a result collector,
+     * etc.
+     */
+    protected void acceptOutput(String line) {
+        System.out.format("[Output] %s%n", line);
     }
 
     @Override

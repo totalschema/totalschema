@@ -37,6 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannelEvent;
+import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
@@ -103,6 +104,13 @@ public final class MinaSshdConnection extends AbstractTerminalSession<String>
     private final String privateKeyPassphrase;
     private final Properties sshProperties;
 
+    /**
+     * When {@code false}, the client skips host-key verification (equivalent to SSH {@code
+     * StrictHostKeyChecking=no}). Intended for integration tests and development environments only
+     * — never disable in production.
+     */
+    private final boolean strictHostKeyChecking;
+
     private final Integer lockTimeout;
     private final TimeUnit lockTimeoutUnit;
     private final long commandTimeoutMs;
@@ -141,6 +149,8 @@ public final class MinaSshdConnection extends AbstractTerminalSession<String>
                         .orElse(DefaultValues.COMMAND_TIMEOUT_MS);
 
         this.lockTemplate = new LockTemplate(lockTimeout, lockTimeoutUnit, new ReentrantLock());
+
+        this.strictHostKeyChecking = configuration.getBoolean("strictHostKeyChecking").orElse(true);
 
         this.sshProperties =
                 configuration.getPrefixNamespace("ssh", "properties").asProperties().orElse(null);
@@ -183,10 +193,27 @@ public final class MinaSshdConnection extends AbstractTerminalSession<String>
 
             channel.open().verify(commandTimeoutMs);
 
-            // Wait for command to complete
-            channel.waitFor(java.util.EnumSet.of(ClientChannelEvent.CLOSED), commandTimeoutMs);
+            // First wait for EXIT_STATUS: it is sent by the server before the channel close,
+            // so it reliably captures the exit code even for very short-lived commands.
+            // CLOSED is included as a fallback for servers that omit the exit-status request.
+            java.util.Set<ClientChannelEvent> firstWait =
+                    channel.waitFor(
+                            java.util.EnumSet.of(
+                                    ClientChannelEvent.EXIT_STATUS,
+                                    ClientChannelEvent.CLOSED,
+                                    ClientChannelEvent.TIMEOUT),
+                            commandTimeoutMs);
 
             Integer exitStatus = channel.getExitStatus();
+
+            // If EXIT_STATUS arrived before CLOSED, wait for the channel to finish closing
+            // so that all output is flushed before we read it.
+            if (!firstWait.contains(ClientChannelEvent.CLOSED)
+                    && !firstWait.contains(ClientChannelEvent.TIMEOUT)) {
+                channel.waitFor(
+                        java.util.EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.TIMEOUT),
+                        commandTimeoutMs);
+            }
 
             // Process output - convert ByteArrayOutputStream to InputStream for processing
             java.io.ByteArrayInputStream outStream =
@@ -237,6 +264,10 @@ public final class MinaSshdConnection extends AbstractTerminalSession<String>
     private void connect() throws IOException, InterruptedException {
         if (client == null) {
             client = SshClient.setUpDefaultClient();
+
+            if (!strictHostKeyChecking) {
+                client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
+            }
 
             // Apply custom SSH properties if provided
             if (sshProperties != null) {

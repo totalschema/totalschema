@@ -1,6 +1,6 @@
 /*
  * totalschema: tool for managing database versioning and schema changes with ease.
- * Copyright (C) 2025 totalschema development team
+ * Copyright (C) 2026 totalschema development team
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,18 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.connector.shell.spi;
+package io.github.totalschema.connector.shell.impl;
 
-import io.github.totalschema.config.Configuration;
-import io.github.totalschema.connector.shell.impl.DefaultLocalShellSessionFactory;
-import io.github.totalschema.spi.ServiceLoaderFactory;
+import java.util.List;
 
-public interface LocalShellSessionFactory {
-
-    static LocalShellSessionFactory getInstance() {
-        return ServiceLoaderFactory.getSingleService(LocalShellSessionFactory.class)
-                .orElseGet(DefaultLocalShellSessionFactory::new);
+/**
+ * Runs {@code .ps1} scripts via Windows PowerShell 5.x ({@code powershell.exe}).
+ *
+ * <p>Used as a fallback when PowerShell Core ({@code pwsh}) is not found on {@code PATH}. {@code
+ * -ExecutionPolicy Bypass} ensures the script is not silently blocked by the system execution
+ * policy.
+ */
+final class WindowsPowerShellScriptRunner extends GenericShellScriptRunner {
+    WindowsPowerShellScriptRunner(String name) {
+        super(name, List.of("powershell.exe", "-ExecutionPolicy", "Bypass", "-File"));
     }
-
-    ShellScriptSession getLocalShellSession(String name, Configuration configuration);
 }

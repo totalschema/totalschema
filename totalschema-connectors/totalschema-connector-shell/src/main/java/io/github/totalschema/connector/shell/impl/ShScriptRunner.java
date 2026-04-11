@@ -1,6 +1,6 @@
 /*
  * totalschema: tool for managing database versioning and schema changes with ease.
- * Copyright (C) 2025 totalschema development team
+ * Copyright (C) 2026 totalschema development team
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,14 +18,16 @@
 
 package io.github.totalschema.connector.shell.impl;
 
-import io.github.totalschema.config.Configuration;
-import io.github.totalschema.connector.shell.spi.LocalShellSessionFactory;
-import io.github.totalschema.connector.shell.spi.ShellScriptSession;
+import java.util.List;
 
-public class DefaultLocalShellSessionFactory implements LocalShellSessionFactory {
-
-    @Override
-    public ShellScriptSession getLocalShellSession(String name, Configuration configuration) {
-        return new DefaultShellScriptSession(name, configuration);
+/**
+ * Runs scripts via {@code sh}, the standard POSIX shell available on Unix and macOS.
+ *
+ * <p>The script path is passed as a file argument ({@code sh <path>}), not via {@code -c}, so no
+ * execute-bit is required on the script file.
+ */
+final class ShScriptRunner extends GenericShellScriptRunner {
+    ShScriptRunner(String name) {
+        super(name, List.of("sh"));
     }
 }

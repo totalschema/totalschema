@@ -26,6 +26,19 @@
             <artifactId>totalschema-core</artifactId>
         </dependency>
 
+        <!-- Connector dependencies (for backward compatibility - all connectors available in CLI) -->
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-connector-ssh</artifactId>
+            <version>1.2.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-connector-shell</artifactId>
+            <version>1.2.0-SNAPSHOT</version>
+        </dependency>
+
         <!-- PicoCLI for command-line interface -->
         <dependency>
             <groupId>info.picocli</groupId>

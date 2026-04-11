@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see SshCommandListConnector
  */
-public class SshScriptConnector extends AbstractTerminalConnector<String> {
+final class SshScriptConnector extends AbstractTerminalConnector<SshConnection> {
 
     private static final Logger log = LoggerFactory.getLogger(SshScriptConnector.class);
 
@@ -73,14 +73,19 @@ public class SshScriptConnector extends AbstractTerminalConnector<String> {
     private final String name;
     private final String remoteTempDir;
     private final String shell;
-    private final SshConnection sshConnection;
 
     public SshScriptConnector(String name, Configuration connectorConfiguration) {
-        super(SshConnectionFactory.getInstance().getSshConnection(name, connectorConfiguration));
+        this(
+                name,
+                SshConnectionFactory.getInstance().getSshConnection(name, connectorConfiguration),
+                connectorConfiguration);
+    }
+
+    public SshScriptConnector(
+            String name, SshConnection sshConnection, Configuration connectorConfiguration) {
+        super(sshConnection);
 
         this.name = name;
-        this.sshConnection =
-                SshConnectionFactory.getInstance().getSshConnection(name, connectorConfiguration);
         this.remoteTempDir =
                 connectorConfiguration.getString("remote", "temp", "dir").orElse("/tmp");
         this.shell = connectorConfiguration.getString("shell").orElse("/bin/bash");
@@ -100,7 +105,7 @@ public class SshScriptConnector extends AbstractTerminalConnector<String> {
                     remoteScriptPath);
 
             // Upload file using Apache MINA SSHD's SCP client
-            sshConnection.uploadFile(scriptFile, remoteScriptPath);
+            session.uploadFile(scriptFile, remoteScriptPath);
 
             // Make script executable
             session.execute("chmod +x " + remoteScriptPath);
