@@ -21,11 +21,10 @@ package io.github.totalschema.connector.shell.impl;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunnerFactory;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of {@link ShellScriptRunnerFactory}.
@@ -40,10 +39,13 @@ import java.util.Locale;
  *   <li><b>{@code start.command} configured</b> — the comma-separated value in the connector
  *       configuration is used as the interpreter prefix for every script, bypassing all
  *       auto-detection.
- *   <li><b>{@code .ps1} extension</b> — {@code pwsh -ExecutionPolicy Bypass -File} is used if
- *       {@code pwsh} (PowerShell 7+) is found on {@code PATH}; otherwise falls back to {@code
- *       powershell.exe -ExecutionPolicy Bypass -File} (Windows PowerShell 5.x).
- *   <li><b>{@code .bat} / {@code .cmd} extension</b> — {@code cmd.exe /c}.
+ *   <li><b>{@code .sh} extension</b> — always {@code sh}, regardless of the host OS.
+ *   <li><b>{@code .ps1} extension</b> — {@code pwsh -ExecutionPolicy Bypass -File} when {@code
+ *       pwsh} (PowerShell 7+) is on {@code PATH}; {@code powershell.exe -ExecutionPolicy Bypass
+ *       -File} (Windows PowerShell 5.x) when {@code pwsh} is absent but the host is Windows; {@link
+ *       IllegalStateException} otherwise.
+ *   <li><b>{@code .bat} / {@code .cmd} extension</b> — {@code cmd.exe /c} on Windows; {@link
+ *       IllegalStateException} on non-Windows.
  *   <li><b>Windows, other extensions</b> — {@code cmd.exe /c}.
  *   <li><b>Unix / macOS, other extensions</b> — {@code sh} (no {@code -c}; the path is passed as a
  *       file argument, so no execute-bit is required on the script).
@@ -54,93 +56,137 @@ import java.util.Locale;
  */
 public class DefaultShellScriptRunnerFactory implements ShellScriptRunnerFactory {
 
-    /** Creates a new {@code DefaultShellScriptRunnerFactory}. */
-    public DefaultShellScriptRunnerFactory() {}
+    private static final Logger log =
+            LoggerFactory.getLogger(DefaultShellScriptRunnerFactory.class);
+
+    private final RuntimeInformation runtimeInformation;
 
     /**
-     * Returns a {@link DefaultShellScriptRunner} configured with the interpreter prefix appropriate
-     * for {@code fileName}.
+     * Creates a new {@code DefaultShellScriptRunnerFactory} that reads the real OS environment.
+     *
+     * <p>Uses {@link DefaultRuntimeInformation} to probe {@code os.name} and {@code PATH}.
+     */
+    public DefaultShellScriptRunnerFactory() {
+        this(new DefaultRuntimeInformation());
+    }
+
+    /**
+     * Creates a new {@code DefaultShellScriptRunnerFactory} with an explicit {@link
+     * RuntimeInformation}.
+     *
+     * <p><b>Package-visible for testing only.</b> Pass a mock or stub {@link RuntimeInformation} to
+     * exercise interpreter-selection logic without depending on the host OS or its {@code PATH}.
+     *
+     * @param runtimeInformation the runtime information provider; must not be {@code null}
+     */
+    DefaultShellScriptRunnerFactory(RuntimeInformation runtimeInformation) {
+        this.runtimeInformation = runtimeInformation;
+    }
+
+    /**
+     * Returns a {@link ShellScriptRunner} for the given script file.
+     *
+     * <p>Specifically, returns:
+     *
+     * <ul>
+     *   <li>a {@link GenericShellScriptRunner} built from the {@code start.command} token list, if
+     *       that key is present in {@code configuration}
+     *   <li>a {@link ShScriptRunner} for {@code .sh} files (on any OS)
+     *   <li>a {@link PwshScriptRunner} for {@code .ps1} files when {@code pwsh} is on {@code PATH}
+     *   <li>a {@link WindowsPowerShellScriptRunner} for {@code .ps1} files on Windows when {@code
+     *       pwsh} is not available
+     *   <li>a {@link CmdExeScriptRunner} for {@code .bat} / {@code .cmd} files on Windows, and for
+     *       all other extensions on Windows
+     *   <li>a {@link ShScriptRunner} on Unix / macOS for all other extensions
+     * </ul>
      *
      * @param name the connector name; forwarded to the runner for logging
      * @param configuration the connector configuration; may contain {@code start.command}
-     * @param fileName the script file name; its extension drives interpreter selection
-     * @return a new {@link DefaultShellScriptRunner}; never {@code null}
+     * @param fileName the script file name; its extension and the current OS drive selection
+     * @return a new {@link GenericShellScriptRunner} instance; never {@code null}
+     * @throws IllegalStateException if a {@code .ps1} script is requested on a non-Windows OS
+     *     without {@code pwsh} on {@code PATH}, or if a {@code .bat} / {@code .cmd} script is
+     *     requested on a non-Windows OS
      */
     @Override
     public ShellScriptRunner getRunner(String name, Configuration configuration, String fileName) {
-        List<String> prefix = resolvePrefix(configuration, fileName);
-        return new DefaultShellScriptRunner(name, prefix);
-    }
-
-    // -------------------------------------------------------------------------
-    // Prefix resolution
-    // -------------------------------------------------------------------------
-
-    private static List<String> resolvePrefix(Configuration configuration, String fileName) {
         List<String> configured = configuration.getList("start.command").orElse(null);
+
+        ShellScriptRunner shellScriptRunner;
+
         if (configured != null) {
-            return configured;
-        }
+            log.debug(
+                    "Creating GenericShellScriptRunner for {} due to user configuration: {}",
+                    fileName,
+                    configured);
 
-        String lower = fileName.toLowerCase(Locale.ROOT);
+            shellScriptRunner = new GenericShellScriptRunner(name, configured);
 
-        if (lower.endsWith(".ps1")) {
-            return powerShellPrefix();
-        }
+        } else if (isFileNameExtension(fileName, "sh")) {
+            log.debug("Creating ShScriptRunner due to file name extension: {}", fileName);
+            shellScriptRunner = getShShellScriptRunner(name);
 
-        if (lower.endsWith(".bat") || lower.endsWith(".cmd") || isWindows()) {
-            return List.of("cmd.exe", "/c");
-        }
+        } else if (isFileNameExtension(fileName, "ps1")) {
+            log.debug("Creating PowerShell Script Runner due to file name extension: {}", fileName);
+            shellScriptRunner = getPowerShellRunner(name, fileName);
 
-        // Unix / macOS: pass the script path as a file argument to sh.
-        // No -c flag: "sh <file>" reads and executes the file directly,
-        // which works even without the execute-bit set on the script.
-        return List.of("sh");
-    }
+        } else if (isFileNameExtension(fileName, "cmd") || isFileNameExtension(fileName, "bat")) {
+            log.debug(
+                    "Creating Windows CMD Script Runner due to file name extension: {}", fileName);
+            shellScriptRunner = getWindowsCmdExeScriptRunner(name, fileName);
 
-    /**
-     * Returns the PowerShell interpreter prefix, preferring PowerShell Core ({@code pwsh},
-     * cross-platform) when it is available on {@code PATH}, and falling back to Windows PowerShell
-     * ({@code powershell.exe}) otherwise.
-     *
-     * <p>{@code -ExecutionPolicy Bypass} is always included so scripts are not silently blocked by
-     * the system execution policy.
-     */
-    private static List<String> powerShellPrefix() {
-        if (isPwshAvailable()) {
-            return List.of("pwsh", "-ExecutionPolicy", "Bypass", "-File");
-        }
-        return List.of("powershell.exe", "-ExecutionPolicy", "Bypass", "-File");
-    }
+        } else {
+            // File name extension does not imply the shell to use. This could be a simple ".txt",
+            // or some exotic scripting language the runtime can start via the shell.
+            if (!runtimeInformation.isWindows()) {
+                log.debug(
+                        "Creating ShScriptRunner for {} as there is no more specific rule",
+                        fileName);
+                shellScriptRunner = getShShellScriptRunner(name);
 
-    /**
-     * Checks whether PowerShell Core ({@code pwsh}) is reachable on the system {@code PATH}.
-     *
-     * <p>Each entry in {@code PATH} is checked using {@link File#pathSeparator}, which resolves to
-     * the OS-specific separator ({@code ;} on Windows, {@code :} on Unix) without requiring
-     * explicit platform detection.
-     *
-     * @return {@code true} if {@code pwsh} (or {@code pwsh.exe} on Windows) is found in any {@code
-     *     PATH} directory; {@code false} otherwise
-     */
-    private static boolean isPwshAvailable() {
-        String pathEnv = System.getenv("PATH");
-        if (pathEnv == null) {
-            return false;
-        }
-
-        String executableFile = isWindows() ? "pwsh.exe" : "pwsh";
-
-        for (String dir : pathEnv.split(File.pathSeparator)) {
-            if (Files.isExecutable(Paths.get(dir, executableFile))) {
-                return true;
+            } else {
+                log.debug(
+                        "Creating Windows CMD Script Runner for {} as there is no more specific"
+                                + " rule",
+                        fileName);
+                shellScriptRunner = getWindowsCmdExeScriptRunner(name, fileName);
             }
         }
-        return false;
+
+        log.debug("Created ShellScriptRunner '{}' for: {}", shellScriptRunner, fileName);
+        return shellScriptRunner;
     }
 
-    /** Returns {@code true} when running on a Windows operating system. */
-    private static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("windows");
+    private static ShScriptRunner getShShellScriptRunner(String name) {
+        return new ShScriptRunner(name);
+    }
+
+    private GenericShellScriptRunner getPowerShellRunner(String name, String fileName) {
+        if (runtimeInformation.isPwshAvailable()) {
+            return new PwshScriptRunner(name);
+        } else {
+            if (runtimeInformation.isWindows()) {
+                return new WindowsPowerShellScriptRunner(name);
+            } else {
+                throw new IllegalStateException(
+                        String.format(
+                                "Cannot run PowerShell script (%s) on non-Windows OS when"
+                                        + " PowerShell Core is not detected on PATH.",
+                                fileName));
+            }
+        }
+    }
+
+    private CmdExeScriptRunner getWindowsCmdExeScriptRunner(String name, String fileName) {
+        if (runtimeInformation.isWindows()) {
+            return new CmdExeScriptRunner(name);
+        } else {
+            throw new IllegalStateException(
+                    String.format("Cannot run CMD script (%s) on non-Windows OS.", fileName));
+        }
+    }
+
+    private static boolean isFileNameExtension(String fileName, String extension) {
+        return fileName.toLowerCase(Locale.ROOT).endsWith(String.format(".%s", extension));
     }
 }

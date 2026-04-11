@@ -58,7 +58,7 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
 
         log.info("Executing command: {}", actualCommand);
 
-        try (AutoCloseableProcess process = new AutoCloseableProcess(startProcess(actualCommand))) {
+        try (AutoCloseableProcess process = startProcess(actualCommand)) {
 
             // stderr is merged into stdout by startProcess(); a single reader thread is
             // sufficient and preserves the exact chronological order of all process output.
@@ -91,14 +91,16 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
      * @param command the command to execute, as a list of tokens (e.g. {@code ["sh",
      *     "/opt/changes/0001.setup.sh"]})
      */
-    private Process startProcess(List<String> command) throws IOException {
+    private AutoCloseableProcess startProcess(List<String> command) throws IOException {
 
         ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream(true);
 
         builder.command(command);
 
-        return builder.start();
+        Process startedProcess = builder.start();
+
+        return new AutoCloseableProcess(startedProcess);
     }
 
     /**

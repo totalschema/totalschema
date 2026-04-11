@@ -52,23 +52,22 @@ public interface ShellScriptRunnerFactory {
     /**
      * Returns a {@link ShellScriptRunner} appropriate for the given script file.
      *
-     * <p>Implementations are expected to inspect {@code fileName} (typically its extension) and
-     * return a runner configured for that script type. For example, a built-in implementation might
-     * return:
+     * <p>Implementations are expected to inspect {@code fileName} (typically its extension) and the
+     * current OS, then return a runner configured for that combination. For example, the built-in
+     * implementation returns:
      *
      * <ul>
-     *   <li>a PowerShell runner for {@code .ps1} files
-     *   <li>a {@code cmd.exe} runner for {@code .bat} / {@code .cmd} files on Windows
-     *   <li>a {@code sh} runner for {@code .sh} and other files on Unix / macOS
+     *   <li>a PowerShell runner for {@code .ps1} files (on any OS)
+     *   <li>a {@code cmd.exe /c} runner on Windows (for all non-{@code .ps1} scripts)
+     *   <li>a {@code sh} runner on Unix / macOS (for all non-{@code .ps1} scripts)
      * </ul>
      *
-     * <p>Returning different concrete types per extension is explicitly encouraged: each returned
-     * instance only needs to know how to run one kind of script, keeping individual runners simple
-     * and independently replaceable.
+     * <p>When {@code start.command} is present in {@code configuration}, implementations should use
+     * it as the interpreter prefix unconditionally, bypassing all extension and OS detection.
      *
      * @param name the connector name; used for logging and diagnostics
      * @param configuration the connector configuration block; may contain a {@code start.command}
-     *     override that should take precedence over any auto-detection
+     *     override that takes precedence over any auto-detection
      * @param fileName the name of the script file about to be executed (e.g. {@code
      *     "0001.setup.apply.myshell.sh"}); used to determine the correct interpreter
      * @return a ready-to-use {@link ShellScriptRunner} for the given file; never {@code null}
