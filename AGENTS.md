@@ -136,13 +136,16 @@ public void testMyFeature() {
 ## Extension Points (SPI)
 
 Register in `META-INF/services/<interface>`:
-1. `ComponentFactory` → IoC components (includes script executors)
-2. `ConnectorFactory` → new connector types
+1. `ComponentFactory<Connector>` → new connector types (qualifier = connector type string, e.g. `"ftp"`)
+2. `ComponentFactory` → other IoC components (script executors, etc.)
 3. `ScriptExecutor` → script languages (via `ComponentFactory<ScriptExecutor>` with qualifier)
 4. `SqlDialect` → database-specific SQL
 5. `StateRepository` → state storage backends
 6. `SecretsManager` → secret providers
+7. `SshConnectionFactory` → replace SSH connection implementation
+8. `LocalShellSessionFactory` → replace local shell session implementation
 
+**📖 See:** `docs/developer/CONNECTOR_ARCHITECTURE.md` for the full connector architecture, built-in types, execution flow, and custom connector guide  
 **📖 See:** `docs/developer/SCRIPT_EXECUTOR_SUBSYSTEM.md` for detailed guide on adding script executors
 
 ## Distribution
@@ -172,6 +175,7 @@ Register in `META-INF/services/<interface>`:
 - `totalschema-cli/user_manual/README.md` → CLI commands, troubleshooting
 - `sample/totalschema.yml` → reference configuration with all features
 - `docs/developer/IOC_CONTAINER_ARCHITECTURE.md` → custom IoC container design (reflection-free, ServiceLoader-based)
+- `docs/developer/CONNECTOR_ARCHITECTURE.md` → **connector infrastructure**: core API, all built-in types (jdbc/ssh-script/ssh-commands/shell), execution flow, module structure, custom connector guide
 - `docs/developer/SCRIPT_EXECUTOR_SUBSYSTEM.md` → script executor architecture and extension guide
 - `docs/developer/LOCK_SERVICE_ARCHITECTURE.md` → distributed lock service implementation
 - `docs/developer/*.md` → refactoring decisions, architectural reviews

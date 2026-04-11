@@ -606,6 +606,8 @@ TotalSchema supports multiple connector types for executing change scripts acros
 | `shell` | Local shell script execution | Run shell scripts on the local machine |
 | Custom | User-defined connector types | Extend TotalSchema with custom connector implementations |
 
+👉 **[Connector Architecture Guide (developer)](docs/developer/CONNECTOR_ARCHITECTURE.md)** — full API reference, execution internals, module structure, and custom connector tutorial.
+
 ### JDBC Database Connectors
 
 Connect to any JDBC-compliant database:
@@ -1798,6 +1800,7 @@ Contributions are welcome! Please:
 
 - **[CLI Usage Guide](totalschema-cli/user_manual/README.md)** - Complete command-line interface documentation
 - **[Maven Plugin Guide](docs/MAVEN-USAGE.md)** - Complete Maven plugin documentation
+- **[Connector Architecture Guide](docs/developer/CONNECTOR_ARCHITECTURE.md)** - Connector infrastructure, built-in types, execution flow, custom connector guide
 - **[Main README](README.md)** - This document (architecture, concepts, configuration)
 
 ## Support
