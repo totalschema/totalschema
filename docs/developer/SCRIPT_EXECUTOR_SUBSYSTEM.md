@@ -88,7 +88,7 @@ from the context; they do not create or close the connection.
 **Features:**
 - Optional variable substitution (opt-in via `scriptExecutors.sql.variableSubstitution: true`)
 - Splits the script on a configurable separator (default: `;`)
-- Separator can be disabled with `no.statementSeparator: true`
+- Separator can be disabled with `disableStatementSeparator: true`
 
 **Configuration:**
 
@@ -98,7 +98,7 @@ connectors:
     type: jdbc
     # ...connection settings...
     statementSeparator: ";"          # optional, default is ";"
-    # no.statementSeparator: true   # disable splitting entirely
+    # disableStatementSeparator: true   # disable splitting entirely
     scriptExecutors:
       sql:
         variableSubstitution: true   # opt-in: enable ${varName} substitution for .sql files

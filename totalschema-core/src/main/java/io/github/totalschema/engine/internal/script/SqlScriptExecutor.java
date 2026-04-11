@@ -68,7 +68,7 @@ public final class SqlScriptExecutor implements ScriptExecutor {
                         .getBoolean("scriptExecutors.sql.variableSubstitution")
                         .orElse(false);
 
-        if (connectorConfiguration.getBoolean("no.statementSeparator").orElse(false)) {
+        if (connectorConfiguration.getBoolean("disableStatementSeparator").orElse(false)) {
             this.statementSeparator = null;
         } else {
             this.statementSeparator =

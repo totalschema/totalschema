@@ -218,7 +218,7 @@ public class SqlScriptExecutorTest {
     @Test
     public void testNoSeparatorExecutesScriptAsOneStatement() throws Exception {
         Configuration connectorConfig =
-                Configuration.builder().set("no.statementSeparator", "true").build();
+                Configuration.builder().set("disableStatementSeparator", "true").build();
 
         String script = "SELECT 1; SELECT 2";
         mockDatabase.execute(script);
