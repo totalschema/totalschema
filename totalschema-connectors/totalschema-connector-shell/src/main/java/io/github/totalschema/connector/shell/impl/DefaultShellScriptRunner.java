@@ -64,33 +64,15 @@ public class DefaultShellScriptRunner extends ExternalProcessTerminalSession
         this.commandPrefix = commandPrefix;
     }
 
-    /**
-     * Prepends {@link #commandPrefix} to {@code command} and launches the OS process.
-     *
-     * @param command the tail of the command (typically a single-element list with the script's
-     *     absolute path)
-     * @return the started {@link Process}
-     * @throws IOException if the process cannot be started
-     */
     @Override
-    protected Process startProcess(List<String> command) throws IOException {
+    protected List<String> buildCommand(List<String> command) {
         LinkedList<String> fullCommand = new LinkedList<>(commandPrefix);
         fullCommand.addAll(command);
-        return super.startProcess(fullCommand);
+        return fullCommand;
     }
 
     @Override
-    protected void acceptStandardOut(String line) {
-        System.out.format("[%s:StdOut] %s%n", name, line);
-    }
-
-    @Override
-    protected void acceptStandardError(String line) {
-        System.err.format("[%s:StdErr] %s%n", name, line);
-    }
-
-    @Override
-    public String toString() {
-        return "DefaultShellScriptRunner{name='" + name + "', commandPrefix=" + commandPrefix + '}';
+    protected void acceptOutput(String line) {
+        System.out.format("[%s:output] %s%n", name, line);
     }
 }

@@ -46,9 +46,6 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
             return process.getInputStream();
         }
 
-        public InputStream getErrorStream() {
-            return process.getErrorStream();
-        }
 
         public int waitFor() throws InterruptedException {
             return process.waitFor();
@@ -62,13 +59,12 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
 
         try (AutoCloseableProcess process = new AutoCloseableProcess(startProcess(command))) {
 
+            // stderr is merged into stdout by startProcess(); a single reader thread is
+            // sufficient and preserves the exact chronological order of all process output.
             Future<?> outReader =
-                    submitReaderTask(process.getInputStream(), this::acceptStandardOut);
-            Future<?> errorReader =
-                    submitReaderTask(process.getErrorStream(), this::acceptStandardError);
+                    submitReaderTask(process.getInputStream(), this::acceptOutput);
 
             outReader.get();
-            errorReader.get();
 
             int exitStatus = process.waitFor();
             if (exitStatus != 0) {
@@ -89,22 +85,47 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
         }
     }
 
-    protected Process startProcess(List<String> command) throws IOException {
+    /**
+     * Starts the OS process for the given command.
+     *
+     * <p>This method is {@code final} to guarantee that {@link
+     * ProcessBuilder#redirectErrorStream(boolean) redirectErrorStream(true)} is always set.
+     * Merging stderr into stdout at the OS level is the only reliable way to preserve the
+     * chronological ordering of all output: two independent reader threads draining separate pipes
+     * would race each other and cannot guarantee order. Subclasses that need to transform the
+     * command tokens should override {@link #buildCommand(List)} instead.
+     */
+    protected final Process startProcess(List<String> command) throws IOException {
 
         ProcessBuilder builder = new ProcessBuilder();
-        builder.redirectErrorStream(false);
+        builder.redirectErrorStream(true);
 
-        builder.command(command);
+        List<String> actualCommand = buildCommand(command);
+
+        builder.command(actualCommand);
 
         return builder.start();
     }
 
-    protected void acceptStandardOut(String line) {
-        System.out.format("[StdOut] %s%n", line);
+    /**
+     * Transforms the logical command into the actual OS-level token list passed to {@link
+     * ProcessBuilder}.
+     *
+     * <p>The default implementation returns the command unchanged. Subclasses may override this
+     * to, for example, prepend an interpreter prefix.
+     */
+    protected List<String> buildCommand(List<String> command) {
+        return command;
     }
 
-    protected void acceptStandardError(String line) {
-        System.err.format("[StdErr] %s%n", line);
+    /**
+     * Called for every line of output produced by the process (stdout and stderr merged).
+     *
+     * <p>Subclasses may override this method to redirect output to a logger, a result collector,
+     * etc.
+     */
+    protected void acceptOutput(String line) {
+        System.out.format("[Output] %s%n", line);
     }
 
     @Override
