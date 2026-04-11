@@ -630,7 +630,7 @@ totalschema-connector-shell            ← OPTIONAL (included in CLI/release by 
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-shell</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0-SNAPSHOT</version>
 </dependency>
 ```
 

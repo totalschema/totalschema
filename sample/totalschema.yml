@@ -68,3 +68,7 @@ connectors:
     password: ${dbPassword}
     db:
       type: generic
+    scriptExecutors:
+      sql:
+        # Opt-in variable substitution: set to true to enable ${varName} replacement in .sql scripts.
+        variableSubstitution: true

@@ -121,7 +121,9 @@ public class JdbcConnectorTest {
     public void testPlaceholdersAreNotSubstitutedByConnector() throws Exception {
         // Substitution is now the executor's concern — the connector passes raw content.
         Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql").build();
+                Configuration.builder()
+                        .set("scriptExecutors.sql.variableSubstitution", "true")
+                        .build();
 
         tempFile = Files.createTempFile("test-", ".sql");
         String rawContent = "CREATE SCHEMA ${mySchema};";

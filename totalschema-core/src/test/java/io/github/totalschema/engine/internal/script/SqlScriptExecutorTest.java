@@ -68,7 +68,9 @@ public class SqlScriptExecutorTest {
     @Test
     public void testVariableSubstitutionAppliedWhenEnabled() throws Exception {
         Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql").build();
+                Configuration.builder()
+                        .set("scriptExecutors.sql.variableSubstitution", "true")
+                        .build();
         Configuration fullConfig = new MapConfiguration(Map.of("variables.schema", "public"));
 
         mockDatabase.execute("CREATE SCHEMA public");
@@ -83,7 +85,9 @@ public class SqlScriptExecutorTest {
     @Test
     public void testVariableSubstitutionAppliedWithEnvironmentOverride() throws Exception {
         Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql").build();
+                Configuration.builder()
+                        .set("scriptExecutors.sql.variableSubstitution", "true")
+                        .build();
         Configuration fullConfig =
                 new MapConfiguration(Map.of("environments.DEV.variables.schema", "dev_schema"));
 
@@ -99,7 +103,9 @@ public class SqlScriptExecutorTest {
     @Test
     public void testMultipleVariablesSubstituted() throws Exception {
         Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "sql").build();
+                Configuration.builder()
+                        .set("scriptExecutors.sql.variableSubstitution", "true")
+                        .build();
         Configuration fullConfig =
                 new MapConfiguration(Map.of("variables.user", "svc", "variables.schema", "app"));
 
@@ -131,9 +137,11 @@ public class SqlScriptExecutorTest {
     }
 
     @Test
-    public void testVariableSubstitutionSkippedWhenSqlNotInList() throws Exception {
+    public void testVariableSubstitutionSkippedWhenFlagExplicitlyFalse() throws Exception {
         Configuration connectorConfig =
-                Configuration.builder().set("variableSubstitution.extensions", "xml").build();
+                Configuration.builder()
+                        .set("scriptExecutors.sql.variableSubstitution", "false")
+                        .build();
 
         mockDatabase.execute("CREATE SCHEMA ${schema}");
         replay(mockDatabase);

@@ -86,7 +86,7 @@ from the context; they do not create or close the connection.
 **Module:** `totalschema-core`
 
 **Features:**
-- Optional variable substitution (opt-in via `variableSubstitution.extensions: sql`)
+- Optional variable substitution (opt-in via `scriptExecutors.sql.variableSubstitution: true`)
 - Splits the script on a configurable separator (default: `;`)
 - Separator can be disabled with `no.statementSeparator: true`
 
@@ -99,8 +99,9 @@ connectors:
     # ...connection settings...
     statementSeparator: ";"          # optional, default is ";"
     # no.statementSeparator: true   # disable splitting entirely
-    variableSubstitution:
-      extensions: sql                # opt-in: enable ${varName} substitution for .sql files
+    scriptExecutors:
+      sql:
+        variableSubstitution: true   # opt-in: enable ${varName} substitution for .sql files
 ```
 
 **Example script:**

@@ -26,7 +26,6 @@ import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.script.ScriptExecutor;
 import io.github.totalschema.spi.variables.VariableService;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -38,8 +37,9 @@ import java.util.stream.Collectors;
  * <p>Responsibilities:
  *
  * <ul>
- *   <li>Optionally substitutes {@code ${varName}} placeholders when {@code "sql"} appears in the
- *       connector's {@code variableSubstitution.extensions} list.
+ *   <li>Optionally substitutes {@code ${varName}} placeholders when {@code
+ *       scriptExecutors.sql.variableSubstitution} is set to {@code true} in the connector
+ *       configuration.
  *   <li>Splits the (possibly substituted) script on the configured statement separator (default:
  *       {@code ";"}) and executes each non-blank statement via JDBC.
  * </ul>
@@ -65,9 +65,8 @@ public final class SqlScriptExecutor implements ScriptExecutor {
 
         this.variableSubstitutionEnabled =
                 connectorConfiguration
-                        .getList("variableSubstitution.extensions")
-                        .orElse(Collections.emptyList())
-                        .contains("sql");
+                        .getBoolean("scriptExecutors.sql.variableSubstitution")
+                        .orElse(false);
 
         if (connectorConfiguration.getBoolean("no.statementSeparator").orElse(false)) {
             this.statementSeparator = null;

@@ -58,7 +58,7 @@ the executor is invoked. Executors retrieve it with `context.get(JdbcDatabase.cl
 not create or own the connection themselves.
 
 Variable substitution (`${varName}` replacement) lives in `SqlScriptExecutor`, controlled by the
-`variableSubstitution.extensions` key in the connector configuration. Other executors are unaffected.
+`scriptExecutors.sql.variableSubstitution` boolean flag in the connector configuration. Other executors are unaffected.
 
 ### Two Built-in Executors
 
