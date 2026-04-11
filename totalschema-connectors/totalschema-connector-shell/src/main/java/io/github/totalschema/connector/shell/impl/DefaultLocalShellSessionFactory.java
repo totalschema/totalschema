@@ -16,30 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.connector.jdbc;
+package io.github.totalschema.connector.shell.impl;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.connector.AbstractConnectorComponentFactory;
-import io.github.totalschema.connector.Connector;
-import java.util.Optional;
+import io.github.totalschema.connector.shell.spi.LocalShellSessionFactory;
+import io.github.totalschema.connector.shell.spi.ShellScriptSession;
 
-/**
- * ComponentFactory for creating JDBC connectors.
- *
- * <p>This factory creates {@link Connector} instances with qualifier "jdbc" that can execute SQL
- * scripts against JDBC databases.
- *
- * <p>Usage: {@code context.get(Connector.class, "jdbc", connectorName, configuration)}
- */
-public final class JdbcConnectorFactory extends AbstractConnectorComponentFactory {
+public class DefaultLocalShellSessionFactory implements LocalShellSessionFactory {
 
     @Override
-    public Optional<String> getQualifier() {
-        return Optional.of(JdbcConnector.CONNECTOR_TYPE);
-    }
-
-    @Override
-    protected Connector createConnector(String connectorName, Configuration configuration) {
-        return new JdbcConnector(connectorName, configuration);
+    public ShellScriptSession getLocalShellSession(String name, Configuration configuration) {
+        return new DefaultShellScriptSession(name, configuration);
     }
 }

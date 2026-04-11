@@ -21,6 +21,7 @@ package io.github.totalschema.connector;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.internal.shell.direct.TerminalSession;
 import io.github.totalschema.model.ChangeFile;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -31,7 +32,7 @@ import java.nio.file.Path;
  *
  * @param <C> the command type for the terminal session
  */
-public abstract class AbstractTerminalConnector<C> extends Connector {
+public abstract class AbstractTerminalConnector<C> extends Connector implements Closeable {
 
     /** The terminal session used to execute commands. */
     protected final TerminalSession<C> session;

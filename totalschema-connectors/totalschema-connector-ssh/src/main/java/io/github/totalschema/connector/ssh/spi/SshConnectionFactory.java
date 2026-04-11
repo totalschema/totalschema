@@ -16,30 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.connector.jdbc;
+package io.github.totalschema.connector.ssh.spi;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.connector.AbstractConnectorComponentFactory;
-import io.github.totalschema.connector.Connector;
-import java.util.Optional;
+import io.github.totalschema.connector.ssh.impl.DefaultSshConnectionFactory;
+import io.github.totalschema.spi.ServiceLoaderFactory;
 
-/**
- * ComponentFactory for creating JDBC connectors.
- *
- * <p>This factory creates {@link Connector} instances with qualifier "jdbc" that can execute SQL
- * scripts against JDBC databases.
- *
- * <p>Usage: {@code context.get(Connector.class, "jdbc", connectorName, configuration)}
- */
-public final class JdbcConnectorFactory extends AbstractConnectorComponentFactory {
+public interface SshConnectionFactory {
 
-    @Override
-    public Optional<String> getQualifier() {
-        return Optional.of(JdbcConnector.CONNECTOR_TYPE);
+    static SshConnectionFactory getInstance() {
+        return ServiceLoaderFactory.getSingleService(SshConnectionFactory.class)
+                .orElseGet(DefaultSshConnectionFactory::new);
     }
 
-    @Override
-    protected Connector createConnector(String connectorName, Configuration configuration) {
-        return new JdbcConnector(connectorName, configuration);
-    }
+    SshConnection getSshConnection(String name, Configuration configuration);
+
+    SshConnection newSshConnection(String name, Configuration configuration);
 }

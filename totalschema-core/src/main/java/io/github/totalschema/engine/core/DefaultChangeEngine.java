@@ -32,8 +32,8 @@ import io.github.totalschema.engine.core.command.api.CommandInvoker;
 import io.github.totalschema.engine.core.container.ComponentContainer;
 import io.github.totalschema.engine.core.event.ChangeEngineCloseEvent;
 import io.github.totalschema.engine.core.event.EventDispatcher;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of ChangeEngine using the Command pattern. All operations are executed as
@@ -42,7 +42,7 @@ import org.apache.commons.logging.LogFactory;
  */
 public class DefaultChangeEngine implements ChangeEngine {
 
-    private static final Log log = LogFactory.getLog(DefaultChangeEngine.class);
+    private static final Logger log = LoggerFactory.getLogger(DefaultChangeEngine.class);
 
     private final EventDispatcher eventDispatcher;
 

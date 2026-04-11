@@ -318,7 +318,7 @@ connectors:
 | **Type string** | `ssh-script` |
 | **Module** | `totalschema-connector-ssh` |
 | **Class** | `io.github.totalschema.connector.ssh.SshScriptConnector` |
-| **Factory** | `io.github.totalschema.connector.ssh.SshScriptConnectorFactory` |
+| **Factory** | `io.github.totalschema.connector.ssh.SshScriptConnectorComponentFactory` |
 
 **Purpose:** Execute a complete shell script on a remote host via SSH. The entire file runs as one
 shell session, so variables, functions, `cd`, and other stateful operations persist across lines.
@@ -386,7 +386,7 @@ echo "Deployment complete at $(date)" >> $LOG_FILE
 | **Type string** | `ssh-commands` |
 | **Module** | `totalschema-connector-ssh` |
 | **Class** | `io.github.totalschema.connector.ssh.SshCommandListConnector` |
-| **Factory** | `io.github.totalschema.connector.ssh.SshCommandListConnectorFactory` |
+| **Factory** | `io.github.totalschema.connector.ssh.SshCommandListConnectorComponentFactory` |
 
 **Purpose:** Execute each non-blank line in a file as an independent SSH command. Lines do **not**
 share shell context — each command is a fresh `exec` channel.
@@ -463,7 +463,7 @@ public SshConnection getSshConnection(String name, Configuration configuration) 
 | **Type string** | `shell` |
 | **Module** | `totalschema-connector-shell` |
 | **Class** | `io.github.totalschema.connector.shell.ShellScriptConnector` |
-| **Factory** | `io.github.totalschema.connector.shell.ShellScriptConnectorFactory` |
+| **Factory** | `io.github.totalschema.connector.shell.ShellScriptConnectorComponentFactory` |
 
 **Purpose:** Execute a shell script on the **local machine** (the machine running TotalSchema).
 The script path is passed as an argument to the system shell.
@@ -773,7 +773,7 @@ Maven plugin.
 |---|---|---|
 | `ComponentFactory<Connector>` | `META-INF/services/io.github.totalschema.spi.factory.ComponentFactory` | Register new connector types (and other IoC components) |
 | `SshConnectionFactory` | `META-INF/services/io.github.totalschema.engine.internal.shell.direct.ssh.spi.SshConnectionFactory` | Replace the SSH connection implementation (e.g. custom auth, keep-alive logic) |
-| `LocalShellSessionFactory` | `META-INF/services/io.github.totalschema.engine.internal.shell.direct.local.spi.LocalShellSessionFactory` | Replace the local shell session implementation |
+| `LocalShellSessionFactory` | `META-INF/services/io.github.totalschema.connector.shell.spi.LocalShellSessionFactory` | Replace the local shell session implementation |
 | `ConnectorManager` | `META-INF/services/io.github.totalschema.connector.ConnectorManager` | Replace connector lifecycle management entirely |
 
 All SPI lookups use `ServiceLoaderFactory.getSingleService()` or `getAllServices()` from
