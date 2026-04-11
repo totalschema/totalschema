@@ -81,6 +81,7 @@
 
     <modules>
         <module>totalschema-core</module>
+        <module>totalschema-connectors</module>
         <module>totalschema-cli</module>
         <module>totalschema-database-integrations</module>
         <module>totalschema-extensions</module>

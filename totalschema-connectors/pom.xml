@@ -4,56 +4,31 @@
 
     <parent>
         <groupId>io.github.totalschema</groupId>
-        <artifactId>totalschema-database-integrations</artifactId>
+        <artifactId>totalschema-parent</artifactId>
         <version>1.2.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>totalschema-gcp-bigquery</artifactId>
+    <artifactId>totalschema-connectors</artifactId>
+    <packaging>pom</packaging>
 
-    <name>totalschema gcp bigquery</name>
+    <name>totalschema connectors</name>
 
     <properties>
 
-        <xml-maven-plugin.version>1.0.2</xml-maven-plugin.version>
+        <xml-maven-plugin.version>1.0</xml-maven-plugin.version>
 
 
-        <spotbugs.version>4.9.8</spotbugs.version>
+        <spotbugs.version>4.8.6</spotbugs.version>
 
 
         <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>io.github.totalschema</groupId>
-            <artifactId>totalschema-core</artifactId>
-            <version>1.2.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.github.totalschema</groupId>
-            <artifactId>totalschema-cli</artifactId>
-            <version>1.2.0-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
-
-    </dependencies>
+    <modules>
+        <module>totalschema-connector-common</module>
+        <module>totalschema-connector-ssh</module>
+        <module>totalschema-connector-shell</module>
+    </modules>
 
     <build>
         <plugins>
@@ -82,9 +57,6 @@
                     <!-- Enables analysis which takes more memory but finds more bugs.
                         If you run out of memory, changes the value of the effort element to 'Low'. -->
                     <effort>Max</effort>
-
-                    <!-- Location of SpotBugs exclude filter file -->
-                    <excludeFilterFile>configuration/spotbugs-exclude.xml</excludeFilterFile>
 
                     <!-- Build shall fail if problems are found -->
                     <failOnError>false</failOnError>
@@ -127,11 +99,7 @@
                             <outputDir>${project.build.directory}/spotbugs</outputDir>
 
                             <!-- Selects the used stylesheet. -->
-                            <!-- <stylesheet>fancy-hist.xsl</stylesheet> -->
-                            <!--<stylesheet>default.xsl</stylesheet> -->
-                            <!--<stylesheet>plain.xsl</stylesheet> -->
                             <stylesheet>fancy.xsl</stylesheet>
-                            <!--<stylesheet>summary.xsl</stylesheet> -->
                             <fileMappers>
                                 <!-- Configures the file extension of the output files. -->
                                 <fileMapper
@@ -151,6 +119,9 @@
                     </dependency>
                 </dependencies>
             </plugin>
+
         </plugins>
     </build>
+
 </project>
+

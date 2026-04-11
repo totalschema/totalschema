@@ -64,7 +64,7 @@ Examples for a connector named `deploy`:
 
 ```
 0001.create_schema.apply.deploy.sh
-0002.seed_data.DEV.apply.deploy.sql
+0002.seed_data.DEV.apply.deploy.txt
 0010.cleanup.revert.deploy.sh
 ```
 

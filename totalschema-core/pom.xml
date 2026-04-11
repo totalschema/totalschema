@@ -35,20 +35,6 @@
             <artifactId>HikariCP</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-common</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-scp</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>

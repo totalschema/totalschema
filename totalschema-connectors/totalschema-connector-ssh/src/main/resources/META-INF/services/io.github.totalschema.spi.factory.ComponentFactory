@@ -1,0 +1,3 @@
+io.github.totalschema.connector.ssh.SshScriptConnectorComponentFactory
+io.github.totalschema.connector.ssh.SshCommandListConnectorComponentFactory
+

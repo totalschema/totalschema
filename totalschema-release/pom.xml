@@ -41,6 +41,19 @@
             </exclusions>
         </dependency>
 
+        <!-- Connectors -->
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-connector-ssh</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-connector-shell</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Extensions -->
         <dependency>
             <groupId>io.github.totalschema</groupId>

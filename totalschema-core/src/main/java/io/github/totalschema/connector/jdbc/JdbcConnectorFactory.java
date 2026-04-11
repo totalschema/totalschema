@@ -35,7 +35,7 @@ public final class JdbcConnectorFactory extends AbstractConnectorComponentFactor
 
     @Override
     public Optional<String> getQualifier() {
-        return Optional.of("jdbc");
+        return Optional.of(JdbcConnector.CONNECTOR_TYPE);
     }
 
     @Override

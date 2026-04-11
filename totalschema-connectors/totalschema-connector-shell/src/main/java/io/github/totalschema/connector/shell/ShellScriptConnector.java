@@ -64,10 +64,10 @@ import java.util.Objects;
  * @see ShellScriptRunnerFactory
  * @see io.github.totalschema.connector.shell.impl.DefaultShellScriptRunnerFactory
  */
-public class ShellScriptConnector extends Connector {
+final class ShellScriptConnector extends Connector {
 
     /** Connector type identifier used in {@code totalschema.yml} ({@code type: shell}). */
-    public static final String CONNECTOR_TYPE = "shell";
+    static final String CONNECTOR_TYPE = "shell";
 
     private final String name;
     private final Configuration configuration;

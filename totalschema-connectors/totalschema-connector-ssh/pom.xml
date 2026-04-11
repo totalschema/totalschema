@@ -4,105 +4,88 @@
 
     <parent>
         <groupId>io.github.totalschema</groupId>
-        <artifactId>totalschema-parent</artifactId>
+        <artifactId>totalschema-connectors</artifactId>
         <version>1.2.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>totalschema-cli</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>totalschema-connector-ssh</artifactId>
 
-    <name>totalschema cli</name>
+    <name>totalschema connector ssh</name>
 
     <properties>
+
         <xml-maven-plugin.version>1.0.2</xml-maven-plugin.version>
+
+
         <spotbugs.version>4.9.8</spotbugs.version>
+
+
         <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
     </properties>
 
     <dependencies>
-        <!-- Core dependency -->
         <dependency>
             <groupId>io.github.totalschema</groupId>
             <artifactId>totalschema-core</artifactId>
-        </dependency>
-
-        <!-- Connector dependencies (for backward compatibility - all connectors available in CLI) -->
-        <dependency>
-            <groupId>io.github.totalschema</groupId>
-            <artifactId>totalschema-connector-ssh</artifactId>
             <version>1.2.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>io.github.totalschema</groupId>
-            <artifactId>totalschema-connector-shell</artifactId>
+            <artifactId>totalschema-connector-common</artifactId>
             <version>1.2.0-SNAPSHOT</version>
         </dependency>
 
-        <!-- PicoCLI for command-line interface -->
         <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
         </dependency>
 
-        <!-- SLF4J API (inherited from core) -->
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-scp</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
-        <!-- Logback Classic (for CLI logging with logback.xml configuration) -->
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
         </dependency>
 
-        <!-- SnakeYAML for configuration -->
         <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
         </dependency>
 
-        <!-- Test dependencies -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Commons IO for test utilities -->
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymock</artifactId>
+            <version>5.5.0</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- H2 for testing -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Groovy for testing -->
-        <dependency>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy-all</artifactId>
-            <type>pom</type>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Groovy extensions for testing -->
-        <dependency>
-            <groupId>io.github.totalschema</groupId>
-            <artifactId>totalschema-groovy-extensions</artifactId>
-            <version>1.2.0-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -114,6 +97,7 @@
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <version>${spotbugs-maven-plugin.version}</version>
                 <executions>
+                    <!-- Ensures that SpotBugs inspects source code when project is compiled. -->
                     <execution>
                         <id>analyze-compile</id>
                         <phase>compile</phase>
@@ -123,11 +107,23 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <!-- Enables analysis which takes more memory but finds more bugs.
+                        If you run out of memory, changes the value of the effort element to 'Low'. -->
                     <effort>Max</effort>
+
+                    <!-- Location of SpotBugs exclude filter file -->
                     <excludeFilterFile>configuration/spotbugs-exclude.xml</excludeFilterFile>
+
+                    <!-- Build shall fail if problems are found -->
                     <failOnError>false</failOnError>
+
+                    <!-- Reports all bugs (other values are medium and max) -->
                     <threshold>Low</threshold>
+
+                    <!-- Produces XML report -->
                     <xmlOutput>true</xmlOutput>
+
+                    <!-- Configures the directory in which the XML report is created -->
                     <spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
                 </configuration>
             </plugin>
@@ -137,6 +133,7 @@
                 <artifactId>xml-maven-plugin</artifactId>
                 <version>${xml-maven-plugin.version}</version>
                 <executions>
+                    <!-- Ensures that the XSLT transformation is run when the project is compiled. -->
                     <execution>
                         <phase>compile</phase>
                         <goals>
@@ -147,22 +144,40 @@
                 <configuration>
                     <transformationSets>
                         <transformationSet>
+                            <!-- Configures the source directory of XML files. -->
                             <dir>${project.build.directory}/spotbugs</dir>
                             <includes>
+                                <!-- only transform spotbugsXml.xml to generate SpotBugs HTML report -->
                                 <include>spotbugsXml.xml</include>
                             </includes>
+
+                            <!-- Configures the directory in which the SpotBugs report is written. -->
                             <outputDir>${project.build.directory}/spotbugs</outputDir>
+
+                            <!-- Selects the used stylesheet. -->
                             <stylesheet>fancy.xsl</stylesheet>
                             <fileMappers>
-                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                <!-- Configures the file extension of the output files. -->
+                                <fileMapper
+                                        implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                     <targetExtension>.html</targetExtension>
                                 </fileMapper>
                             </fileMappers>
                         </transformationSet>
                     </transformationSets>
                 </configuration>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs</artifactId>
+                        <version>${spotbugs.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
+
         </plugins>
     </build>
+
 </project>
 

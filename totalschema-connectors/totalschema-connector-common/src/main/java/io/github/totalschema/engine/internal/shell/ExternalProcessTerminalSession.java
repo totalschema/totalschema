@@ -52,7 +52,7 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
     }
 
     @Override
-    public void execute(List<String> command) {
+    public void execute(List<String> command) throws InterruptedException {
 
         List<String> actualCommand = buildActualCommand(command);
 
@@ -69,7 +69,10 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
             int exitStatus = process.waitFor();
             if (exitStatus != 0) {
                 throw new RuntimeException(
-                        "Exit status " + exitStatus + " received for command: " + command);
+                        "Exit status "
+                                + exitStatus
+                                + " received for command: "
+                                + String.join(" ", actualCommand));
             }
 
         } catch (ExecutionException e) {
@@ -77,11 +80,6 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
 
         } catch (IOException ex) {
             throw new RuntimeException(ex);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new RuntimeException("interrupt received", e);
         }
     }
 

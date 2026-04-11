@@ -76,9 +76,4 @@ public class JdbcConnector extends Connector {
             throw new RuntimeException("Failure reading: " + file);
         }
     }
-
-    @Override
-    public void close() throws IOException {
-        // no-op
-    }
 }

@@ -22,7 +22,6 @@ import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.config.MapConfiguration;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunnerFactory;
 import io.github.totalschema.engine.core.command.api.CommandContext;
@@ -32,7 +31,6 @@ import io.github.totalschema.model.ChangeType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.Map;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -107,7 +105,8 @@ public class ShellScriptConnectorTest {
 
     @Test
     public void testExecutePassesConfigurationToFactory() throws InterruptedException {
-        Configuration specificConfig = new MapConfiguration(Map.of("start.command", "bash,-c"));
+        Configuration specificConfig =
+                Configuration.builder().set("start.command", "bash,-c").build();
         ShellScriptConnector connectorWithConfig =
                 new ShellScriptConnector(CONNECTOR_NAME, specificConfig, mockFactory);
 

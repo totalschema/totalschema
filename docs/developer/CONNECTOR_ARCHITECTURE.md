@@ -551,21 +551,21 @@ totalschema-connector-shell            ← OPTIONAL (included in CLI/release by 
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-core</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0-SNAPSHOT</version>
 </dependency>
 
 <!-- SSH connectors (optional) -->
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-ssh</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0-SNAPSHOT</version>
 </dependency>
 
 <!-- Shell connector (optional) -->
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-shell</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0-SNAPSHOT</version>
 </dependency>
 ```
 

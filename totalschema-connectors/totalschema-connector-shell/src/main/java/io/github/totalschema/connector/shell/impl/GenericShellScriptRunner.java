@@ -90,4 +90,9 @@ class GenericShellScriptRunner extends ExternalProcessTerminalSession implements
     protected void acceptOutput(String line) {
         System.out.format("[%s:output] %s%n", name, line);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getName() + "{" + "name='" + name + '\'' + ", prefix=" + prefix + '}';
+    }
 }

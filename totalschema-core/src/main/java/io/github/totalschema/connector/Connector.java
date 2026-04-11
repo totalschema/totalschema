@@ -20,7 +20,6 @@ package io.github.totalschema.connector;
 
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
-import java.io.Closeable;
 
 /**
  * Base class for all connectors in TotalSchema.
@@ -31,7 +30,7 @@ import java.io.Closeable;
  * <p>Connectors are configured in the configuration file under the "connectors" section and are
  * referenced by name in change file names.
  */
-public abstract class Connector implements Closeable {
+public abstract class Connector {
 
     @Override
     public abstract String toString();

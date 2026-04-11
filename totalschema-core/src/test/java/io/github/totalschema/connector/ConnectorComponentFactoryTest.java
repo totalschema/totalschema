@@ -54,9 +54,10 @@ public class ConnectorComponentFactoryTest {
                 "Should find at least one connector ComponentFactory");
 
         // Verify we have all 4 built-in connector factories
-        assertTrue(
-                connectorFactories.size() >= 4,
-                "Should find at least 4 built-in connector ComponentFactories, found: "
+        assertEquals(
+                connectorFactories.size(),
+                1,
+                "Should find at the single built-in connector ComponentFactories, found: "
                         + connectorFactories.size());
 
         // Verify that all built-in qualifiers are present
@@ -68,10 +69,6 @@ public class ConnectorComponentFactoryTest {
                         .collect(Collectors.toList());
 
         assertTrue(qualifiers.contains("jdbc"), "Should have jdbc ComponentFactory");
-        assertTrue(qualifiers.contains("ssh-script"), "Should have ssh-script ComponentFactory");
-        assertTrue(
-                qualifiers.contains("ssh-commands"), "Should have ssh-commands ComponentFactory");
-        assertTrue(qualifiers.contains("shell"), "Should have shell ComponentFactory");
     }
 
     @Test
