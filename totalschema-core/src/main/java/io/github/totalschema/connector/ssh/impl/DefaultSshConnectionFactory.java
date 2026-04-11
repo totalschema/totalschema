@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.shell.direct.ssh.impl;
+package io.github.totalschema.connector.ssh.impl;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.connector.ssh.spi.SshConnection;
+import io.github.totalschema.connector.ssh.spi.SshConnectionFactory;
 import io.github.totalschema.engine.cache.NamedConfigKey;
-import io.github.totalschema.engine.internal.shell.direct.ssh.spi.SshConnection;
-import io.github.totalschema.engine.internal.shell.direct.ssh.spi.SshConnectionFactory;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DefaultSshConnectionFactory implements SshConnectionFactory {

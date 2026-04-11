@@ -20,8 +20,8 @@ package io.github.totalschema.connector.ssh;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.AbstractTerminalConnector;
+import io.github.totalschema.connector.ssh.spi.SshConnectionFactory;
 import io.github.totalschema.engine.core.command.api.CommandContext;
-import io.github.totalschema.engine.internal.shell.direct.ssh.spi.SshConnectionFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

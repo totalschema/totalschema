@@ -31,7 +31,7 @@ import java.util.Optional;
  *
  * <p>Usage: {@code context.get(Connector.class, "ssh-script", connectorName, configuration)}
  */
-public final class SshScriptConnectorFactory extends AbstractConnectorComponentFactory {
+public final class SshScriptConnectorComponentFactory extends AbstractConnectorComponentFactory {
 
     @Override
     public Optional<String> getQualifier() {

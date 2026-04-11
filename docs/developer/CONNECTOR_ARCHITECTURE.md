@@ -318,7 +318,7 @@ connectors:
 | **Type string** | `ssh-script` |
 | **Module** | `totalschema-connector-ssh` |
 | **Class** | `io.github.totalschema.connector.ssh.SshScriptConnector` |
-| **Factory** | `io.github.totalschema.connector.ssh.SshScriptConnectorFactory` |
+| **Factory** | `io.github.totalschema.connector.ssh.SshScriptConnectorComponentFactory` |
 
 **Purpose:** Execute a complete shell script on a remote host via SSH. The entire file runs as one
 shell session, so variables, functions, `cd`, and other stateful operations persist across lines.
@@ -386,7 +386,7 @@ echo "Deployment complete at $(date)" >> $LOG_FILE
 | **Type string** | `ssh-commands` |
 | **Module** | `totalschema-connector-ssh` |
 | **Class** | `io.github.totalschema.connector.ssh.SshCommandListConnector` |
-| **Factory** | `io.github.totalschema.connector.ssh.SshCommandListConnectorFactory` |
+| **Factory** | `io.github.totalschema.connector.ssh.SshCommandListConnectorComponentFactory` |
 
 **Purpose:** Execute each non-blank line in a file as an independent SSH command. Lines do **not**
 share shell context — each command is a fresh `exec` channel.

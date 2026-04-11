@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.shell.direct.ssh.spi;
+package io.github.totalschema.connector.ssh.spi;
 
 import io.github.totalschema.engine.internal.shell.direct.TerminalSession;
 import java.io.IOException;

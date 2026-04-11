@@ -16,13 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.shell.direct.ssh.impl;
+package io.github.totalschema.connector.ssh.impl;
 
 import io.github.totalschema.concurrent.LockTemplate;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MissingConfigurationKeyException;
+import io.github.totalschema.connector.ssh.spi.SshConnection;
 import io.github.totalschema.engine.internal.shell.AbstractTerminalSession;
-import io.github.totalschema.engine.internal.shell.direct.ssh.spi.SshConnection;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
