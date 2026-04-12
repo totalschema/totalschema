@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.github.totalschema</groupId>
         <artifactId>totalschema-parent</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>1.2.0</version>
     </parent>
 
     <artifactId>totalschema-maven-plugin</artifactId>
@@ -36,13 +36,13 @@
         <dependency>
             <groupId>io.github.totalschema</groupId>
             <artifactId>totalschema-core</artifactId>
-            <version>1.2.0-SNAPSHOT</version>
+            <version>1.2.0</version>
         </dependency>
 
         <dependency>
             <groupId>io.github.totalschema</groupId>
             <artifactId>totalschema-cli</artifactId>
-            <version>1.2.0-SNAPSHOT</version>
+            <version>1.2.0</version>
         </dependency>
 
     </dependencies>

@@ -490,7 +490,7 @@ changes/
 │   │   ├── 0001.create_foo.DEV.apply.mydb.sql
 │   │   ├── 0001.create_foo.DEV.revert.mydb.sql
 │   │   └── 0002.create_bar.DEV.apply.mydb.sql
-│   ├── 1.2.0-SNAPSHOT/                     # Version 1.2.0-SNAPSHOT
+│   ├── 1.2.0/                     # Version 1.2.0
 │   │   └── 0001.add_column.DEV.apply.mydb.sql
 │   └── 99/                        # Always-last directory for version 1.X
 │       └── 0001.final_cleanup.DEV.apply.mydb.sql
