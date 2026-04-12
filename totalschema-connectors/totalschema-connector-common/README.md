@@ -88,7 +88,7 @@ Most users don't need to explicitly depend on this module. It's pulled in transi
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-ssh</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0-SNAPSHOT</version>
     <!-- Transitively includes totalschema-connector-common -->
 </dependency>
 
@@ -96,7 +96,7 @@ Most users don't need to explicitly depend on this module. It's pulled in transi
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-shell</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0-SNAPSHOT</version>
     <!-- Transitively includes totalschema-connector-common -->
 </dependency>
 ```
