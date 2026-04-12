@@ -62,7 +62,7 @@ public class JSR223ScriptExecutor implements ScriptExecutor {
             return new JSR223ScriptExecutor(extension, scriptEngine);
 
         } catch (RuntimeException ex) {
-            throw new IllegalStateException("Failed to load JSR223 engine " + extension, ex);
+            throw new IllegalStateException("Failed to load JSR223 engine: " + extension, ex);
         }
     }
 
