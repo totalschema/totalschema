@@ -59,6 +59,8 @@ public class JSR223ScriptExecutor implements ScriptExecutor {
 
             ScriptEngine scriptEngine = manager.getEngineByExtension(extension);
 
+            log.debug("Created ScriptEngine for extension: {}", extension);
+
             return new JSR223ScriptExecutor(extension, scriptEngine);
 
         } catch (RuntimeException ex) {
