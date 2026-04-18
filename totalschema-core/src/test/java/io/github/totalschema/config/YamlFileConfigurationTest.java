@@ -23,6 +23,7 @@ import static org.testng.Assert.*;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.testng.annotations.Test;
@@ -149,7 +150,7 @@ public class YamlFileConfigurationTest {
     @Test
     public void testMissingFile() {
         YamlFileConfiguration configuration =
-                new YamlFileConfiguration(() -> Optional.empty(), "Missing file");
+                new YamlFileConfiguration(Optional::empty, "Missing file");
 
         assertTrue(configuration.getKeys().isEmpty());
         assertFalse(configuration.getString("anyKey").isPresent());
@@ -175,7 +176,7 @@ public class YamlFileConfigurationTest {
     }
 
     @Test
-    public void testListValuesConvertedToString() {
+    public void testListValuesConvertedToIndexedKeys() {
         String yamlContent = "items:\n" + "  - item1\n" + "  - item2\n" + "simple: value\n";
 
         YamlFileConfiguration configuration =
@@ -186,13 +187,55 @@ public class YamlFileConfigurationTest {
                                                 yamlContent.getBytes(StandardCharsets.UTF_8))),
                         "YAML with list");
 
-        // List values are converted to string representation
-        assertTrue(configuration.getString("items").isPresent());
-        assertEquals(configuration.getString("simple").orElse(null), "value");
+        // List entries are flattened to indexed keys: items.0, items.1
+        assertTrue(configuration.getKeys().contains("items.0"));
+        assertTrue(configuration.getKeys().contains("items.1"));
+        assertEquals(configuration.getString("items.0").orElse(null), "item1");
+        assertEquals(configuration.getString("items.1").orElse(null), "item2");
 
-        // Should have both keys
-        assertTrue(configuration.getKeys().contains("items"));
-        assertTrue(configuration.getKeys().contains("simple"));
+        // The parent key itself is NOT a leaf
+        assertFalse(configuration.getString("items").isPresent());
+
+        assertEquals(configuration.getString("simple").orElse(null), "value");
+    }
+
+    @Test
+    public void testGetListFromYamlList() {
+        String yamlContent =
+                "initCommands:\n"
+                        + "  - pip install -r requirements.txt\n"
+                        + "  - pip install pandas\n";
+
+        YamlFileConfiguration configuration =
+                new YamlFileConfiguration(
+                        () ->
+                                Optional.of(
+                                        new ByteArrayInputStream(
+                                                yamlContent.getBytes(StandardCharsets.UTF_8))),
+                        "YAML with initCommands list");
+
+        Optional<List<String>> result = configuration.getList("initCommands");
+        assertTrue(result.isPresent());
+        assertEquals(
+                result.get(), List.of("pip install -r requirements.txt", "pip install pandas"));
+    }
+
+    @Test
+    public void testGetListFromCommaSeparatedString() {
+        String yamlContent = "initCommands: pip install -r requirements.txt, pip install pandas\n";
+
+        YamlFileConfiguration configuration =
+                new YamlFileConfiguration(
+                        () ->
+                                Optional.of(
+                                        new ByteArrayInputStream(
+                                                yamlContent.getBytes(StandardCharsets.UTF_8))),
+                        "YAML with comma-separated initCommands");
+
+        Optional<List<String>> result = configuration.getList("initCommands");
+        assertTrue(result.isPresent());
+        assertEquals(
+                result.get(), List.of("pip install -r requirements.txt", "pip install pandas"));
     }
 
     @Test

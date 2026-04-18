@@ -127,8 +127,18 @@ public class YamlFileConfiguration extends AbstractConfiguration {
                 for (Map.Entry<String, Object> entry : nestedMap.entrySet()) {
                     stack.push(new MapEntry(entry.getKey(), entry.getValue(), key));
                 }
+            } else if (current.value instanceof List) {
+                // Flatten list entries as indexed keys: key.0, key.1, ...
+                @SuppressWarnings("unchecked")
+                List<Object> list = (List<Object>) current.value;
+                for (int i = 0; i < list.size(); i++) {
+                    Object item = list.get(i);
+                    if (item != null) {
+                        stack.push(new MapEntry(String.valueOf(i), item, key));
+                    }
+                }
             } else if (current.value != null) {
-                // Only add leaf keys (non-Map values) as strings
+                // Only add leaf keys (non-Map, non-List values) as strings
                 result.put(key, current.value.toString());
             }
         }
