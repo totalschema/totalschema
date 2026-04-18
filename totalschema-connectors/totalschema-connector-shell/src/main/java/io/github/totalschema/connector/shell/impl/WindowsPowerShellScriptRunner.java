@@ -19,6 +19,7 @@
 package io.github.totalschema.connector.shell.impl;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Runs {@code .ps1} scripts via Windows PowerShell 5.x ({@code powershell.exe}).
@@ -28,7 +29,11 @@ import java.util.List;
  * policy.
  */
 final class WindowsPowerShellScriptRunner extends GenericShellScriptRunner {
-    WindowsPowerShellScriptRunner(String name) {
-        super(name, List.of("powershell.exe", "-ExecutionPolicy", "Bypass", "-File"));
+
+    private static final List<String> COMMAND =
+            List.of("powershell.exe", "-ExecutionPolicy", "Bypass", "-File");
+
+    WindowsPowerShellScriptRunner(String name, Map<String, String> environmentVariables) {
+        super(name, COMMAND, environmentVariables);
     }
 }

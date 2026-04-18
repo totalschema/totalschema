@@ -19,10 +19,14 @@
 package io.github.totalschema.connector.shell.impl;
 
 import java.util.List;
+import java.util.Map;
 
 /** Runs scripts via {@code cmd.exe /c} on Windows. */
 final class CmdExeScriptRunner extends GenericShellScriptRunner {
-    CmdExeScriptRunner(String name) {
-        super(name, List.of("cmd.exe", "/c"));
+
+    private static final List<String> COMMAND = List.of("cmd.exe", "/c");
+
+    CmdExeScriptRunner(String name, Map<String, String> environmentVariables) {
+        super(name, COMMAND, environmentVariables);
     }
 }

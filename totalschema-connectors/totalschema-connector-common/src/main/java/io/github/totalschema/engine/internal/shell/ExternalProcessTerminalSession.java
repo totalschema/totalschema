@@ -21,6 +21,7 @@ package io.github.totalschema.engine.internal.shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.slf4j.Logger;
@@ -29,6 +30,27 @@ import org.slf4j.LoggerFactory;
 public abstract class ExternalProcessTerminalSession extends AbstractTerminalSession<List<String>> {
 
     private static final Logger log = LoggerFactory.getLogger(ExternalProcessTerminalSession.class);
+
+    private final Map<String, String> environmentVariables;
+
+    /**
+     * Constructs a session with no extra environment variables; the child process inherits the
+     * parent's environment unchanged.
+     */
+    protected ExternalProcessTerminalSession() {
+        this(null);
+    }
+
+    /**
+     * Constructs a session with the given extra environment variables merged into the child
+     * process's environment.
+     *
+     * @param environmentVariables extra variables, or {@code null} if none
+     */
+    protected ExternalProcessTerminalSession(Map<String, String> environmentVariables) {
+        this.environmentVariables =
+                environmentVariables != null ? Map.copyOf(environmentVariables) : null;
+    }
 
     protected static final class AutoCloseableProcess implements AutoCloseable {
         private final Process process;
@@ -95,6 +117,10 @@ public abstract class ExternalProcessTerminalSession extends AbstractTerminalSes
         builder.redirectErrorStream(true);
 
         builder.command(command);
+
+        if (environmentVariables != null && !environmentVariables.isEmpty()) {
+            builder.environment().putAll(environmentVariables);
+        }
 
         Process startedProcess = builder.start();
 

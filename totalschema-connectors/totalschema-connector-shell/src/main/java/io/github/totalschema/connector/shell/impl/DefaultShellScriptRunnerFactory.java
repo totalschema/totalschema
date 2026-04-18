@@ -23,6 +23,7 @@ import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunnerFactory;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,6 +113,9 @@ public class DefaultShellScriptRunnerFactory implements ShellScriptRunnerFactory
     public ShellScriptRunner getRunner(String name, Configuration configuration, String fileName) {
         List<String> configured = configuration.getList("start.command").orElse(null);
 
+        Map<String, String> environmentVariables =
+                configuration.getPrefixNamespace("environmentVariables").asMap().orElse(null);
+
         ShellScriptRunner shellScriptRunner;
 
         if (configured != null) {
@@ -120,20 +124,21 @@ public class DefaultShellScriptRunnerFactory implements ShellScriptRunnerFactory
                     fileName,
                     configured);
 
-            shellScriptRunner = new GenericShellScriptRunner(name, configured);
+            shellScriptRunner =
+                    new GenericShellScriptRunner(name, configured, environmentVariables);
 
         } else if (isFileNameExtension(fileName, "sh")) {
             log.debug("Creating ShScriptRunner due to file name extension: {}", fileName);
-            shellScriptRunner = getShShellScriptRunner(name);
+            shellScriptRunner = getShShellScriptRunner(name, environmentVariables);
 
         } else if (isFileNameExtension(fileName, "ps1")) {
             log.debug("Creating PowerShell Script Runner due to file name extension: {}", fileName);
-            shellScriptRunner = getPowerShellRunner(name, fileName);
+            shellScriptRunner = getPowerShellRunner(name, fileName, environmentVariables);
 
         } else if (isFileNameExtension(fileName, "cmd") || isFileNameExtension(fileName, "bat")) {
             log.debug(
                     "Creating Windows CMD Script Runner due to file name extension: {}", fileName);
-            shellScriptRunner = getWindowsCmdExeScriptRunner(name, fileName);
+            shellScriptRunner = getWindowsCmdExeScriptRunner(name, fileName, environmentVariables);
 
         } else {
             // File name extension does not imply the shell to use. This could be a simple ".txt",
@@ -142,14 +147,15 @@ public class DefaultShellScriptRunnerFactory implements ShellScriptRunnerFactory
                 log.debug(
                         "Creating ShScriptRunner for {} as there is no more specific rule",
                         fileName);
-                shellScriptRunner = getShShellScriptRunner(name);
+                shellScriptRunner = getShShellScriptRunner(name, environmentVariables);
 
             } else {
                 log.debug(
                         "Creating Windows CMD Script Runner for {} as there is no more specific"
                                 + " rule",
                         fileName);
-                shellScriptRunner = getWindowsCmdExeScriptRunner(name, fileName);
+                shellScriptRunner =
+                        getWindowsCmdExeScriptRunner(name, fileName, environmentVariables);
             }
         }
 
@@ -157,16 +163,18 @@ public class DefaultShellScriptRunnerFactory implements ShellScriptRunnerFactory
         return shellScriptRunner;
     }
 
-    private static ShScriptRunner getShShellScriptRunner(String name) {
-        return new ShScriptRunner(name);
+    private static ShScriptRunner getShShellScriptRunner(
+            String name, Map<String, String> environmentVariables) {
+        return new ShScriptRunner(name, environmentVariables);
     }
 
-    private GenericShellScriptRunner getPowerShellRunner(String name, String fileName) {
+    private GenericShellScriptRunner getPowerShellRunner(
+            String name, String fileName, Map<String, String> environmentVariables) {
         if (runtimeInformation.isPwshAvailable()) {
-            return new PwshScriptRunner(name);
+            return new PwshScriptRunner(name, environmentVariables);
         } else {
             if (runtimeInformation.isWindows()) {
-                return new WindowsPowerShellScriptRunner(name);
+                return new WindowsPowerShellScriptRunner(name, environmentVariables);
             } else {
                 throw new IllegalStateException(
                         String.format(
@@ -177,9 +185,10 @@ public class DefaultShellScriptRunnerFactory implements ShellScriptRunnerFactory
         }
     }
 
-    private CmdExeScriptRunner getWindowsCmdExeScriptRunner(String name, String fileName) {
+    private CmdExeScriptRunner getWindowsCmdExeScriptRunner(
+            String name, String fileName, Map<String, String> environmentVariables) {
         if (runtimeInformation.isWindows()) {
-            return new CmdExeScriptRunner(name);
+            return new CmdExeScriptRunner(name, environmentVariables);
         } else {
             throw new IllegalStateException(
                     String.format("Cannot run CMD script (%s) on non-Windows OS.", fileName));

@@ -19,6 +19,7 @@
 package io.github.totalschema.connector.shell.impl;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Runs scripts via {@code sh}, the standard POSIX shell available on Unix and macOS.
@@ -27,7 +28,10 @@ import java.util.List;
  * execute-bit is required on the script file.
  */
 final class ShScriptRunner extends GenericShellScriptRunner {
-    ShScriptRunner(String name) {
-        super(name, List.of("sh"));
+
+    private static final List<String> COMMAND = List.of("sh");
+
+    ShScriptRunner(String name, Map<String, String> environmentVariables) {
+        super(name, COMMAND, environmentVariables);
     }
 }

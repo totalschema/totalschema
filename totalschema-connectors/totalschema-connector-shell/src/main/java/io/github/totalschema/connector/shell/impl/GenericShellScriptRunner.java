@@ -22,6 +22,7 @@ import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.engine.internal.shell.ExternalProcessTerminalSession;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Base class for {@link ShellScriptRunner} implementations that launch OS processes.
@@ -58,12 +59,17 @@ class GenericShellScriptRunner extends ExternalProcessTerminalSession implements
     private final List<String> prefix;
 
     /**
-     * Constructs a runner for the given connector with the supplied interpreter prefix.
+     * Constructs a runner for the given connector with the supplied interpreter prefix and
+     * additional environment variables.
      *
      * @param name the connector name; used for logging and diagnostics
      * @param prefix the interpreter tokens prepended to every command; must not be {@code null}
+     * @param environmentVariables extra variables merged into the child process's environment, or
+     *     {@code null} if the parent environment should be inherited unchanged
      */
-    GenericShellScriptRunner(String name, List<String> prefix) {
+    GenericShellScriptRunner(
+            String name, List<String> prefix, Map<String, String> environmentVariables) {
+        super(environmentVariables);
         this.name = name;
         this.prefix = List.copyOf(prefix);
     }

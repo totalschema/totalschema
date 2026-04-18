@@ -19,6 +19,7 @@
 package io.github.totalschema.connector.shell.impl;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Runs {@code .ps1} scripts via PowerShell Core ({@code pwsh}), the cross-platform PowerShell 7+
@@ -28,7 +29,11 @@ import java.util.List;
  * the script is not silently blocked by the system execution policy.
  */
 final class PwshScriptRunner extends GenericShellScriptRunner {
-    PwshScriptRunner(String name) {
-        super(name, List.of("pwsh", "-ExecutionPolicy", "Bypass", "-File"));
+
+    private static final List<String> COMMAND =
+            List.of("pwsh", "-ExecutionPolicy", "Bypass", "-File");
+
+    PwshScriptRunner(String name, Map<String, String> environmentVariables) {
+        super(name, COMMAND, environmentVariables);
     }
 }
