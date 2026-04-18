@@ -19,8 +19,8 @@
         </fileSet>
         <!-- Include user manual -->
         <fileSet>
-            <directory>${project.basedir}/user_manual</directory>
-            <outputDirectory>/</outputDirectory>
+            <directory>${project.parent.basedir}/docs/user_manual</directory>
+            <outputDirectory>/docs</outputDirectory>
             <includes>
                 <include>*</include>
             </includes>
