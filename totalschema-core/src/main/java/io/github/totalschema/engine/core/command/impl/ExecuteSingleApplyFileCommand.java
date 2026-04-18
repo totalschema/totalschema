@@ -22,6 +22,7 @@ import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeType;
+import io.github.totalschema.spi.change.ChangeExecutionException;
 import io.github.totalschema.spi.change.ChangeService;
 import io.github.totalschema.spi.state.StateService;
 import java.nio.file.Path;
@@ -45,28 +46,34 @@ public final class ExecuteSingleApplyFileCommand implements Command<Void> {
     @Override
     public Void execute(CommandContext context) throws InterruptedException {
 
-        StateService stateService = context.get(StateService.class);
-        ChangeService changeService = context.get(ChangeService.class);
+        try {
+            StateService stateService = context.get(StateService.class);
+            ChangeService changeService = context.get(ChangeService.class);
 
-        Path changeFilePath = applyFile.getFile();
-        log.info("Applying: {}", changeFilePath);
+            Path changeFilePath = applyFile.getFile();
+            log.info("Applying: {}", changeFilePath);
 
-        changeService.execute(applyFile, context);
+            changeService.execute(applyFile, context);
 
-        ChangeType changeType = applyFile.getChangeType();
+            ChangeType changeType = applyFile.getChangeType();
 
-        if (changeType != ChangeType.APPLY_ALWAYS) {
-            stateService.registerCompletion(applyFile);
+            if (changeType != ChangeType.APPLY_ALWAYS) {
+                stateService.registerCompletion(applyFile);
 
-        } else {
-            log.info(
-                    "As file is {}, its completion is not registered in state: {}",
-                    changeType,
-                    changeFilePath);
+            } else {
+                log.info(
+                        "As file is {}, its completion is not registered in state: {}",
+                        changeType,
+                        changeFilePath);
+            }
+
+            log.info("SUCCESS executing: {}", changeFilePath);
+
+            return null;
+
+        } catch (ChangeExecutionException changeExecutionException) {
+            log.error("FAILURE executing: {}", applyFile.getFile());
+            throw changeExecutionException;
         }
-
-        log.info("SUCCESS executing: {}", changeFilePath);
-
-        return null;
     }
 }

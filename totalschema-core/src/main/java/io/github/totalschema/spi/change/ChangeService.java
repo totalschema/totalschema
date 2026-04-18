@@ -31,7 +31,9 @@ public interface ChangeService {
      *
      * @param changeFile the change file to apply
      * @param context the command context containing configuration and services
+     * @throws ChangeExecutionException if the change could not be executed successfully
      * @throws InterruptedException if the operation is interrupted
      */
-    void execute(ChangeFile changeFile, CommandContext context) throws InterruptedException;
+    void execute(ChangeFile changeFile, CommandContext context)
+            throws ChangeExecutionException, InterruptedException;
 }
