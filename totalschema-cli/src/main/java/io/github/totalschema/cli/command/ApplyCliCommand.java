@@ -20,6 +20,7 @@ package io.github.totalschema.cli.command;
 
 import io.github.totalschema.cli.DryRunSupportEnvironmentAwareCliCommand;
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeManager;
 import io.github.totalschema.model.ApplyFile;
 import java.util.List;
 import picocli.CommandLine;
@@ -35,9 +36,22 @@ public class ApplyCliCommand extends DryRunSupportEnvironmentAwareCliCommand {
             description = "Include change files matching this expression only")
     protected String filterExpression;
 
+    @CommandLine.Option(
+            names = "--autoRevertOnFailure",
+            negatable = true,
+            defaultValue = "false",
+            description = "Automatically revert all applied changes on failure. False by default.")
+    boolean autoRevertOnFailure;
+
     @Override
     protected void runActual(ChangeEngine changeEngine) {
-        changeEngine.getChangeManager().executePendingApplies(filterExpression);
+        ChangeManager changeManager = changeEngine.getChangeManager();
+
+        if (autoRevertOnFailure) {
+            changeManager.executePendingAppliesWithAutomaticRevert(filterExpression);
+        } else {
+            changeManager.executePendingApplies(filterExpression);
+        }
     }
 
     @Override

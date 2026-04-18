@@ -19,6 +19,7 @@
 package io.github.totalschema.engine.core;
 
 import io.github.totalschema.engine.core.command.api.Command;
+import java.util.Objects;
 
 /**
  * Abstract base class for all manager implementations. Provides access to the ChangeEngine's
@@ -29,7 +30,7 @@ abstract class AbstractManager {
     private final DefaultChangeEngine changeEngine;
 
     protected AbstractManager(DefaultChangeEngine changeEngine) {
-        this.changeEngine = changeEngine;
+        this.changeEngine = Objects.requireNonNull(changeEngine);
     }
 
     /**

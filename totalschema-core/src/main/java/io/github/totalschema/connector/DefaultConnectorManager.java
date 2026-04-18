@@ -65,7 +65,7 @@ public class DefaultConnectorManager implements ConnectorManager {
                             connectorName,
                             configurationOfTheConnector);
 
-            logger.info("Created: {}", connector);
+            logger.info("Using: {}", connector);
 
             return connector;
 

@@ -35,36 +35,49 @@ public class ChangeManagerImpl extends AbstractManager implements ChangeManager 
         super(changeEngine);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<ApplyFile> getAllApplyFiles(String filterExpression) {
         return executeCommand(new GetApplyFilesCommand(filterExpression));
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<RevertFile> getAllRevertFiles(String filterExpression) {
         return executeCommand(new GetRevertFilesCommand(filterExpression));
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<ApplyFile> getPendingApplyFiles(List<ApplyFile> allApplyFiles) {
         return executeCommand(new GetPendingApplyFilesCommand(allApplyFiles));
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<RevertFile> getApplicableRevertFiles(String filterExpression) {
         return executeCommand(new GetApplicableRevertFilesCommand(filterExpression));
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void executePendingAppliesWithAutomaticRevert(String filterExpression) {
+        executeCommand(new ExecutePendingApplyFilesWithAutomaticRevertCommand(filterExpression));
+    }
+
+    /** {@inheritDoc} */
     @Override
     public void executePendingApplies(String filterExpression) {
         executeCommand(new ExecutePendingApplyFilesCommand(filterExpression));
     }
 
+    /** {@inheritDoc} */
     @Override
     public void executeReverts(String filterExpression) {
         executeCommand(new ExecuteRevertFilesCommand(filterExpression));
     }
 
+    /** {@inheritDoc} */
     @Override
     public void execute(ApplyFile applyFile) {
         executeCommand(new ExecuteSingleApplyFileCommand(applyFile));

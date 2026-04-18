@@ -55,22 +55,32 @@ public interface ChangeManager {
     /**
      * Returns revert files that can be applied (have corresponding applied changes).
      *
-     * @param filterExpression filter for selecting files (can be null for all)
+     * @param filterExpression filter for selecting files (can be {@code null} for all)
      * @return list of applicable revert files
      */
     List<RevertFile> getApplicableRevertFiles(String filterExpression);
 
     /**
+     * Executes all pending changes matching the filter expression. If any change fails, already
+     * applied changes from this run are automatically reverted before the exception is propagated.
+     *
+     * @param filterExpression wildcard/glob expression used to select which change files are
+     *     considered; {@code null} selects all files
+     * @throws RuntimeException if any change fails
+     */
+    void executePendingAppliesWithAutomaticRevert(String filterExpression);
+
+    /**
      * Executes all pending changes matching the filter expression.
      *
-     * @param filterExpression filter for selecting changes (can be null for all)
+     * @param filterExpression filter for selecting changes (can be {@code null} for all)
      */
     void executePendingApplies(String filterExpression);
 
     /**
      * Executes revert operations for changes matching the filter expression.
      *
-     * @param filterExpression filter for selecting reverts (can be null for all)
+     * @param filterExpression filter for selecting reverts (can be {@code null} for all)
      */
     void executeReverts(String filterExpression);
 
