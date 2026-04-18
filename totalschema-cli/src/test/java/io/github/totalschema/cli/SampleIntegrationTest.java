@@ -61,7 +61,7 @@ public class SampleIntegrationTest {
 
     private final Logger logger = LoggerFactory.getLogger(SampleIntegrationTest.class);
 
-    private static final String SAMPLE_PROJECT_SOURCE = "../sample";
+    private static final String SAMPLE_PROJECT_SOURCE = "../samples/basic";
     private static final String TEST_WORKSPACE_NAME =
             "test-sample-workspace/" + System.currentTimeMillis();
     private Path testWorkspacePath;
@@ -223,11 +223,11 @@ public class SampleIntegrationTest {
                 // Validate name transformations
                 // first_name should be extracted from name (first word)
                 assertNotNull(firstName, "First name should be populated (transformed from name)");
-                assertTrue(!firstName.isEmpty(), "First name should not be empty");
+                assertFalse(firstName.isEmpty(), "First name should not be empty");
 
                 // last_name should be extracted from name (remaining words)
                 assertNotNull(lastName, "Last name should be populated (transformed from name)");
-                assertTrue(!lastName.isEmpty(), "Last name should not be empty");
+                assertFalse(lastName.isEmpty(), "Last name should not be empty");
 
                 System.out.println(
                         "✓ Row "

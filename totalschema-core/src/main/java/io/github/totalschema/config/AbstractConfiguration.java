@@ -51,6 +51,15 @@ public abstract class AbstractConfiguration implements Configuration {
 
     @Override
     public final Optional<List<String>> getList(String key) {
+        // Check for YAML-style indexed keys first (key.0, key.1, ...)
+        List<String> indexed = new ArrayList<>();
+        for (int i = 0; getString(key + "." + i).isPresent(); i++) {
+            indexed.add(getString(key + "." + i).get());
+        }
+        if (!indexed.isEmpty()) {
+            return Optional.of(indexed);
+        }
+        // Fall back to comma-separated string value
         return getString(key)
                 .map(value -> value.split(","))
                 .map(

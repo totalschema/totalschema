@@ -23,6 +23,7 @@ import io.github.totalschema.connector.Connector;
 import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
+import io.github.totalschema.spi.change.ChangeExecutionException;
 import io.github.totalschema.spi.change.ChangeService;
 import java.util.Optional;
 
@@ -41,7 +42,8 @@ final class DefaultChangeService implements ChangeService {
     }
 
     @Override
-    public void execute(ChangeFile changeFile, CommandContext context) throws InterruptedException {
+    public void execute(ChangeFile changeFile, CommandContext context)
+            throws ChangeExecutionException, InterruptedException {
 
         String thisEnvironmentName = environment.getName();
 
@@ -57,10 +59,21 @@ final class DefaultChangeService implements ChangeService {
             }
         }
 
-        String changeFileConnector = changeFile.getConnector();
+        try {
 
-        Connector connector = connectorManager.getConnectorByName(changeFileConnector, context);
+            String changeFileConnector = changeFile.getConnector();
 
-        connector.execute(changeFile, context);
+            Connector connector = connectorManager.getConnectorByName(changeFileConnector, context);
+
+            connector.execute(changeFile, context);
+
+        } catch (RuntimeException ex) {
+            throw new ChangeExecutionException(
+                    changeFile,
+                    String.format(
+                            "Change execution failed for '%s': %s",
+                            changeFile.getRelativePath(), ex.getMessage()),
+                    ex);
+        }
     }
 }

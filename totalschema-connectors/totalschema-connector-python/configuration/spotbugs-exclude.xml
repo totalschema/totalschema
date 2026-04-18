@@ -1,0 +1,9 @@
+<FindBugsFilter>
+    <Match>
+        <Class name="io.github.totalschema.connector.python.PythonConnector" />
+        <Method name="execute" />
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
+        <!-- Objects.requireNonNull and explicit null-guard on getParent() prevent NPE -->
+    </Match>
+</FindBugsFilter>
+

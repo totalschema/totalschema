@@ -99,6 +99,14 @@
             <version>1.3.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- Python connector for testing -->
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-connector-python</artifactId>
+            <version>1.3.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

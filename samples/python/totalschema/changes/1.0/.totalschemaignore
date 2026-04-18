@@ -1,0 +1,12 @@
+# .totalschemaignore — files and directories excluded from TotalSchema change-file discovery.
+# Syntax mirrors .gitignore:
+#   - Lines starting with # are comments.
+#   - Patterns ending with / are directory patterns (the directory and its contents are skipped).
+#   - Patterns containing / are matched against the full relative path from the changes root.
+#   - Patterns without / are matched against the file or directory name anywhere in the tree.
+
+# Ignore the Python helper-library directory used by the python3 connector sample.
+# The library lives inside the changes tree so TotalSchema can resolve it relative to the
+# workspace, but it must not be treated as a set of change files.
+
+*.log

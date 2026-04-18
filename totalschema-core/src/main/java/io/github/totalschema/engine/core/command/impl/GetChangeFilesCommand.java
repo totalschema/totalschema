@@ -24,6 +24,7 @@ import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
+import io.github.totalschema.engine.internal.changefile.ChangeFileIgnorePatterns;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.ChangeType;
 import io.github.totalschema.spi.hash.HashService;
@@ -150,6 +151,8 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
 
         logger.info("Searching for change files in: {}", rootDirectory.toAbsolutePath());
 
+        ChangeFileIgnorePatterns rootIgnorePatterns = ChangeFileIgnorePatterns.load(rootDirectory);
+
         LinkedList<T> changeFiles = new LinkedList<>();
 
         try {
@@ -159,7 +162,13 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
             while (!directoriesToVisit.isEmpty()) {
                 Path directoryToProcess = directoriesToVisit.poll();
 
-                List<Path> directSubDirectories = getDirectSubDirectories(directoryToProcess);
+                ChangeFileIgnorePatterns effectiveIgnorePatterns =
+                        getEffectiveIgnorePatterns(
+                                directoryToProcess, rootDirectory, rootIgnorePatterns);
+
+                List<Path> directSubDirectories =
+                        getDirectSubDirectories(
+                                directoryToProcess, rootDirectory, effectiveIgnorePatterns);
                 directoriesToVisit.addAll(directSubDirectories);
 
                 List<T> changeFilesInTheDirectory =
@@ -167,7 +176,8 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
                                 directoryToProcess,
                                 environmentName,
                                 rootDirectory,
-                                changeFileFactory);
+                                changeFileFactory,
+                                effectiveIgnorePatterns);
 
                 changeFiles.addAll(changeFilesInTheDirectory);
             }
@@ -189,11 +199,29 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
         }
     }
 
+    private static ChangeFileIgnorePatterns getEffectiveIgnorePatterns(
+            Path currentDirectory,
+            Path rootDirectory,
+            ChangeFileIgnorePatterns rootIgnorePatterns) {
+        // Load per-directory ignore file and combine with root patterns.
+        // When visiting the root itself we skip loading to avoid applying
+        // root patterns twice (they are already in rootIgnorePatterns).
+        ChangeFileIgnorePatterns effectiveIgnorePatterns;
+        if (currentDirectory.equals(rootDirectory)) {
+            effectiveIgnorePatterns = rootIgnorePatterns;
+        } else {
+            effectiveIgnorePatterns =
+                    rootIgnorePatterns.combine(ChangeFileIgnorePatterns.load(currentDirectory));
+        }
+        return effectiveIgnorePatterns;
+    }
+
     private List<T> getChangeFilesInDirectory(
             Path directoryToProcess,
             String environmentName,
             Path rootDirectory,
-            ChangeFileFactory changeFileFactory)
+            ChangeFileFactory changeFileFactory,
+            ChangeFileIgnorePatterns ignorePatterns)
             throws IOException {
 
         List<T> changeFilesInDirectory;
@@ -203,6 +231,7 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
             changeFilesInDirectory =
                     directoryContents
                             .filter(Files::isRegularFile)
+                            .filter(p -> !ignorePatterns.isIgnoredFile(rootDirectory.relativize(p)))
                             .filter(isIncludedType(rootDirectory, changeFileFactory))
                             .map(
                                     changeFile ->
@@ -220,12 +249,19 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
         return Comparator.comparing(ChangeFile::getOrder);
     }
 
-    private List<Path> getDirectSubDirectories(Path directoryToProcess) throws IOException {
+    private List<Path> getDirectSubDirectories(
+            Path directoryToProcess, Path rootDirectory, ChangeFileIgnorePatterns ignorePatterns)
+            throws IOException {
+
         List<Path> subDirectories;
         try (Stream<Path> directoryContents = Files.list(directoryToProcess)) {
             subDirectories =
                     directoryContents
                             .filter(Files::isDirectory)
+                            .filter(
+                                    p ->
+                                            !ignorePatterns.isIgnoredDirectory(
+                                                    rootDirectory.relativize(p)))
                             .sorted(getDirectoryOrderComparator())
                             .collect(Collectors.toList());
         }

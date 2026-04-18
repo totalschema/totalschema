@@ -25,6 +25,7 @@ automatically discovered.
    - [SSH Script (`ssh-script`)](#52-ssh-script-connector)
    - [SSH Command List (`ssh-commands`)](#53-ssh-command-list-connector)
    - [Shell (`shell`)](#54-shell-connector)
+   - [Python (`python`)](#55-python-connector)
 6. [Module Structure & Dependencies](#6-module-structure--dependencies)
 7. [Configuration Reference](#7-configuration-reference)
 8. [Execution Flow](#8-execution-flow)
@@ -562,6 +563,47 @@ echo "Backup complete"
 
 ---
 
+### 5.5 Python Connector
+
+| Property | Value |
+|---|---|
+| **Type string** | `python` |
+| **Module** | `totalschema-connectors/totalschema-connector-python` |
+| **Class** | `io.github.totalschema.connector.python.PythonConnector` |
+| **Factory** | `io.github.totalschema.connector.python.PythonConnectorComponentFactory` |
+| **README** | [`totalschema-connector-python/README.md`](../../totalschema-connectors/totalschema-connector-python/README.md) |
+
+**Purpose:** Execute Python scripts (`.py`) on the **local machine** via the configured Python
+executable. Each change file is passed as the sole argument to the interpreter. stdout and stderr
+are logged line-by-line at `INFO` level; a non-zero exit code fails the deployment.
+
+**Key classes:**
+
+| Class | Responsibility |
+|---|---|
+| `PythonConnector` | Orchestrates execution; reads all config options |
+| `DefaultPythonProcessRunner` | Launches OS processes via `ProcessBuilder`; merges `PYTHONPATH` and environment variables |
+| `TotalSchemaSdkGenerator` | Generates `totalschema/__init__.py` + `totalschema/sdk.py` in the run dir; cleans up after the script |
+| `OperatingSystem` | `IS_WINDOWS` / `IS_MAC` / `IS_LINUX` constants for OS detection |
+
+**Notable configuration options:**
+
+| Key | Default | Description |
+|---|---|---|
+| `executable` | `python3` (*nix) / `python` (Windows) | Python interpreter |
+| `workingDirectory` | Script's parent directory | Override working dir for all scripts |
+| `copyToTempDir` | `false` | Copy script to a fresh temp dir; delete it afterwards |
+| `modulesDirectory` | *(absent)* | Prepended to `PYTHONPATH`; place user libraries here, outside the changes tree |
+| `initFiles` | *(absent)* | Files written to the working dir once before the first script |
+| `initCommands` | *(absent)* | Commands run once before the first script (e.g. `pip install`) |
+| `sdk.enabled` | `false` | Generate a `totalschema` Python package exposing `Variable.get()` |
+| `sdk.variables` | *(absent)* | Map of name → value exposed to the SDK; values are base64-encoded |
+| `environmentVariables` | *(absent)* | Extra env vars merged into the child process environment |
+
+**📖 See:** [`totalschema-connector-python/README.md`](../../totalschema-connectors/totalschema-connector-python/README.md) for the full user-facing reference.
+
+---
+
 ## 6. Module Structure & Dependencies
 
 ```
@@ -601,6 +643,14 @@ totalschema-connector-shell            ← OPTIONAL (included in CLI/release by 
   │   ├── PwshScriptRunner             ("pwsh -ExecutionPolicy Bypass -File")
   │   └── WindowsPowerShellScriptRunner("powershell.exe -ExecutionPolicy Bypass -File")
   └── (ServiceLoader: ShellScriptConnectorComponentFactory)
+
+totalschema-connector-python           ← OPTIONAL (included in CLI/release by default)
+  ├── PythonConnector + PythonConnectorComponentFactory
+  ├── PythonProcessRunner (interface)
+  ├── DefaultPythonProcessRunner (ProcessBuilder; merges PYTHONPATH + env vars)
+  ├── TotalSchemaSdkGenerator (generates/cleans up totalschema/ Python package)
+  ├── OperatingSystem (IS_WINDOWS / IS_MAC / IS_LINUX constants)
+  └── (ServiceLoader: PythonConnectorComponentFactory)
 ```
 
 **Dependency rules:**
@@ -860,5 +910,5 @@ All SPI lookups use `ServiceLoaderFactory.getSingleService()` or `getAllServices
   were extracted from `totalschema-core` into separate modules, with full implementation details.
 - **`docs/developer/FINAL-SUMMARY.md`** — High-level summary of the connector extraction
   refactoring: module contents, dependency flow, and backward-compatibility notes.
-- **`sample/totalschema.yml`** — Reference configuration showing a JDBC connector in practice.
+- **`samples/basic/totalschema.yml`** — Reference configuration showing a JDBC connector in practice.
 

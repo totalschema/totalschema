@@ -4,32 +4,59 @@
 
     <parent>
         <groupId>io.github.totalschema</groupId>
-        <artifactId>totalschema-parent</artifactId>
+        <artifactId>totalschema-connectors</artifactId>
         <version>1.3.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>totalschema-connectors</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>totalschema-connector-python</artifactId>
 
-    <name>totalschema connectors</name>
+    <name>totalschema connector python</name>
 
     <properties>
 
-        <xml-maven-plugin.version>1.0</xml-maven-plugin.version>
+        <xml-maven-plugin.version>1.0.2</xml-maven-plugin.version>
 
 
-        <spotbugs.version>4.8.6</spotbugs.version>
+        <spotbugs.version>4.9.8</spotbugs.version>
 
 
         <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
+
     </properties>
 
-    <modules>
-        <module>totalschema-connector-common</module>
-        <module>totalschema-connector-ssh</module>
-        <module>totalschema-connector-shell</module>
-        <module>totalschema-connector-python</module>
-    </modules>
+    <dependencies>
+
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-core</artifactId>
+            <version>1.3.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymock</artifactId>
+            <version>5.5.0</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
 
     <build>
         <plugins>
@@ -45,7 +72,6 @@
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <version>${spotbugs-maven-plugin.version}</version>
                 <executions>
-                    <!-- Ensures that SpotBugs inspects source code when project is compiled. -->
                     <execution>
                         <id>analyze-compile</id>
                         <phase>compile</phase>
@@ -55,20 +81,11 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <!-- Enables analysis which takes more memory but finds more bugs.
-                        If you run out of memory, changes the value of the effort element to 'Low'. -->
                     <effort>Max</effort>
-
-                    <!-- Build shall fail if problems are found -->
+                    <excludeFilterFile>configuration/spotbugs-exclude.xml</excludeFilterFile>
                     <failOnError>false</failOnError>
-
-                    <!-- Reports all bugs (other values are medium and max) -->
                     <threshold>Low</threshold>
-
-                    <!-- Produces XML report -->
                     <xmlOutput>true</xmlOutput>
-
-                    <!-- Configures the directory in which the XML report is created -->
                     <spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
                 </configuration>
             </plugin>
@@ -78,7 +95,6 @@
                 <artifactId>xml-maven-plugin</artifactId>
                 <version>${xml-maven-plugin.version}</version>
                 <executions>
-                    <!-- Ensures that the XSLT transformation is run when the project is compiled. -->
                     <execution>
                         <phase>compile</phase>
                         <goals>
@@ -89,20 +105,13 @@
                 <configuration>
                     <transformationSets>
                         <transformationSet>
-                            <!-- Configures the source directory of XML files. -->
                             <dir>${project.build.directory}/spotbugs</dir>
                             <includes>
-                                <!-- only transform spotbugsXml.xml to generate SpotBugs HTML report -->
                                 <include>spotbugsXml.xml</include>
                             </includes>
-
-                            <!-- Configures the directory in which the SpotBugs report is written. -->
                             <outputDir>${project.build.directory}/spotbugs</outputDir>
-
-                            <!-- Selects the used stylesheet. -->
                             <stylesheet>fancy.xsl</stylesheet>
                             <fileMappers>
-                                <!-- Configures the file extension of the output files. -->
                                 <fileMapper
                                         implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                     <targetExtension>.html</targetExtension>
@@ -111,7 +120,6 @@
                         </transformationSet>
                     </transformationSets>
                 </configuration>
-
                 <dependencies>
                     <dependency>
                         <groupId>com.github.spotbugs</groupId>

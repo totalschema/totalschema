@@ -125,8 +125,18 @@ by their leading order number.
 
 ## Configuration: totalschema.yml
 
-The configuration file declares how TotalSchema stores state, which environments exist, and
-which target systems (connectors) are available.
+`totalschema.yml` is the central configuration file for a TotalSchema workspace. It declares:
+
+- **Connectors** — the target systems TotalSchema deploys to (databases, SSH servers, local
+  shell). Each connector has a name, a type, and the connection details for that system. Change
+  script filenames reference connectors by name, so the file is the single place that ties
+  together your scripts and the systems they run against.
+- **Environments** — named execution contexts (e.g. `DEV`, `QA`, `PROD`) with
+  per-environment variable overrides, so the same change scripts can be applied to different
+  systems without duplication.
+- **State and locking** — where TotalSchema records applied changes and how concurrent
+  executions are coordinated.
+- **Variables** — shared values referenced throughout the configuration via `${varName}`.
 
 ```yaml
 version: 1
