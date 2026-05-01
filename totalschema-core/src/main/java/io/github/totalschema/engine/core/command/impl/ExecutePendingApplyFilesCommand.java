@@ -24,7 +24,9 @@ import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
+import io.github.totalschema.model.ChangeFile;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,20 +98,28 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
         return null;
     }
 
-    private void initializeConnectors(CommandContext context, List<ApplyFile> pendingApplyFiles) {
+    private void initializeConnectors(CommandContext context, List<ApplyFile> pendingApplyFiles)
+            throws InterruptedException {
 
-        List<String> connectorsUsed =
+        Map<String, List<ChangeFile.Id>> changeFileIdsByConnector =
                 pendingApplyFiles.stream()
-                        .map(ApplyFile::getConnector)
-                        .distinct()
-                        .collect(Collectors.toList());
+                        .collect(
+                                Collectors.groupingBy(
+                                        ApplyFile::getConnector,
+                                        Collectors.mapping(ApplyFile::getId, Collectors.toList())));
 
-        for (String connector : connectorsUsed) {
+        log.info("Connectors required for the changes: {}", changeFileIdsByConnector.keySet());
+
+        ConnectorManager connectorManager = context.get(ConnectorManager.class);
+
+        for (Map.Entry<String, List<ChangeFile.Id>> entry : changeFileIdsByConnector.entrySet()) {
+
+            String connector = entry.getKey();
+            List<ChangeFile.Id> plannedChangeFileIds = entry.getValue();
 
             log.info("Initializing connector '{}'", connector);
 
-            ConnectorManager connectorManager = context.get(ConnectorManager.class);
-            connectorManager.getConnectorByName(connector, context);
+            connectorManager.checkConnector(connector, context, plannedChangeFileIds);
         }
     }
 }

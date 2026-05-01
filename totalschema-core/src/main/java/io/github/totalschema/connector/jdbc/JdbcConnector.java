@@ -20,6 +20,7 @@ package io.github.totalschema.connector.jdbc;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.Connector;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.model.ChangeFile;
@@ -27,6 +28,7 @@ import io.github.totalschema.spi.script.ScriptExecutor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +61,25 @@ public class JdbcConnector extends Connector {
                 + connectorConfiguration
                 + '\''
                 + '}';
+    }
+
+    @Override
+    public void checkConnection(Context context, List<ChangeFile.Id> plannedChangeFileIds)
+            throws InterruptedException {
+        // Acquiring the JdbcDatabase initialises the HikariCP connection pool and validates
+        // connectivity (DefaultJdbcDatabase.init() calls Connection.isValid()). The instance is
+        // cached by the context so the subsequent execute() calls reuse the same pool.
+        logger.info("[{}] Verifying JDBC connectivity", name);
+        try {
+
+            context.get(JdbcDatabase.class, null, name, connectorConfiguration);
+
+        } catch (RuntimeException ex) {
+            logger.error("[{}] JDBC connectivity check FAILED", name, ex);
+            throw ex;
+        }
+
+        logger.info("[{}] JDBC connection verified", name);
     }
 
     @Override

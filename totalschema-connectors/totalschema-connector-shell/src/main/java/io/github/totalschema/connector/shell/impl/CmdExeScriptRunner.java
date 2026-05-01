@@ -29,4 +29,9 @@ final class CmdExeScriptRunner extends GenericShellScriptRunner {
     CmdExeScriptRunner(String name, Map<String, String> environmentVariables) {
         super(name, COMMAND, environmentVariables);
     }
+
+    @Override
+    public void checkReady() throws InterruptedException {
+        executeProbeScript("cmd", "@echo off\r\n");
+    }
 }

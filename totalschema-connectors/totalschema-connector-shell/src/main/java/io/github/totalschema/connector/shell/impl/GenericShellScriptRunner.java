@@ -20,6 +20,9 @@ package io.github.totalschema.connector.shell.impl;
 
 import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.engine.internal.shell.ExternalProcessTerminalSession;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +98,75 @@ class GenericShellScriptRunner extends ExternalProcessTerminalSession implements
     @Override
     protected void acceptOutput(String line) {
         System.out.format("[%s:output] %s%n", name, line);
+    }
+
+    /**
+     * Creates a temporary no-op script with the given {@code extension} and {@code content} via
+     * {@link #createTempScript}, executes it through this runner, then deletes the file regardless
+     * of outcome.
+     *
+     * <p>Intended to be called by {@link #checkReady()} implementations in subclasses — each
+     * subclass passes the extension and content appropriate for its interpreter (e.g. {@code "sh"}
+     * for POSIX shells, {@code "cmd"} for {@code cmd.exe}, {@code "ps1"} for PowerShell).
+     *
+     * @param extension the file extension for the temporary script, without the leading dot (e.g.
+     *     {@code "sh"}, {@code "cmd"}, {@code "ps1"}); the dot is prepended automatically
+     * @param content the script content; must be a valid no-op for the target interpreter
+     * @throws InterruptedException if the probe execution is interrupted
+     */
+    protected final void executeProbeScript(String extension, String content)
+            throws InterruptedException {
+        Path tempScript = null;
+        try {
+            tempScript = createTempScript(extension, content);
+            execute(List.of(tempScript.toAbsolutePath().toString()));
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Shell runner '" + name + "' readiness check failed: " + e.getMessage(), e);
+        } finally {
+            if (tempScript != null) {
+                try {
+                    Files.deleteIfExists(tempScript);
+                } catch (IOException ignored) {
+                    // best-effort cleanup
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates a temporary script file with the given {@code extension} and {@code content}.
+     *
+     * <p>Subclasses may override this method to apply additional setup after the file is written —
+     * for example, setting the executable bit for POSIX shells — by calling {@code super} and then
+     * modifying the returned path.
+     *
+     * @param extension the file extension, without the leading dot (e.g. {@code "sh"}, {@code
+     *     "cmd"}, {@code "ps1"}); the dot is prepended automatically
+     * @param content the script content to write
+     * @return the path of the newly created temporary file
+     * @throws IOException if the file cannot be created or written
+     */
+    protected Path createTempScript(String extension, String content) throws IOException {
+        Path tempScript = Files.createTempFile("totalschema-shell-check-", "." + extension);
+        Files.writeString(tempScript, content);
+        return tempScript;
+    }
+
+    /**
+     * Verifies that this runner's interpreter is accessible by executing a minimal POSIX no-op
+     * script.
+     *
+     * <p>This default implementation is a best-effort fallback for user-configured {@code
+     * start.command} runners whose interpreter type is unknown. Named subclasses (e.g. {@link
+     * ShScriptRunner}, {@link CmdExeScriptRunner}) override this method and call {@link
+     * #executeProbeScript} with the extension and content that match their specific interpreter.
+     *
+     * @throws InterruptedException if the probe execution is interrupted
+     */
+    @Override
+    public void checkReady() throws InterruptedException {
+        executeProbeScript("sh", "#!/bin/sh\n");
     }
 
     @Override

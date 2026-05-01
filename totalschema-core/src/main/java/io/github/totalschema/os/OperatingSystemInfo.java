@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.connector.python;
+package io.github.totalschema.os;
 
 /**
  * Utility class for runtime operating-system detection.
@@ -24,15 +24,24 @@ package io.github.totalschema.connector.python;
  * <p>All detection is based on the {@code os.name} system property, evaluated once at class-load
  * time to avoid repeated look-ups.
  */
-final class OperatingSystemInfo {
+public final class OperatingSystemInfo {
 
     private static final String OS_NAME =
             System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
 
     /** {@code true} when the JVM is running on a Microsoft Windows host. */
-    static final boolean IS_WINDOWS = OS_NAME.contains("win");
+    public static final boolean IS_WINDOWS = OS_NAME.contains("win");
+
+    /**
+     * Returns {@code true} when the JVM is running on a Microsoft Windows host.
+     *
+     * @return {@code true} if the current OS is Windows, {@code false} otherwise
+     */
+    public static boolean isWindows() {
+        return IS_WINDOWS;
+    }
 
     private OperatingSystemInfo() {
-        // utility class — not instantiable
+        throw new AssertionError("utility class: not instantiable");
     }
 }

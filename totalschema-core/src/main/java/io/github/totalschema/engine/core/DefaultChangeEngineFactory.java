@@ -72,34 +72,40 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
             SecretsManager secretsManager,
             String environmentName) {
 
-        Environment environment = environmentName != null ? new Environment(environmentName) : null;
+        try {
+            Environment environment =
+                    environmentName != null ? new Environment(environmentName) : null;
 
-        if (secretsManager == null) {
-            SecretManagerFactory secretManagerFactory = SecretManagerFactory.getInstance();
+            if (secretsManager == null) {
+                SecretManagerFactory secretManagerFactory = SecretManagerFactory.getInstance();
 
-            logger.debug(
-                    "Creating SecretsManager using SecretManagerFactory: {}",
-                    secretManagerFactory.getClass().getName());
+                logger.debug(
+                        "Creating SecretsManager using SecretManagerFactory: {}",
+                        secretManagerFactory.getClass().getName());
 
-            secretsManager = secretManagerFactory.getSecretsManager(null, null);
+                secretsManager = secretManagerFactory.getSecretsManager(null, null);
+            }
+
+            EventDispatcher eventDispatcher = new EventDispatcher();
+
+            ComponentContainer componentContainer =
+                    createComponentContainer(
+                            environment, configurationSupplier, secretsManager, eventDispatcher);
+
+            CommandExecutor commandExecutor = new CommandInvoker();
+
+            if (componentContainer.has(LockService.class)) {
+                logger.debug(
+                        "Adding LockInterceptor to command execution chain, as LockService is available");
+
+                commandExecutor = new LockInterceptor(commandExecutor);
+            }
+
+            return new DefaultChangeEngine(commandExecutor, componentContainer, eventDispatcher);
+
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Failed to create ChangeEngine: " + e.getMessage(), e);
         }
-
-        EventDispatcher eventDispatcher = new EventDispatcher();
-
-        ComponentContainer componentContainer =
-                createComponentContainer(
-                        environment, configurationSupplier, secretsManager, eventDispatcher);
-
-        CommandExecutor commandExecutor = new CommandInvoker();
-
-        if (componentContainer.has(LockService.class)) {
-            logger.debug(
-                    "Adding LockInterceptor to command execution chain, as LockService is available");
-
-            commandExecutor = new LockInterceptor(commandExecutor);
-        }
-
-        return new DefaultChangeEngine(commandExecutor, componentContainer, eventDispatcher);
     }
 
     static ComponentContainer createComponentContainer(

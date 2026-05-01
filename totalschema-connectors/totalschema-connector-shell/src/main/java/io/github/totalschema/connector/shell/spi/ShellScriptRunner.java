@@ -35,4 +35,15 @@ import java.util.List;
  * provided by registering a {@link ShellScriptRunnerFactory} via Java {@link
  * java.util.ServiceLoader}.
  */
-public interface ShellScriptRunner extends TerminalSession<List<String>> {}
+public interface ShellScriptRunner extends TerminalSession<List<String>> {
+
+    /**
+     * Verifies that the interpreter managed by this runner is accessible and functional.
+     *
+     * <p>Implementations should perform the lightest possible probe — e.g. execute a no-op script —
+     * and throw a {@link RuntimeException} if the interpreter cannot be started.
+     *
+     * @throws InterruptedException if the probe is interrupted
+     */
+    void checkReady() throws InterruptedException;
+}

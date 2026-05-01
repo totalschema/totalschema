@@ -31,6 +31,7 @@ import io.github.totalschema.model.ChangeType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -126,16 +127,12 @@ public class ShellScriptConnectorTest {
     }
 
     @Test
-    public void testExecutePassesFileNameOnlyNotFullPath() throws InterruptedException {
-        // File lives inside a subdirectory; only the leaf name must reach the factory
-        Path changesDir = Paths.get("/workspace/changes");
-        Path scriptFile = Paths.get("/workspace/changes/v1/0002.install.apply.myshell.sh");
-        ApplyFile applyFile = makeApplyFile(changesDir, scriptFile, "0002", "install", null, "sh");
+    public void testExecutePassesExtensionToFactory() throws InterruptedException {
+        Path changesDir = Paths.get("/changes");
+        Path scriptFile = Paths.get("/changes/0001.setup.apply.myshell.sh");
+        ApplyFile applyFile = makeApplyFile(changesDir, scriptFile, "0001", "setup", null, "sh");
 
-        expect(
-                        mockFactory.getRunner(
-                                CONNECTOR_NAME, configuration, "0002.install.apply.myshell.sh"))
-                .andReturn(mockRunner);
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "sh")).andReturn(mockRunner);
         mockRunner.execute(anyObject());
         mockRunner.close();
         replay(mockFactory, mockRunner);
@@ -146,15 +143,13 @@ public class ShellScriptConnectorTest {
     }
 
     @Test
-    public void testExecutePassesFileNameWithEnvironmentSegment() throws InterruptedException {
-        Path changesDir = Paths.get("/changes");
-        Path scriptFile = Paths.get("/changes/0001.setup.DEV.apply.myshell.sh");
-        ApplyFile applyFile = makeApplyFile(changesDir, scriptFile, "0001", "setup", "DEV", "sh");
+    public void testExecutePassesExtensionNotFullFileName() throws InterruptedException {
+        // File lives in a sub-directory; only the extension must reach the factory, not the path
+        Path changesDir = Paths.get("/workspace/changes");
+        Path scriptFile = Paths.get("/workspace/changes/v1/0002.install.apply.myshell.sh");
+        ApplyFile applyFile = makeApplyFile(changesDir, scriptFile, "0002", "install", null, "sh");
 
-        expect(
-                        mockFactory.getRunner(
-                                CONNECTOR_NAME, configuration, "0001.setup.DEV.apply.myshell.sh"))
-                .andReturn(mockRunner);
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "sh")).andReturn(mockRunner);
         mockRunner.execute(anyObject());
         mockRunner.close();
         replay(mockFactory, mockRunner);
@@ -188,13 +183,11 @@ public class ShellScriptConnectorTest {
 
     @Test
     public void testExecuteWrapsPathInSingletonList() throws InterruptedException {
-        // Verifies that execute() wraps the path in exactly a one-element list
         Path changesDir = Paths.get("/changes");
         Path scriptFile = Paths.get("/changes/0001.setup.apply.myshell.sh");
         ApplyFile applyFile = makeApplyFile(changesDir, scriptFile, "0001", "setup", null, "sh");
 
         expect(mockFactory.getRunner(anyString(), anyObject(), anyString())).andReturn(mockRunner);
-        // expectation accepts exactly the singleton list – any other list would fail
         mockRunner.execute(Collections.singletonList(scriptFile.toAbsolutePath().toString()));
         mockRunner.close();
         replay(mockFactory, mockRunner);
@@ -249,7 +242,6 @@ public class ShellScriptConnectorTest {
         expect(mockFactory.getRunner(anyString(), anyObject(), anyString())).andReturn(mockRunner);
         mockRunner.execute(anyObject());
         expectLastCall().andThrow(new InterruptedException("simulated interruption"));
-        // close() must still be invoked by the try-with-resources block
         mockRunner.close();
         expectLastCall().once();
         replay(mockFactory, mockRunner);
@@ -257,7 +249,6 @@ public class ShellScriptConnectorTest {
         try {
             connector.execute(applyFile, context);
         } catch (InterruptedException ignored) {
-            // Expected – we only assert that close() was still called
         }
 
         verify(mockFactory, mockRunner);
@@ -265,7 +256,6 @@ public class ShellScriptConnectorTest {
 
     @Test
     public void testRunnerIsCreatedFreshForEachExecution() throws InterruptedException {
-        // A second runner mock for the second call
         ShellScriptRunner mockRunner2 = createMock(ShellScriptRunner.class);
 
         Path changesDir = Paths.get("/changes");
@@ -274,15 +264,11 @@ public class ShellScriptConnectorTest {
         ApplyFile applyFile1 = makeApplyFile(changesDir, script1, "0001", "setup", null, "sh");
         ApplyFile applyFile2 = makeApplyFile(changesDir, script2, "0002", "migrate", null, "sh");
 
-        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "0001.setup.apply.myshell.sh"))
-                .andReturn(mockRunner);
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "sh")).andReturn(mockRunner);
         mockRunner.execute(anyObject());
         mockRunner.close();
 
-        expect(
-                        mockFactory.getRunner(
-                                CONNECTOR_NAME, configuration, "0002.migrate.apply.myshell.sh"))
-                .andReturn(mockRunner2);
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "sh")).andReturn(mockRunner2);
         mockRunner2.execute(anyObject());
         mockRunner2.close();
 
@@ -304,10 +290,7 @@ public class ShellScriptConnectorTest {
         Path scriptFile = Paths.get("/changes/0002.install.apply.myshell.bat");
         ApplyFile applyFile = makeApplyFile(changesDir, scriptFile, "0002", "install", null, "bat");
 
-        expect(
-                        mockFactory.getRunner(
-                                CONNECTOR_NAME, configuration, "0002.install.apply.myshell.bat"))
-                .andReturn(mockRunner);
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "bat")).andReturn(mockRunner);
         mockRunner.execute(anyObject());
         mockRunner.close();
         replay(mockFactory, mockRunner);
@@ -324,10 +307,7 @@ public class ShellScriptConnectorTest {
         ApplyFile applyFile =
                 makeApplyFile(changesDir, scriptFile, "0003", "configure", null, "ps1");
 
-        expect(
-                        mockFactory.getRunner(
-                                CONNECTOR_NAME, configuration, "0003.configure.apply.myshell.ps1"))
-                .andReturn(mockRunner);
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "ps1")).andReturn(mockRunner);
         mockRunner.execute(anyObject());
         mockRunner.close();
         replay(mockFactory, mockRunner);
@@ -338,12 +318,76 @@ public class ShellScriptConnectorTest {
     }
 
     // -------------------------------------------------------------------------
+    // checkConnection — interpreter probing per distinct extension
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testCheckConnectionProbesRunnerForEachDistinctExtension()
+            throws InterruptedException {
+        ShellScriptRunner mockRunner2 = createMock(ShellScriptRunner.class);
+
+        ChangeFile.Id idSh = makeId("0001", "setup", null, "sh");
+        ChangeFile.Id idPs1 = makeId("0002", "configure", null, "ps1");
+        ChangeFile.Id idSh2 = makeId("0003", "migrate", null, "sh"); // same ext as idSh
+
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "sh")).andReturn(mockRunner);
+        mockRunner.checkReady();
+        mockRunner.close();
+
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "ps1")).andReturn(mockRunner2);
+        mockRunner2.checkReady();
+        mockRunner2.close();
+
+        replay(mockFactory, mockRunner, mockRunner2);
+
+        connector.checkConnection(context, List.of(idSh, idPs1, idSh2));
+
+        verify(mockFactory, mockRunner, mockRunner2);
+    }
+
+    @Test
+    public void testCheckConnectionWithEmptyListDoesNothing() throws InterruptedException {
+        replay(mockFactory, mockRunner);
+
+        connector.checkConnection(context, Collections.emptyList());
+
+        verify(mockFactory, mockRunner); // no interactions expected
+    }
+
+    @Test
+    public void testCheckConnectionClosesRunnerAfterCheckReady() throws InterruptedException {
+        ChangeFile.Id id = makeId("0001", "setup", null, "sh");
+
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "sh")).andReturn(mockRunner);
+        mockRunner.checkReady();
+        mockRunner.close();
+        expectLastCall().once();
+        replay(mockFactory, mockRunner);
+
+        connector.checkConnection(context, List.of(id));
+
+        verify(mockFactory, mockRunner);
+    }
+
+    @Test(expectedExceptions = InterruptedException.class)
+    public void testCheckConnectionPropagatesInterruptedException() throws InterruptedException {
+        ChangeFile.Id id = makeId("0001", "setup", null, "sh");
+
+        expect(mockFactory.getRunner(CONNECTOR_NAME, configuration, "sh")).andReturn(mockRunner);
+        mockRunner.checkReady();
+        expectLastCall().andThrow(new InterruptedException("simulated"));
+        mockRunner.close();
+        replay(mockFactory, mockRunner);
+
+        connector.checkConnection(context, List.of(id));
+    }
+
+    // -------------------------------------------------------------------------
     // Null-safety guards
     // -------------------------------------------------------------------------
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testExecuteWithNullChangeFileThrowsNpe() throws InterruptedException {
-        // changeFile.getFile() dereferences null → implicit NPE
         connector.execute(null, context);
     }
 
@@ -358,29 +402,12 @@ public class ShellScriptConnectorTest {
         connector.execute(mockChangeFile, context);
     }
 
-    @Test(
-            expectedExceptions = NullPointerException.class,
-            expectedExceptionsMessageRegExp = "fileName is null")
-    public void testExecuteWithNullFileNameThrowsNpe() throws InterruptedException {
-        Path mockPath = createMock(Path.class);
-        expect(mockPath.getFileName()).andReturn(null);
-
-        ChangeFile mockChangeFile = createMock(ChangeFile.class);
-        expect(mockChangeFile.getFile()).andReturn(mockPath);
-
-        replay(mockPath, mockChangeFile);
-
-        connector.execute(mockChangeFile, context);
-    }
-
     // -------------------------------------------------------------------------
     // Default-factory constructor
     // -------------------------------------------------------------------------
 
     @Test
     public void testDefaultConstructorCreatesConnector() {
-        // Exercises the public two-argument constructor that resolves the factory
-        // via ServiceLoader (falls back to DefaultShellScriptRunnerFactory)
         ShellScriptConnector c = new ShellScriptConnector(CONNECTOR_NAME, configuration);
         assertNotNull(c);
     }
@@ -392,7 +419,7 @@ public class ShellScriptConnectorTest {
     }
 
     // -------------------------------------------------------------------------
-    // Helper
+    // Helpers
     // -------------------------------------------------------------------------
 
     private static ApplyFile makeApplyFile(
@@ -402,15 +429,12 @@ public class ShellScriptConnectorTest {
             String description,
             String environment,
             String extension) {
-        ChangeFile.Id id =
-                new ChangeFile.Id(
-                        "",
-                        order,
-                        description,
-                        environment,
-                        ChangeType.APPLY,
-                        CONNECTOR_NAME,
-                        extension);
-        return new ApplyFile(changesDir, file, id);
+        return new ApplyFile(changesDir, file, makeId(order, description, environment, extension));
+    }
+
+    private static ChangeFile.Id makeId(
+            String order, String description, String environment, String extension) {
+        return new ChangeFile.Id(
+                "", order, description, environment, ChangeType.APPLY, CONNECTOR_NAME, extension);
     }
 }

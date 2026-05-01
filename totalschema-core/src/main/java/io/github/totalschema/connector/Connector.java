@@ -18,8 +18,10 @@
 
 package io.github.totalschema.connector;
 
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
+import java.util.List;
 
 /**
  * Base class for all connectors in TotalSchema.
@@ -32,8 +34,31 @@ import io.github.totalschema.model.ChangeFile;
  */
 public abstract class Connector {
 
+    /**
+     * Returns a human-readable representation of the connector.
+     *
+     * @return a string representation of the connector
+     */
     @Override
     public abstract String toString();
+
+    /**
+     * Checks whether this connector can successfully reach its target system.
+     *
+     * <p>Connectors that can meaningfully test reachability (e.g. open a JDBC connection, attempt a
+     * trivial SSH command, verify an interpreter is on the PATH) should implement this method and
+     * throw a {@link RuntimeException} when the target cannot be reached.
+     *
+     * <p>The check can be disabled per connector via {@code connectionCheck.enabled: false} in
+     * {@code totalschema.yml}.
+     *
+     * @param context the current command context, available for IoC-managed resources (e.g. {@link
+     *     io.github.totalschema.jdbc.JdbcDatabase})
+     * @param plannedChangeFileIds the list of change file IDs that are planned to be executed using
+     *     this connector; provided as context for pre-flight validation
+     */
+    public abstract void checkConnection(Context context, List<ChangeFile.Id> plannedChangeFileIds)
+            throws InterruptedException;
 
     /**
      * Execute a change file against this connector's target system.

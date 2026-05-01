@@ -20,6 +20,7 @@ package io.github.totalschema.connector.python;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.Connector;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import java.io.File;
@@ -92,7 +93,7 @@ public final class PythonConnector extends Connector {
     public static final String CONNECTOR_TYPE = "python";
 
     private static final String DEFAULT_EXECUTABLE =
-            OperatingSystemInfo.IS_WINDOWS ? "python" : "python3";
+            io.github.totalschema.os.OperatingSystemInfo.IS_WINDOWS ? "python" : "python3";
 
     private static final Logger log = LoggerFactory.getLogger(PythonConnector.class);
 
@@ -202,6 +203,16 @@ public final class PythonConnector extends Connector {
         } else {
             this.sdkGenerator = null;
         }
+    }
+
+    @Override
+    public void checkConnection(Context context, List<ChangeFile.Id> plannedChangeFileIds)
+            throws InterruptedException {
+        log.info("[{}] Verifying Python interpreter is accessible: {}", name, executable);
+        // `<executable> --version` exits 0 on all Python 2/3 variants
+        processRunner.run(
+                List.of(executable, "--version"), Path.of(System.getProperty("user.dir")));
+        log.info("[{}] Python interpreter verified: {}", name, executable);
     }
 
     @Override

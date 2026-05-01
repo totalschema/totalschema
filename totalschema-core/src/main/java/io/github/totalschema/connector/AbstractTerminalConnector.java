@@ -18,12 +18,14 @@
 
 package io.github.totalschema.connector;
 
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.internal.shell.direct.TerminalSession;
 import io.github.totalschema.model.ChangeFile;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Base class for connectors that use terminal/shell sessions.
@@ -60,6 +62,19 @@ public abstract class AbstractTerminalConnector<S extends TerminalSession<?>> ex
      * @throws InterruptedException if execution is interrupted
      */
     protected abstract void execute(Path scriptFile, CommandContext context)
+            throws InterruptedException;
+
+    /**
+     * Checks whether the underlying terminal session can reach its target system.
+     *
+     * <p>Subclasses execute a lightweight probe command (e.g. a no-op shell built-in) and throw a
+     * {@link RuntimeException} if the session is not healthy.
+     *
+     * @param context the current command context (available for IoC resources if needed)
+     * @param plannedChangeFileIds the list of change file IDs planned for this connector
+     */
+    @Override
+    public abstract void checkConnection(Context context, List<ChangeFile.Id> plannedChangeFileIds)
             throws InterruptedException;
 
     @Override

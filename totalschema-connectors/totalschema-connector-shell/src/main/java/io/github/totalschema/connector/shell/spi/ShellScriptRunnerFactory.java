@@ -68,9 +68,10 @@ public interface ShellScriptRunnerFactory {
      * @param name the connector name; used for logging and diagnostics
      * @param configuration the connector configuration block; may contain a {@code start.command}
      *     override that takes precedence over any auto-detection
-     * @param fileName the name of the script file about to be executed (e.g. {@code
-     *     "0001.setup.apply.myshell.sh"}); used to determine the correct interpreter
-     * @return a ready-to-use {@link ShellScriptRunner} for the given file; never {@code null}
+     * @param fileExtension the extension of the script file about to be executed (e.g. {@code
+     *     "sh"}, {@code "ps1"}, {@code "bat"}); used to determine the correct interpreter.
+     *     Case-insensitive. When {@code start.command} is configured, this value is ignored.
+     * @return a ready-to-use {@link ShellScriptRunner} for the given extension; never {@code null}
      */
-    ShellScriptRunner getRunner(String name, Configuration configuration, String fileName);
+    ShellScriptRunner getRunner(String name, Configuration configuration, String fileExtension);
 }
