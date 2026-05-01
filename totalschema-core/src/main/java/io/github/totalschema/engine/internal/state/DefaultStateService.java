@@ -129,7 +129,8 @@ class DefaultStateService implements StateService {
         return allStateRecords.stream()
                 .filter(
                         stateRecord ->
-                                isRelevantForEnvironment(stateRecord.getChangeFileId(), environmentName))
+                                isRelevantForEnvironment(
+                                        stateRecord.getChangeFileId(), environmentName))
                 .filter(stateRecord -> !onDiskIds.contains(stateRecord.getChangeFileId()))
                 .collect(Collectors.toUnmodifiableList());
     }

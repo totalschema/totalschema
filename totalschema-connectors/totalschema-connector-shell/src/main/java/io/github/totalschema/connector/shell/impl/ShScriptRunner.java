@@ -46,7 +46,8 @@ final class ShScriptRunner extends GenericShellScriptRunner {
         Path script = super.createTempScript(suffix, content);
         boolean couldSetExecutable = script.toFile().setExecutable(true);
         if (couldSetExecutable) {
-            throw new IllegalStateException("Failed to set execute permission on probe script: " + script);
+            throw new IllegalStateException(
+                    "Failed to set execute permission on probe script: " + script);
         }
         return script;
     }

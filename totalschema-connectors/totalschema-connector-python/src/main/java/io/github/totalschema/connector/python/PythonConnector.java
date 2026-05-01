@@ -23,6 +23,7 @@ import io.github.totalschema.connector.Connector;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
+import io.github.totalschema.os.OperatingSystemInfo;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -92,8 +93,11 @@ public final class PythonConnector extends Connector {
     /** Connector type identifier used in {@code totalschema.yml} ({@code type: python}). */
     public static final String CONNECTOR_TYPE = "python";
 
+    private static final String WINDOWS_EXECUTABLE_NAME = "python";
+    private static final String GENERIC_PYTHON_3_EXECUTABLE = "python3";
+
     private static final String DEFAULT_EXECUTABLE =
-            io.github.totalschema.os.OperatingSystemInfo.IS_WINDOWS ? "python" : "python3";
+            OperatingSystemInfo.IS_WINDOWS ? WINDOWS_EXECUTABLE_NAME : GENERIC_PYTHON_3_EXECUTABLE;
 
     private static final Logger log = LoggerFactory.getLogger(PythonConnector.class);
 
@@ -150,7 +154,7 @@ public final class PythonConnector extends Connector {
             final String existing = envVars.get(PYTHONPATH_VARIABLE_NAME);
             final String pythonPath =
                     existing != null ? resolvedPath + File.pathSeparator + existing : resolvedPath;
-            envVars.put("PYTHONPATH", pythonPath);
+            envVars.put(PYTHONPATH_VARIABLE_NAME, pythonPath);
             log.debug(
                     "[{}] modulesDirectory resolved to '{}'; PYTHONPATH set to '{}'",
                     name,

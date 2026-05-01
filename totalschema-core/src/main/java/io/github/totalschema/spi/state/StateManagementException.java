@@ -27,12 +27,13 @@ package io.github.totalschema.spi.state;
  * runtime exceptions.
  *
  * <p>Common scenarios:
+ *
  * <ul>
- *   <li>Failure to persist state records to storage</li>
- *   <li>Failure to retrieve state records from storage</li>
- *   <li>State table initialization errors</li>
- *   <li>File I/O errors during state operations</li>
- *   <li>Concurrent state access violations</li>
+ *   <li>Failure to persist state records to storage
+ *   <li>Failure to retrieve state records from storage
+ *   <li>State table initialization errors
+ *   <li>File I/O errors during state operations
+ *   <li>Concurrent state access violations
  * </ul>
  *
  * @see StateService
@@ -55,8 +56,8 @@ public class StateManagementException extends RuntimeException {
      * Constructs a new state management exception with the specified detail message and cause.
      *
      * @param message the detail message explaining why the state operation failed
-     * @param cause the underlying cause of the failure (e.g., {@link java.io.IOException},
-     *     {@link java.sql.SQLException})
+     * @param cause the underlying cause of the failure (e.g., {@link java.io.IOException}, {@link
+     *     java.sql.SQLException})
      */
     public StateManagementException(String message, Throwable cause) {
         super(message, cause);
@@ -71,4 +72,3 @@ public class StateManagementException extends RuntimeException {
         super(cause);
     }
 }
-
