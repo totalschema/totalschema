@@ -74,8 +74,8 @@ public class PurgeOrphanedStateCliCommand extends CommonCliCommandBase {
             System.out.println("No orphaned state records found.");
         } else {
             System.out.format("Purged %d orphaned state record(s):%n", purged.size());
-            for (StateRecord record : purged) {
-                System.out.format("  %s%n", record.getChangeFileId().toStringRepresentation());
+            for (StateRecord stateRecord : purged) {
+                System.out.format("  %s%n", stateRecord.getChangeFileId().toStringRepresentation());
             }
         }
     }
@@ -89,8 +89,8 @@ public class PurgeOrphanedStateCliCommand extends CommonCliCommandBase {
         } else {
             System.out.format(
                     "[dry-run] Would purge %d orphaned state record(s):%n", wouldBePurged.size());
-            for (StateRecord record : wouldBePurged) {
-                System.out.format("  %s%n", record.getChangeFileId().toStringRepresentation());
+            for (StateRecord stateRecord : wouldBePurged) {
+                System.out.format("  %s%n", stateRecord.getChangeFileId().toStringRepresentation());
             }
         }
     }

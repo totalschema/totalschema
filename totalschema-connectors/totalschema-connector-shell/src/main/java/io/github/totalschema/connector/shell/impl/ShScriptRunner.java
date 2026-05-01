@@ -44,7 +44,10 @@ final class ShScriptRunner extends GenericShellScriptRunner {
     @Override
     protected Path createTempScript(String suffix, String content) throws IOException {
         Path script = super.createTempScript(suffix, content);
-        script.toFile().setExecutable(true);
+        boolean couldSetExecutable = script.toFile().setExecutable(true);
+        if (couldSetExecutable) {
+            throw new IllegalStateException("Failed to set execute permission on probe script: " + script);
+        }
         return script;
     }
 
