@@ -21,6 +21,7 @@ package io.github.totalschema.engine.core.command.impl;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
@@ -39,10 +40,10 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
 
     private final Logger log = LoggerFactory.getLogger(ExecutePendingApplyFilesCommand.class);
 
-    private final String filterExpression;
+    private final ChangeFileSelector selector;
 
-    public ExecutePendingApplyFilesCommand(String filterExpression) {
-        this.filterExpression = filterExpression;
+    public ExecutePendingApplyFilesCommand(ChangeFileSelector selector) {
+        this.selector = selector != null ? selector : ChangeFileSelector.empty();
     }
 
     @Override
@@ -51,8 +52,7 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
         ChangeEngine changeEngine = context.get(ChangeEngine.class);
         Environment environment = context.get(Environment.class);
 
-        List<ApplyFile> allApplyFiles =
-                changeEngine.getChangeManager().getAllApplyFiles(filterExpression);
+        List<ApplyFile> allApplyFiles = changeEngine.getChangeManager().getAllApplyFiles(selector);
 
         log.info("{} change files found", allApplyFiles.size());
 
@@ -68,30 +68,26 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
         initializeConnectors(context, pendingApplyFiles);
 
         for (int i = 0; i < totalPending; i++) {
-
             int outputIndex = i + 1;
-
             log.info(
                     "Executing change file #{} out of {}, remaining: {}",
                     outputIndex,
                     totalPending,
                     totalPending - outputIndex);
-
-            ApplyFile applyFile = pendingApplyFiles.get(i);
-
-            changeEngine.getChangeManager().execute(applyFile);
+            changeEngine.getChangeManager().execute(pendingApplyFiles.get(i));
         }
 
         if (!pendingApplyFiles.isEmpty()) {
             log.info("Executed {} change files", pendingApplyFiles.size());
         }
 
-        if (filterExpression == null) {
+        String filterExpression = selector.getFilterExpression();
+        if (filterExpression == null && selector.getLabelFilters().isEmpty()) {
             log.info("SUCCESS: The {} environment is in desired state.", environment.getName());
         } else {
             log.info(
-                    "SUCCESS: Apply scripts filtered by '{}' are executed against the {} environment.",
-                    filterExpression,
+                    "SUCCESS: Apply scripts matching the given selector are executed"
+                            + " against the {} environment.",
                     environment.getName());
         }
 
@@ -113,13 +109,8 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
         ConnectorManager connectorManager = context.get(ConnectorManager.class);
 
         for (Map.Entry<String, List<ChangeFile.Id>> entry : changeFileIdsByConnector.entrySet()) {
-
-            String connector = entry.getKey();
-            List<ChangeFile.Id> plannedChangeFileIds = entry.getValue();
-
-            log.info("Initializing connector '{}'", connector);
-
-            connectorManager.checkConnector(connector, context, plannedChangeFileIds);
+            log.info("Initializing connector '{}'", entry.getKey());
+            connectorManager.checkConnector(entry.getKey(), context, entry.getValue());
         }
     }
 }

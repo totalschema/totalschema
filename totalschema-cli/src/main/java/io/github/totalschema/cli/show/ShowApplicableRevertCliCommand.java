@@ -19,7 +19,9 @@
 package io.github.totalschema.cli.show;
 
 import io.github.totalschema.cli.EnvironmentAwareCliCommand;
+import io.github.totalschema.cli.LabelFilterMixin;
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.model.RevertFile;
 import java.util.List;
 import picocli.CommandLine;
@@ -35,11 +37,13 @@ public class ShowApplicableRevertCliCommand extends EnvironmentAwareCliCommand {
             description = "Include change files matching this expression only")
     protected String filterExpression;
 
+    @CommandLine.Mixin private LabelFilterMixin labelFilterMixin = new LabelFilterMixin();
+
     @Override
     public void run(ChangeEngine changeEngine) {
-
+        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
         List<RevertFile> revertFiles =
-                changeEngine.getChangeManager().getApplicableRevertFiles(filterExpression);
+                changeEngine.getChangeManager().getApplicableRevertFiles(selector);
 
         System.out.format("%s revertable changes found %n", revertFiles.size());
 

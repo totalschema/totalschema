@@ -18,6 +18,7 @@
 
 package io.github.totalschema.engine.core.command.impl;
 
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.model.ChangeType;
 import io.github.totalschema.model.RevertFile;
@@ -26,8 +27,8 @@ import java.util.Comparator;
 
 public final class GetRevertFilesCommand extends GetChangeFilesCommand<RevertFile> {
 
-    public GetRevertFilesCommand(String filterExpression) {
-        super(filterExpression, ChangeType.REVERT);
+    public GetRevertFilesCommand(ChangeFileSelector selector) {
+        super(selector, ChangeType.REVERT);
     }
 
     @Override

@@ -19,6 +19,7 @@
 package io.github.totalschema.engine.core.command.impl.revert;
 
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.RevertFile;
@@ -32,10 +33,10 @@ public class ExecuteRevertFilesCommand implements Command<Void> {
 
     protected final Logger log = LoggerFactory.getLogger(ExecuteRevertFilesCommand.class);
 
-    private final String filterExpression;
+    private final ChangeFileSelector selector;
 
-    public ExecuteRevertFilesCommand(String filterExpression) {
-        this.filterExpression = filterExpression;
+    public ExecuteRevertFilesCommand(ChangeFileSelector selector) {
+        this.selector = selector != null ? selector : ChangeFileSelector.empty();
     }
 
     @Override
@@ -47,7 +48,7 @@ public class ExecuteRevertFilesCommand implements Command<Void> {
         ChangeService changeService = context.get(ChangeService.class);
 
         List<RevertFile> revertFiles =
-                changeEngine.getChangeManager().getApplicableRevertFiles(filterExpression);
+                changeEngine.getChangeManager().getApplicableRevertFiles(selector);
 
         log.info("{} applicable revert files found", revertFiles.size());
 

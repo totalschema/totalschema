@@ -18,6 +18,7 @@
 
 package io.github.totalschema.engine.core.command.impl;
 
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
@@ -31,12 +32,8 @@ import java.util.Comparator;
  */
 public final class GetApplyFilesCommand extends GetChangeFilesCommand<ApplyFile> {
 
-    public GetApplyFilesCommand(String filterExpression) {
-        super(
-                filterExpression,
-                ChangeType.APPLY,
-                ChangeType.APPLY_ALWAYS,
-                ChangeType.APPLY_ON_CHANGE);
+    public GetApplyFilesCommand(ChangeFileSelector selector) {
+        super(selector, ChangeType.APPLY, ChangeType.APPLY_ALWAYS, ChangeType.APPLY_ON_CHANGE);
     }
 
     @Override

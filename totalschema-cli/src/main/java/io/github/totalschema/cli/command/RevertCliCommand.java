@@ -19,7 +19,9 @@
 package io.github.totalschema.cli.command;
 
 import io.github.totalschema.cli.DryRunSupportEnvironmentAwareCliCommand;
+import io.github.totalschema.cli.LabelFilterMixin;
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.model.RevertFile;
 import java.util.List;
 import picocli.CommandLine;
@@ -32,17 +34,19 @@ public class RevertCliCommand extends DryRunSupportEnvironmentAwareCliCommand {
             description = "Include change files matching this expression only")
     protected String filterExpression;
 
+    @CommandLine.Mixin private LabelFilterMixin labelFilterMixin = new LabelFilterMixin();
+
     @Override
     protected void runActual(ChangeEngine changeEngine) {
-        changeEngine.getChangeManager().executeReverts(filterExpression);
+        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
+        changeEngine.getChangeManager().executeReverts(selector);
     }
 
     @Override
     protected void runDry(ChangeEngine changeEngine) {
-
-        // Show applicable revert changes without executing
+        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
         List<RevertFile> revertFiles =
-                changeEngine.getChangeManager().getApplicableRevertFiles(filterExpression);
+                changeEngine.getChangeManager().getApplicableRevertFiles(selector);
 
         System.out.format("%s revertable changes would be executed%n", revertFiles.size());
 

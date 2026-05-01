@@ -19,6 +19,7 @@
 package io.github.totalschema.engine.core.command.impl.validate;
 
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
@@ -41,10 +42,10 @@ public final class ValidateApplyFilesCommand implements Command<List<Exception>>
 
     private final Logger log = LoggerFactory.getLogger(ValidateApplyFilesCommand.class);
 
-    private final String filterExpression;
+    private final ChangeFileSelector selector;
 
-    public ValidateApplyFilesCommand(String filterExpression) {
-        this.filterExpression = filterExpression;
+    public ValidateApplyFilesCommand(ChangeFileSelector selector) {
+        this.selector = selector != null ? selector : ChangeFileSelector.empty();
     }
 
     @Override
@@ -56,8 +57,7 @@ public final class ValidateApplyFilesCommand implements Command<List<Exception>>
         ChangeEngine changeEngine = context.get(ChangeEngine.class);
         StateService stateService = context.get(StateService.class);
 
-        List<ApplyFile> allApplyFiles =
-                changeEngine.getChangeManager().getAllApplyFiles(filterExpression);
+        List<ApplyFile> allApplyFiles = changeEngine.getChangeManager().getAllApplyFiles(selector);
 
         Map<ChangeFile.Id, ApplyFile> idToChangeFile =
                 allApplyFiles.stream()

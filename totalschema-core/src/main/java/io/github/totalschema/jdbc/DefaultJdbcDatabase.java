@@ -394,10 +394,10 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
                 }
             }
 
-            log.info("[{}] database: connection established", name);
+            log.info("[{}] database: connection established.", name);
 
             log.info(
-                    "[{}] database: SQL statement logging has been {}",
+                    "[{}] database: SQL statement logging has been {}.",
                     name,
                     logSql ? "enabled" : "disabled");
 

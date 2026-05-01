@@ -19,7 +19,9 @@
 package io.github.totalschema.cli.command;
 
 import io.github.totalschema.cli.EnvironmentAwareCliCommand;
+import io.github.totalschema.cli.LabelFilterMixin;
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,11 +40,13 @@ public class ValidateCliCommand extends EnvironmentAwareCliCommand {
             description = "Include change files matching this expression only")
     protected String filterExpression;
 
+    @CommandLine.Mixin private LabelFilterMixin labelFilterMixin = new LabelFilterMixin();
+
     @Override
     public void run(ChangeEngine changeEngine) {
-
+        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
         List<Exception> exceptions =
-                changeEngine.getValidationManager().validateChangeFiles(filterExpression);
+                changeEngine.getValidationManager().validateChangeFiles(selector);
 
         if (exceptions.isEmpty()) {
             log.info("Validation SUCCESSFUL: no errors found");

@@ -19,9 +19,7 @@
 package io.github.totalschema.model;
 
 import java.nio.file.Path;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Abstract base class representing a change file containing database modifications.
@@ -234,6 +232,7 @@ public abstract class ChangeFile {
 
     private final Path file;
     private final Path relativePath;
+    private Map<String, List<String>> effectiveLabels = Collections.emptyMap();
 
     /**
      * Constructs a ChangeFile with the specified properties.
@@ -304,6 +303,30 @@ public abstract class ChangeFile {
 
     public int getOrder() {
         return id.getOrder();
+    }
+
+    /**
+     * Gets the effective change file group labels resolved during discovery.
+     *
+     * @return an unmodifiable map of label key to list of values; never null, may be empty
+     */
+    public Map<String, List<String>> getEffectiveLabels() {
+        return effectiveLabels;
+    }
+
+    /**
+     * Sets the effective labels resolved for this change file during discovery. Package-scoped to
+     * keep mutation inside the engine internals.
+     *
+     * @param effectiveLabels the resolved labels; must not be null
+     */
+    public void setEffectiveLabels(Map<String, List<String>> effectiveLabels) {
+
+        Objects.requireNonNull(effectiveLabels, "effectiveLabels");
+
+        LinkedHashMap<String, List<String>> defensiveCopy = new LinkedHashMap<>(effectiveLabels);
+
+        this.effectiveLabels = Collections.unmodifiableMap(defensiveCopy);
     }
 
     @Override

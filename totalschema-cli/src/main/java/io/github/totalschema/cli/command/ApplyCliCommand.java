@@ -19,7 +19,9 @@
 package io.github.totalschema.cli.command;
 
 import io.github.totalschema.cli.DryRunSupportEnvironmentAwareCliCommand;
+import io.github.totalschema.cli.LabelFilterMixin;
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.api.ChangeManager;
 import io.github.totalschema.model.ApplyFile;
 import java.util.List;
@@ -36,6 +38,8 @@ public class ApplyCliCommand extends DryRunSupportEnvironmentAwareCliCommand {
             description = "Include change files matching this expression only")
     protected String filterExpression;
 
+    @CommandLine.Mixin private LabelFilterMixin labelFilterMixin = new LabelFilterMixin();
+
     @CommandLine.Option(
             names = "--autoRevertOnFailure",
             negatable = true,
@@ -45,21 +49,19 @@ public class ApplyCliCommand extends DryRunSupportEnvironmentAwareCliCommand {
 
     @Override
     protected void runActual(ChangeEngine changeEngine) {
+        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
         ChangeManager changeManager = changeEngine.getChangeManager();
-
         if (autoRevertOnFailure) {
-            changeManager.executePendingAppliesWithAutomaticRevert(filterExpression);
+            changeManager.executePendingAppliesWithAutomaticRevert(selector);
         } else {
-            changeManager.executePendingApplies(filterExpression);
+            changeManager.executePendingApplies(selector);
         }
     }
 
     @Override
     protected void runDry(ChangeEngine changeEngine) {
-
-        // Show pending changes without executing
-        List<ApplyFile> allApplyFiles =
-                changeEngine.getChangeManager().getAllApplyFiles(filterExpression);
+        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
+        List<ApplyFile> allApplyFiles = changeEngine.getChangeManager().getAllApplyFiles(selector);
         List<ApplyFile> pendingApplyFiles =
                 changeEngine.getChangeManager().getPendingApplyFiles(allApplyFiles);
 

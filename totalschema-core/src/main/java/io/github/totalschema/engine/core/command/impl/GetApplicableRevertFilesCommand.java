@@ -19,6 +19,7 @@
 package io.github.totalschema.engine.core.command.impl;
 
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
@@ -30,10 +31,10 @@ import java.util.stream.Collectors;
 
 public final class GetApplicableRevertFilesCommand implements Command<List<RevertFile>> {
 
-    private final String filterExpression;
+    private final ChangeFileSelector selector;
 
-    public GetApplicableRevertFilesCommand(String filterExpression) {
-        this.filterExpression = filterExpression;
+    public GetApplicableRevertFilesCommand(ChangeFileSelector selector) {
+        this.selector = selector != null ? selector : ChangeFileSelector.empty();
     }
 
     @Override
@@ -48,7 +49,7 @@ public final class GetApplicableRevertFilesCommand implements Command<List<Rever
                         .collect(Collectors.toSet());
 
         List<RevertFile> allRevertFiles =
-                changeEngine.getChangeManager().getAllRevertFiles(filterExpression);
+                changeEngine.getChangeManager().getAllRevertFiles(selector);
 
         return allRevertFiles.stream()
                 .filter(
