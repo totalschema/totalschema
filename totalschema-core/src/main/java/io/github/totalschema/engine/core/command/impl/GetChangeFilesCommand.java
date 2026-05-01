@@ -133,7 +133,8 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
 
         ChangeFileFactory changeFileFactory = context.get(ChangeFileFactory.class);
 
-        String environmentName = context.get(Environment.class).getName();
+        String environmentName =
+                context.getOptional(Environment.class).map(Environment::getName).orElse(null);
 
         Configuration config = context.get(Configuration.class);
 
@@ -291,7 +292,7 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
 
         boolean matches = true;
 
-        if (file.getEnvironment().isPresent()) {
+        if (environmentName != null && file.getEnvironment().isPresent()) {
             String fileNameEnvironment = file.getEnvironment().get();
 
             matches = fileNameEnvironment.equalsIgnoreCase(environmentName);

@@ -19,7 +19,9 @@
 package io.github.totalschema.engine.core;
 
 import io.github.totalschema.engine.api.StateManager;
+import io.github.totalschema.engine.core.command.impl.state.GetOrphanedStateRecordsCommand;
 import io.github.totalschema.engine.core.command.impl.state.GetStateRecordsCommand;
+import io.github.totalschema.engine.core.command.impl.state.PurgeOrphanedStateRecordsCommand;
 import io.github.totalschema.model.StateRecord;
 import java.util.List;
 
@@ -36,5 +38,15 @@ public class StateManagerImpl extends AbstractManager implements StateManager {
     @Override
     public List<StateRecord> getStateRecords() {
         return executeCommand(new GetStateRecordsCommand());
+    }
+
+    @Override
+    public List<StateRecord> getOrphanedStateRecords() {
+        return executeCommand(new GetOrphanedStateRecordsCommand());
+    }
+
+    @Override
+    public List<StateRecord> purgeOrphanedStateRecords() {
+        return executeCommand(new PurgeOrphanedStateRecordsCommand());
     }
 }

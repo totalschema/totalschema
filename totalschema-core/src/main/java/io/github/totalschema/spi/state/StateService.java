@@ -23,6 +23,8 @@ import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.RevertFile;
 import io.github.totalschema.model.StateRecord;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 public interface StateService {
 
@@ -33,4 +35,30 @@ public interface StateService {
     List<ChangeFile.Id> getAppliedChanges();
 
     List<StateRecord> getStateRecords();
+
+    /**
+     * Returns state records for change files that no longer exist on disk, without making any
+     * changes. Only records relevant to the specified environment are considered: records that are
+     * env-agnostic always qualify; env-specific records qualify only if their environment matches
+     * the given one. When the environment is empty, all records are candidates regardless of their
+     * environment.
+     *
+     * @param onDiskIds the set of change file IDs currently discovered on disk
+     * @param environmentName the current environment, or empty to consider all environments
+     * @return the list of orphaned state records
+     */
+    List<StateRecord> getOrphanedStateRecords(
+            Set<ChangeFile.Id> onDiskIds, Optional<String> environmentName);
+
+    /**
+     * Removes state records for change files that no longer exist on disk. Only records relevant to
+     * the specified environment are considered. When the environment is empty, all records are
+     * candidates regardless of their environment.
+     *
+     * @param onDiskIds the set of change file IDs currently discovered on disk
+     * @param environmentName the current environment, or empty to consider all environments
+     * @return the list of state records that were removed
+     */
+    List<StateRecord> purgeOrphanedStateRecords(
+            Set<ChangeFile.Id> onDiskIds, Optional<String> environmentName);
 }

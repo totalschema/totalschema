@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -117,6 +118,48 @@ class DefaultStateService implements StateService {
             throw new IllegalStateException(
                     recordsDeleted + " records deleted from state for: " + revertFile);
         }
+    }
+
+    @Override
+    public List<StateRecord> getOrphanedStateRecords(
+            Set<ChangeFile.Id> onDiskIds, Optional<String> environmentName) {
+
+        List<StateRecord> allStateRecords = repository.getAllStateRecords();
+        return allStateRecords.stream()
+                .filter(
+                        record ->
+                                isRelevantForEnvironment(record.getChangeFileId(), environmentName))
+                .filter(record -> !onDiskIds.contains(record.getChangeFileId()))
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    @Override
+    public List<StateRecord> purgeOrphanedStateRecords(
+            Set<ChangeFile.Id> onDiskIds, Optional<String> environmentName) {
+
+        List<StateRecord> orphaned = getOrphanedStateRecords(onDiskIds, environmentName);
+
+        if (!orphaned.isEmpty()) {
+            Set<ChangeFile.Id> idsToDelete =
+                    orphaned.stream().map(StateRecord::getChangeFileId).collect(Collectors.toSet());
+            repository.deleteStateRecordByIds(idsToDelete);
+            logger.info(
+                    "Purged {} orphaned state record(s) for environment '{}'",
+                    orphaned.size(),
+                    environmentName.orElse("(all)"));
+        }
+
+        return orphaned;
+    }
+
+    private boolean isRelevantForEnvironment(ChangeFile.Id id, Optional<String> environmentName) {
+        if (environmentName.isEmpty()) {
+            // No environment filter: all records are candidates
+            return true;
+        }
+        // Env-agnostic records always qualify; env-specific records must match
+        return id.getEnvironment().isEmpty()
+                || id.getEnvironment().get().equalsIgnoreCase(environmentName.get());
     }
 
     private int deleteStateRecordsByChangeId(ChangeFile.Id id) {

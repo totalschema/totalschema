@@ -29,6 +29,7 @@ For the CLI command reference see **[CLI-USAGE.md](CLI-USAGE.md)**.
 - [Variable Substitution](#variable-substitution)
 - [Secret Management](#secret-management)
 - [State Tracking](#state-tracking)
+  - [Purging orphaned state records](#purging-orphaned-state-records)
 - [Troubleshooting](#troubleshooting)
 - [Support](#support)
 
@@ -564,6 +565,34 @@ Use the `state display` command to inspect state without querying the database d
 bin/totalschema.sh state display -e DEV
 bin/totalschema.sh state display -e PROD -f "1.X/*"
 ```
+
+### Purging orphaned state records
+
+It is a legitimate practice to delete old change scripts from the repository once their
+deployment is long since complete and there is no need to track them any further. When a
+script is removed from disk its state record becomes **orphaned** — it persists in the state
+table but no longer has a corresponding file.
+
+Use `state purge-orphaned` to identify and remove these records:
+
+```bash
+# Preview what would be removed across all environments
+bin/totalschema.sh state purge-orphaned --dry-run
+
+# Remove orphaned records across all environments
+bin/totalschema.sh state purge-orphaned
+
+# Limit to a single environment
+bin/totalschema.sh state purge-orphaned -e DEV --dry-run
+bin/totalschema.sh state purge-orphaned -e DEV
+```
+
+The `-e` flag is **optional**. Without it, all state records are candidates regardless of
+their environment scope. With it, only env-agnostic records and records for the specified
+environment are considered — records belonging to other environments are never touched.
+
+> ⚠️ This operation is irreversible. Always run with `--dry-run` first to review what will be
+> deleted before committing.
 
 ---
 

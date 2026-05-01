@@ -33,4 +33,21 @@ public interface StateManager {
      * @return list of state records
      */
     List<StateRecord> getStateRecords();
+
+    /**
+     * Returns state records for change files that no longer exist on disk, without making any
+     * changes. Only records scoped to the current environment (env-agnostic or matching the
+     * engine's environment) are considered.
+     *
+     * @return the list of orphaned state records
+     */
+    List<StateRecord> getOrphanedStateRecords();
+
+    /**
+     * Removes state records for change files that no longer exist on disk. Only records scoped to
+     * the current environment (env-agnostic or matching the engine's environment) are considered.
+     *
+     * @return the list of state records that were removed
+     */
+    List<StateRecord> purgeOrphanedStateRecords();
 }
