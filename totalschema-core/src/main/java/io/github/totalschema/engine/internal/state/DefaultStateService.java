@@ -20,6 +20,7 @@ package io.github.totalschema.engine.internal.state;
 
 import io.github.totalschema.model.*;
 import io.github.totalschema.spi.hash.HashService;
+import io.github.totalschema.spi.state.StateManagementException;
 import io.github.totalschema.spi.state.StateRepository;
 import io.github.totalschema.spi.state.StateService;
 import java.io.IOException;
@@ -100,7 +101,7 @@ class DefaultStateService implements StateService {
                 return hashService.hashToHexString(fileContent);
 
             } catch (IOException ex) {
-                throw new RuntimeException("Failure reading file for hashing: " + file, ex);
+                throw new StateManagementException("Failure reading file for hashing: " + file, ex);
             }
         }
 
@@ -127,9 +128,9 @@ class DefaultStateService implements StateService {
         List<StateRecord> allStateRecords = repository.getAllStateRecords();
         return allStateRecords.stream()
                 .filter(
-                        record ->
-                                isRelevantForEnvironment(record.getChangeFileId(), environmentName))
-                .filter(record -> !onDiskIds.contains(record.getChangeFileId()))
+                        stateRecord ->
+                                isRelevantForEnvironment(stateRecord.getChangeFileId(), environmentName))
+                .filter(stateRecord -> !onDiskIds.contains(stateRecord.getChangeFileId()))
                 .collect(Collectors.toUnmodifiableList());
     }
 
