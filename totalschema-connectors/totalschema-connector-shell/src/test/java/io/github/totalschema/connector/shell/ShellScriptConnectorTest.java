@@ -249,6 +249,7 @@ public class ShellScriptConnectorTest {
         try {
             connector.execute(applyFile, context);
         } catch (InterruptedException ignored) {
+            // exception is ignored
         }
 
         verify(mockFactory, mockRunner);
