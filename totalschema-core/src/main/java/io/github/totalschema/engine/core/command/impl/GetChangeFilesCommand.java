@@ -351,7 +351,8 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
     private boolean matchesDesiredConfig(String environmentName, T file) {
 
         if (environmentName != null && file.getEnvironment().isPresent()) {
-            if (!file.getEnvironment().get().equalsIgnoreCase(environmentName)) {
+            String fileEnvironment = file.getEnvironment().get();
+            if (!fileEnvironment.equalsIgnoreCase(environmentName)) {
                 return false;
             }
         }
