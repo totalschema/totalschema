@@ -121,7 +121,7 @@ class GenericShellScriptRunner extends ExternalProcessTerminalSession implements
             tempScript = createTempScript(extension, content);
             execute(List.of(tempScript.toAbsolutePath().toString()));
         } catch (IOException e) {
-            throw new RuntimeException(
+            throw new ShellScriptException(
                     "Shell runner '" + name + "' readiness check failed: " + e.getMessage(), e);
         } finally {
             if (tempScript != null) {
