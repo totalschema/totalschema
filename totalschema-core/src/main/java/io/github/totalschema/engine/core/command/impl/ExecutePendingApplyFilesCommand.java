@@ -54,7 +54,7 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
 
         List<ApplyFile> allApplyFiles = changeEngine.getChangeManager().getAllApplyFiles(selector);
 
-        log.info("{} change files found", allApplyFiles.size());
+        log.info("Found {} change file(s) — {}", allApplyFiles.size(), selector.getDescription());
 
         List<ApplyFile> pendingApplyFiles =
                 changeEngine.getChangeManager().getPendingApplyFiles(allApplyFiles);
@@ -81,8 +81,7 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
             log.info("Executed {} change files", pendingApplyFiles.size());
         }
 
-        String filterExpression = selector.getFilterExpression();
-        if (filterExpression == null && selector.getLabelFilters().isEmpty()) {
+        if (selector.isEmpty()) {
             log.info("SUCCESS: The {} environment is in desired state.", environment.getName());
         } else {
             log.info(

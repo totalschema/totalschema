@@ -18,8 +18,8 @@
 
 package io.github.totalschema.cli.command;
 
+import io.github.totalschema.cli.ChangeFileSelectorMixin;
 import io.github.totalschema.cli.EnvironmentAwareCliCommand;
-import io.github.totalschema.cli.LabelFilterMixin;
 import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeFileSelector;
 import java.util.List;
@@ -35,16 +35,12 @@ public class ValidateCliCommand extends EnvironmentAwareCliCommand {
 
     private final Logger log = LoggerFactory.getLogger(ValidateCliCommand.class);
 
-    @CommandLine.Option(
-            names = {"-f", "--filterExpression"},
-            description = "Include change files matching this expression only")
-    protected String filterExpression;
-
-    @CommandLine.Mixin private LabelFilterMixin labelFilterMixin = new LabelFilterMixin();
+    @CommandLine.Mixin
+    private ChangeFileSelectorMixin selectorMixin = new ChangeFileSelectorMixin();
 
     @Override
     public void run(ChangeEngine changeEngine) {
-        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
+        ChangeFileSelector selector = selectorMixin.buildSelector();
         List<Exception> exceptions =
                 changeEngine.getValidationManager().validateChangeFiles(selector);
 

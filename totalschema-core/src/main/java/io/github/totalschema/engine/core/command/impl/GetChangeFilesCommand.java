@@ -281,10 +281,8 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
                                     changeFile ->
                                             getChangeFile(
                                                     rootDirectory, changeFile, changeFileFactory))
-                            .filter(
-                                    it ->
-                                            matchesDesiredConfig(
-                                                    environmentName, it, cascade, dirLabels))
+                            .map(it -> resolveAndSetEffectiveLabels(it, cascade, dirLabels))
+                            .filter(it -> matchesDesiredConfig(environmentName, it))
                             .sorted(getChangeFileSortComparator())
                             .collect(Collectors.toList());
         }
@@ -334,37 +332,40 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
         };
     }
 
-    private boolean matchesDesiredConfig(
-            String environmentName,
-            T file,
-            ChangeFileLabelsCascade cascade,
-            ChangeFileLabels dirLabels) {
+    private T resolveAndSetEffectiveLabels(
+            T file, ChangeFileLabelsCascade cascade, ChangeFileLabels dirLabels) {
 
-        boolean matches = true;
+        Map<String, List<String>> effectiveLabels = cascade.resolve(dirLabels, file.getFile());
+        logger.debug(
+                "Resolved effective labels for file {}: {}",
+                file.getRelativePath(),
+                effectiveLabels);
+
+        // withEffectiveLabels will always return the same type as the file was itself
+        @SuppressWarnings("unchecked")
+        T fileWithLabels = (T) file.withEffectiveLabels(effectiveLabels);
+
+        return fileWithLabels;
+    }
+
+    private boolean matchesDesiredConfig(String environmentName, T file) {
 
         if (environmentName != null && file.getEnvironment().isPresent()) {
-            String fileNameEnvironment = file.getEnvironment().get();
-            matches = fileNameEnvironment.equalsIgnoreCase(environmentName);
+            if (!file.getEnvironment().get().equalsIgnoreCase(environmentName)) {
+                return false;
+            }
         }
 
-        if (matches && filterExpressionPattern != null) {
-            matches = filterExpressionPattern.matcher(file.getRelativePath().toString()).matches();
+        if (filterExpressionPattern != null) {
+            if (!filterExpressionPattern.matcher(file.getRelativePath().toString()).matches()) {
+                return false;
+            }
         }
 
-        if (matches && !labelFilter.isEmpty()) {
-            String filename = file.getFile().getFileName().toString();
-            java.util.Map<String, java.util.List<String>> effectiveLabels =
-                    cascade.resolve(dirLabels, filename);
-            file.setEffectiveLabels(effectiveLabels);
-            matches = labelFilter.matches(effectiveLabels);
-        } else if (!labelFilter.isEmpty()) {
-            // already failed an earlier check, skip label resolution
-        } else {
-            // No label filter — still populate effective labels for show labels command
-            String filename = file.getFile().getFileName().toString();
-            file.setEffectiveLabels(cascade.resolve(dirLabels, filename));
+        if (!labelFilter.isEmpty()) {
+            return labelFilter.matches(file.getEffectiveLabels());
         }
 
-        return matches;
+        return true;
     }
 }

@@ -18,8 +18,8 @@
 
 package io.github.totalschema.cli.show;
 
+import io.github.totalschema.cli.ChangeFileSelectorMixin;
 import io.github.totalschema.cli.EnvironmentAwareCliCommand;
-import io.github.totalschema.cli.LabelFilterMixin;
 import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.model.ApplyFile;
@@ -32,16 +32,12 @@ import picocli.CommandLine;
         description = "lists all pending change operations applicable now")
 public class ShowPendingApplyCliCommand extends EnvironmentAwareCliCommand {
 
-    @CommandLine.Option(
-            names = {"-f", "--filterExpression"},
-            description = "Include change files matching this expression only")
-    protected String filterExpression;
-
-    @CommandLine.Mixin private LabelFilterMixin labelFilterMixin = new LabelFilterMixin();
+    @CommandLine.Mixin
+    private ChangeFileSelectorMixin selectorMixin = new ChangeFileSelectorMixin();
 
     @Override
     public void run(ChangeEngine changeEngine) {
-        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
+        ChangeFileSelector selector = selectorMixin.buildSelector();
         List<ApplyFile> allApplyFiles = changeEngine.getChangeManager().getAllApplyFiles(selector);
         List<ApplyFile> pendingApplyFiles =
                 changeEngine.getChangeManager().getPendingApplyFiles(allApplyFiles);

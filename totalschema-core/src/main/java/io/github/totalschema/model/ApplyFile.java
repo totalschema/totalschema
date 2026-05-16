@@ -19,6 +19,8 @@
 package io.github.totalschema.model;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Represents an apply change file that contains SQL or script statements to be executed.
@@ -36,5 +38,14 @@ public final class ApplyFile extends ChangeFile {
      */
     public ApplyFile(Path changesDirectory, Path file, Id id) {
         super(changesDirectory, file, id);
+    }
+
+    private ApplyFile(ApplyFile source, Map<String, List<String>> effectiveLabels) {
+        super(source, effectiveLabels);
+    }
+
+    @Override
+    public ApplyFile withEffectiveLabels(Map<String, List<String>> labels) {
+        return new ApplyFile(this, labels);
     }
 }

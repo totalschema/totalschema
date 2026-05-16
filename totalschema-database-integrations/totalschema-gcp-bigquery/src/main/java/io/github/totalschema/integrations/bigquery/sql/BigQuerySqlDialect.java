@@ -22,8 +22,6 @@ import io.github.totalschema.engine.internal.sql.DefaultSqlDialect;
 
 final class BigQuerySqlDialect extends DefaultSqlDialect {
 
-    static final BigQuerySqlDialect INSTANCE = new BigQuerySqlDialect();
-
     @Override
     public String varchar(int length) {
         return "STRING";

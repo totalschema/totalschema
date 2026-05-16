@@ -21,6 +21,7 @@ package io.github.totalschema.engine.api;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Immutable value object that encapsulates both a path-based filter expression and a set of change
@@ -59,8 +60,10 @@ public final class ChangeFileSelector {
     private final List<String> labelFilters;
 
     private ChangeFileSelector(String filterExpression, List<String> labelFilters) {
+        Objects.requireNonNull(labelFilters, "labelFilters must not be null");
+
         this.filterExpression = filterExpression;
-        this.labelFilters = labelFilters;
+        this.labelFilters = List.copyOf(labelFilters);
     }
 
     /**
@@ -90,6 +93,19 @@ public final class ChangeFileSelector {
     }
 
     /**
+     * Returns {@code true} if this selector imposes no restrictions, i.e. it selects all change
+     * files.
+     *
+     * <p>A selector is considered empty when its path filter expression is {@code null} and its
+     * label filter list is empty.
+     *
+     * @return {@code true} when this instance is equivalent to {@link #empty()}
+     */
+    public boolean isEmpty() {
+        return filterExpression == null && labelFilters.isEmpty();
+    }
+
+    /**
      * Gets the path filter expression.
      *
      * @return the expression, or {@code null} if none
@@ -105,6 +121,52 @@ public final class ChangeFileSelector {
      */
     public List<String> getLabelFilters() {
         return labelFilters;
+    }
+
+    /**
+     * Returns a human-readable description of the restrictions imposed by this selector.
+     *
+     * <p>Examples:
+     *
+     * <ul>
+     *   <li>{@code "all change files"} — no restrictions
+     *   <li>{@code "path matching 'postgresql/.*'"} — path filter only
+     *   <li>{@code "labels [targetRelease=2027-Q1-01, JIRA=FOOBAR-1234]"} — label filters only
+     *   <li>{@code "path matching 'postgresql/.*' and labels [targetRelease=2027-Q1-01]"} — both
+     * </ul>
+     *
+     * @return a non-null, non-empty human-readable description
+     */
+    public String getDescription() {
+        if (isEmpty()) {
+            return "all change files";
+        }
+        final StringBuilder sb = new StringBuilder();
+        if (filterExpression != null) {
+            sb.append("path matching '").append(filterExpression).append('\'');
+        }
+        if (!labelFilters.isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append(" and ");
+            }
+            if (labelFilters.size() == 1) {
+                sb.append("label: ").append(labelFilters);
+            } else {
+                sb.append("labels: ").append(labelFilters);
+            }
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        return "ChangeFileSelector{"
+                + "filterExpression='"
+                + filterExpression
+                + '\''
+                + ", labelFilters="
+                + labelFilters
+                + '}';
     }
 
     /** Builder for {@link ChangeFileSelector}. */
@@ -150,8 +212,9 @@ public final class ChangeFileSelector {
 
         /** Builds the {@link ChangeFileSelector}. */
         public ChangeFileSelector build() {
-            return new ChangeFileSelector(
-                    filterExpression, Collections.unmodifiableList(new ArrayList<>(labelFilters)));
+            // the constructor creates a defensive copy of labelFilters,
+            // so we can safely pass the mutable list
+            return new ChangeFileSelector(filterExpression, labelFilters);
         }
     }
 }

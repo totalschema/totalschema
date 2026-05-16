@@ -18,8 +18,8 @@
 
 package io.github.totalschema.cli.command;
 
+import io.github.totalschema.cli.ChangeFileSelectorMixin;
 import io.github.totalschema.cli.DryRunSupportEnvironmentAwareCliCommand;
-import io.github.totalschema.cli.LabelFilterMixin;
 import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.model.RevertFile;
@@ -29,22 +29,18 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "revert", description = "reverts applied changes")
 public class RevertCliCommand extends DryRunSupportEnvironmentAwareCliCommand {
 
-    @CommandLine.Option(
-            names = {"-f", "--filterExpression"},
-            description = "Include change files matching this expression only")
-    protected String filterExpression;
-
-    @CommandLine.Mixin private LabelFilterMixin labelFilterMixin = new LabelFilterMixin();
+    @CommandLine.Mixin
+    private ChangeFileSelectorMixin selectorMixin = new ChangeFileSelectorMixin();
 
     @Override
     protected void runActual(ChangeEngine changeEngine) {
-        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
+        ChangeFileSelector selector = selectorMixin.buildSelector();
         changeEngine.getChangeManager().executeReverts(selector);
     }
 
     @Override
     protected void runDry(ChangeEngine changeEngine) {
-        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
+        ChangeFileSelector selector = selectorMixin.buildSelector();
         List<RevertFile> revertFiles =
                 changeEngine.getChangeManager().getApplicableRevertFiles(selector);
 

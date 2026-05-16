@@ -25,7 +25,6 @@ import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.spi.change.ChangeExecutionException;
 import io.github.totalschema.spi.change.ChangeService;
-import java.util.Optional;
 
 /**
  * Default implementation of ChangeService that routes changes to appropriate connectors. Validates
@@ -47,17 +46,7 @@ final class DefaultChangeService implements ChangeService {
 
         String thisEnvironmentName = environment.getName();
 
-        Optional<String> changeFileEnvironment = changeFile.getEnvironment();
-        if (changeFileEnvironment.isPresent()) {
-            // a change file might not have a restriction on environment, but if it has one, we
-            // check that
-            if (!thisEnvironmentName.equalsIgnoreCase(changeFileEnvironment.get())) {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Change file %s should not be executed in environment '%s'",
-                                changeFile, thisEnvironmentName));
-            }
-        }
+        requireMatchingEnvironment(changeFile, thisEnvironmentName);
 
         try {
 
@@ -75,5 +64,23 @@ final class DefaultChangeService implements ChangeService {
                             changeFile.getRelativePath(), ex.getMessage()),
                     ex);
         }
+    }
+
+    private static void requireMatchingEnvironment(
+            ChangeFile changeFile, String thisEnvironmentName) {
+
+        changeFile
+                .getEnvironment()
+                .ifPresent(
+                        environmentOfTheChangeFile -> {
+                            // a change file might not have a restriction on environment,
+                            // but if it has one, we check that it matches the current environment
+                            if (!thisEnvironmentName.equalsIgnoreCase(environmentOfTheChangeFile)) {
+                                throw new IllegalArgumentException(
+                                        String.format(
+                                                "Change file %s should not be executed in environment '%s'",
+                                                changeFile, thisEnvironmentName));
+                            }
+                        });
     }
 }

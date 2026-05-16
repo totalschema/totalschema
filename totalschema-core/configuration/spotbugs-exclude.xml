@@ -57,4 +57,11 @@
         <!-- accepting the EventDispatcher is correct, it comes from the factory -->
     </Match>
 
+    <Match>
+        <Class name="io.github.totalschema.engine.internal.changefile.labels.ChangeFileLabels" />
+        <Method name="getGlobalLabels"/>
+        <Bug pattern="EI_EXPOSE_REP" />
+        <!-- the field returned is always unmodifiable -->
+    </Match>
+
 </FindBugsFilter>

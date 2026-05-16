@@ -45,14 +45,6 @@ public interface ChangeManager {
     List<RevertFile> getAllRevertFiles(ChangeFileSelector selector);
 
     /**
-     * Returns apply files that are pending execution (not yet applied or changed since last apply).
-     *
-     * @param allApplyFiles all apply files to check
-     * @return list of pending apply files
-     */
-    List<ApplyFile> getPendingApplyFiles(List<ApplyFile> allApplyFiles);
-
-    /**
      * Returns revert files that can be applied (have corresponding applied changes).
      *
      * @param selector the selector specifying path and/or label filters; must not be null
@@ -81,6 +73,18 @@ public interface ChangeManager {
      * @param selector the selector; must not be null
      */
     void executeReverts(ChangeFileSelector selector);
+
+    // -------------------------------------------------------------------------
+    // Non-filter operations
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns apply files that are pending execution (not yet applied or changed since last apply).
+     *
+     * @param allApplyFiles all apply files to check
+     * @return list of pending apply files
+     */
+    List<ApplyFile> getPendingApplyFiles(List<ApplyFile> allApplyFiles);
 
     /**
      * Applies a single change file immediately.

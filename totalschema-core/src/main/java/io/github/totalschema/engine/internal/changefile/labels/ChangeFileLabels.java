@@ -58,6 +58,8 @@ public final class ChangeFileLabels {
 
     private ChangeFileLabels(
             Map<String, List<String>> globalLabels, List<FilePatternEntry> filePatternEntries) {
+        // these are always unmodifiable, as the constructor is called from
+        // internal methods, that guarantee this
         this.globalLabels = globalLabels;
         this.filePatternEntries = filePatternEntries;
     }

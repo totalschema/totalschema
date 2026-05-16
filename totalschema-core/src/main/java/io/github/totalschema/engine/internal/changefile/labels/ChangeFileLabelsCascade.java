@@ -106,6 +106,26 @@ public final class ChangeFileLabelsCascade {
     }
 
     /**
+     * Resolves the effective labels for a specific change file identified by its {@link Path}.
+     * Extracts the bare filename from the path and delegates to {@link #resolve(ChangeFileLabels,
+     * String)}.
+     *
+     * @param currentDirLabels the labels loaded from the file's immediate parent directory
+     * @param filePath the absolute or relative path of the change file; must have a non-null
+     *     filename component
+     * @return the fully resolved effective labels
+     * @throws NullPointerException if {@code filePath.getFileName()} is null
+     */
+    public Map<String, List<String>> resolve(ChangeFileLabels currentDirLabels, Path filePath) {
+        Path fileName = filePath.getFileName();
+        if (fileName == null) {
+            throw new NullPointerException("File name cannot be null for: " + filePath);
+        }
+
+        return resolve(currentDirLabels, fileName.toString());
+    }
+
+    /**
      * Resolves the effective labels for a specific change file. Combines:
      *
      * <ol>
@@ -141,10 +161,5 @@ public final class ChangeFileLabelsCascade {
         result.putAll(filePatternLabels);
 
         return Collections.unmodifiableMap(result);
-    }
-
-    /** Returns the accumulated cascaded labels (without any file-pattern resolution). */
-    public Map<String, List<String>> getAccumulatedLabels() {
-        return accumulatedLabels;
     }
 }

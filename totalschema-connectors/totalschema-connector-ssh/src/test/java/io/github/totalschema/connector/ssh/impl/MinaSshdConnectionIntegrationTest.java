@@ -122,7 +122,7 @@ public class MinaSshdConnectionIntegrationTest {
     // -----------------------------------------------------------------------
 
     @Test
-    public void testExecuteSimpleEchoCommandSucceeds() {
+    public void testExecuteSimpleEchoCommandSucceeds() throws InterruptedException {
         MinaSshdConnection conn = new MinaSshdConnection("test-conn", serverConfig());
 
         // Should complete without any exception
@@ -132,7 +132,7 @@ public class MinaSshdConnectionIntegrationTest {
     }
 
     @Test
-    public void testExecuteMultipleCommandsReusesSameConnection() {
+    public void testExecuteMultipleCommandsReusesSameConnection() throws InterruptedException {
         MinaSshdConnection conn = new MinaSshdConnection("test-conn", serverConfig());
 
         conn.execute("echo first");
@@ -143,7 +143,8 @@ public class MinaSshdConnectionIntegrationTest {
     }
 
     @Test
-    public void testExecuteCommandWithNonZeroExitCodeThrowsRuntimeException() {
+    public void testExecuteCommandWithNonZeroExitCodeThrowsRuntimeException()
+            throws InterruptedException {
         // 'false' is a standard Unix command that always exits with code 1
         try (MinaSshdConnection conn = new MinaSshdConnection("test-conn", serverConfig())) {
             conn.execute("false");
@@ -207,7 +208,7 @@ public class MinaSshdConnectionIntegrationTest {
     // -----------------------------------------------------------------------
 
     @Test
-    public void testCloseSucceedsOnOpenConnection() {
+    public void testCloseSucceedsOnOpenConnection() throws InterruptedException {
         MinaSshdConnection conn = new MinaSshdConnection("test-conn", serverConfig());
 
         // Trigger a connection by executing a command

@@ -18,6 +18,7 @@
 
 package io.github.totalschema.engine.internal.changefile;
 
+import io.github.totalschema.engine.internal.changefile.labels.ChangeFileLabels;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +83,13 @@ public final class ChangeFileIgnorePatterns {
 
     /** Name of the ignore file looked up in the changes root directory. */
     public static final String IGNORE_FILE_NAME = ".totalschemaignore";
+
+    /**
+     * TotalSchema config file names that are never change files and are always excluded from
+     * discovery regardless of any configured patterns.
+     */
+    private static final Set<String> ALWAYS_IGNORED_FILE_NAMES =
+            Set.of(IGNORE_FILE_NAME, ChangeFileLabels.LABEL_FILE_NAME);
 
     private static final ChangeFileIgnorePatterns EMPTY =
             new ChangeFileIgnorePatterns(Collections.emptyList(), Collections.emptyList());
@@ -238,6 +247,8 @@ public final class ChangeFileIgnorePatterns {
      *
      * <ul>
      *   <li>The ignore file itself ({@value #IGNORE_FILE_NAME}).
+     *   <li>The label file ({@code totalschema-labels.yml}) — a TotalSchema config file that never
+     *       contains change scripts.
      *   <li>Any file whose name starts with {@code .} (dot-files / hidden files).
      * </ul>
      *
@@ -246,9 +257,16 @@ public final class ChangeFileIgnorePatterns {
      */
     public boolean isIgnoredFile(Path relativePath) {
         final Path name = relativePath.getFileName();
-        if (name != null && startsWithDot(name.toString())) {
-            log.debug("Ignoring dot-file: {}", relativePath);
-            return true;
+        if (name != null) {
+            final String nameStr = name.toString();
+            if (startsWithDot(nameStr)) {
+                log.debug("Ignoring dot-file: {}", relativePath);
+                return true;
+            }
+            if (ALWAYS_IGNORED_FILE_NAMES.contains(nameStr)) {
+                log.debug("Ignoring TotalSchema config file: {}", relativePath);
+                return true;
+            }
         }
         final boolean ignored = filePatterns.stream().anyMatch(p -> p.matches(relativePath));
         if (ignored) {

@@ -18,8 +18,8 @@
 
 package io.github.totalschema.cli.show;
 
+import io.github.totalschema.cli.ChangeFileSelectorMixin;
 import io.github.totalschema.cli.EnvironmentAwareCliCommand;
-import io.github.totalschema.cli.LabelFilterMixin;
 import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.model.ApplyFile;
@@ -44,16 +44,12 @@ import picocli.CommandLine;
                 "Shows the effective labels assigned to each change file after cascade resolution")
 public class ShowLabelsCliCommand extends EnvironmentAwareCliCommand {
 
-    @CommandLine.Option(
-            names = {"-f", "--filterExpression"},
-            description = "Include change files matching this expression only")
-    protected String filterExpression;
-
-    @CommandLine.Mixin private LabelFilterMixin labelFilterMixin = new LabelFilterMixin();
+    @CommandLine.Mixin
+    private ChangeFileSelectorMixin selectorMixin = new ChangeFileSelectorMixin();
 
     @Override
     public void run(ChangeEngine changeEngine) {
-        ChangeFileSelector selector = labelFilterMixin.buildSelector(filterExpression);
+        ChangeFileSelector selector = selectorMixin.buildSelector();
 
         List<ApplyFile> applyFiles = changeEngine.getChangeManager().getAllApplyFiles(selector);
         List<RevertFile> revertFiles = changeEngine.getChangeManager().getAllRevertFiles(selector);

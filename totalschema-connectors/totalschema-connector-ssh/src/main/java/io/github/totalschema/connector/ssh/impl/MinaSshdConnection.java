@@ -157,7 +157,7 @@ public final class MinaSshdConnection extends AbstractTerminalSession<String>
     }
 
     @Override
-    public void execute(String command) {
+    public void execute(String command) throws InterruptedException {
         try {
             executeWithLockHeld(() -> executeSSHCommand(command));
         } catch (IOException e) {
@@ -165,18 +165,8 @@ public final class MinaSshdConnection extends AbstractTerminalSession<String>
         }
     }
 
-    private void executeWithLockHeld(SshAction action) throws IOException {
-        lockTemplate.withTryLock(
-                () -> {
-                    try {
-                        action.execute();
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("interrupted", e);
-                    }
-                });
+    private void executeWithLockHeld(SshAction action) throws IOException, InterruptedException {
+        lockTemplate.withTryLockInterruptible(action::execute);
     }
 
     private void executeSSHCommand(String command) throws IOException, InterruptedException {
@@ -381,6 +371,11 @@ public final class MinaSshdConnection extends AbstractTerminalSession<String>
             executeWithLockHeld(this::disconnect);
         } catch (IOException e) {
             log.warn("Error closing SSH connection", e);
+            throw new RuntimeException(e);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("close interrupted", e);
         }
     }
 

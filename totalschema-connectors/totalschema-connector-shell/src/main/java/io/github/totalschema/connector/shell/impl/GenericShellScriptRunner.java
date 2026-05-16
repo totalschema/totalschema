@@ -148,7 +148,8 @@ class GenericShellScriptRunner extends ExternalProcessTerminalSession implements
      * @throws IOException if the file cannot be created or written
      */
     protected Path createTempScript(String extension, String content) throws IOException {
-        Path tempScript = Files.createTempFile("totalschema-shell-check-", "." + extension);
+        Path tempScript =
+                SecureTempFiles.createSecureTempFile("totalschema-shell-check-", "." + extension);
         Files.writeString(tempScript, content);
         return tempScript;
     }
