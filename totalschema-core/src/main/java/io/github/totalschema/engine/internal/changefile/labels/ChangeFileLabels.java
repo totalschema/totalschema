@@ -349,10 +349,7 @@ public final class ChangeFileLabels {
                         ti++;
                     }
                     return false;
-                } else if (pc == '?') {
-                    pi++;
-                    ti++;
-                } else if (pc == text.charAt(ti)) {
+                } else if (pc == '?' || pc == text.charAt(ti)) {
                     pi++;
                     ti++;
                 } else {
