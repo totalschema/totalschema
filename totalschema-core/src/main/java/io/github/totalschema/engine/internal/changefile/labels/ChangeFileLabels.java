@@ -79,8 +79,9 @@ public final class ChangeFileLabels {
      * @param directory the directory to look in
      * @return the parsed labels, or empty if no label file is present
      * @throws IllegalArgumentException if the file is present but malformed
+     * @throws IOException if the label fail could not be loaded
      */
-    public static ChangeFileLabels load(Path directory) {
+    public static ChangeFileLabels load(Path directory) throws IOException {
         Path labelFile = directory.resolve(LABEL_FILE_NAME);
         if (!Files.exists(labelFile)) {
             return empty();
@@ -98,7 +99,7 @@ public final class ChangeFileLabels {
             return parse(raw, labelFile);
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read label file: " + labelFile, e);
+            throw new IOException("Failed to read label file: " + labelFile, e);
         }
     }
 

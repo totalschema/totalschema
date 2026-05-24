@@ -18,6 +18,7 @@
 
 package io.github.totalschema.engine.internal.changefile.labels;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -100,8 +101,10 @@ public final class ChangeFileLabelsCascade {
      * @param directory the directory whose label file should be loaded
      * @param mode the inheritance mode
      * @return a new cascade incorporating the directory's global labels
+     * @throws IOException if loading of label file fails
      */
-    public ChangeFileLabelsCascade withDirectory(Path directory, LabelInheritanceMode mode) {
+    public ChangeFileLabelsCascade withDirectory(Path directory, LabelInheritanceMode mode)
+            throws IOException {
         return withDirectory(ChangeFileLabels.load(directory), mode);
     }
 
