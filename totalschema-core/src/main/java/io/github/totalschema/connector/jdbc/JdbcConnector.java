@@ -76,7 +76,7 @@ public class JdbcConnector extends Connector {
 
         } catch (RuntimeException ex) {
             logger.error("[{}] JDBC connectivity check FAILED", name, ex);
-            throw ex;
+            throw new JdbcConnectorException("JDBC connectivity check failed", ex);
         }
 
         logger.info("[{}] JDBC connection verified", name);
