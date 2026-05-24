@@ -21,6 +21,7 @@ package io.github.totalschema.connector.ssh.impl;
 import io.github.totalschema.concurrent.LockTemplate;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MissingConfigurationKeyException;
+import io.github.totalschema.connector.ssh.SshConnectorException;
 import io.github.totalschema.connector.ssh.spi.SshConnection;
 import io.github.totalschema.engine.internal.shell.AbstractTerminalSession;
 import java.io.ByteArrayOutputStream;
@@ -371,11 +372,11 @@ public final class MinaSshdConnection extends AbstractTerminalSession<String>
             executeWithLockHeld(this::disconnect);
         } catch (IOException e) {
             log.warn("Error closing SSH connection", e);
-            throw new RuntimeException(e);
+            throw new SshConnectorException(e);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("close interrupted", e);
+            throw new SshConnectorException("close interrupted", e);
         }
     }
 
