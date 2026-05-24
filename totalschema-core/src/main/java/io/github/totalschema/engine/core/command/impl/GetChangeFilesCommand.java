@@ -357,10 +357,9 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
             }
         }
 
-        if (filterExpressionPattern != null) {
-            if (!filterExpressionPattern.matcher(file.getRelativePath().toString()).matches()) {
-                return false;
-            }
+        if (filterExpressionPattern != null
+                && !filterExpressionPattern.matcher(file.getRelativePath().toString()).matches()) {
+            return false;
         }
 
         if (!labelFilter.isEmpty()) {
