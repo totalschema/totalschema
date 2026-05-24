@@ -36,4 +36,9 @@ final class WindowsPowerShellScriptRunner extends GenericShellScriptRunner {
     WindowsPowerShellScriptRunner(String name, Map<String, String> environmentVariables) {
         super(name, COMMAND, environmentVariables);
     }
+
+    @Override
+    public void checkReady() throws InterruptedException {
+        executeProbeScript("ps1", "exit 0\n");
+    }
 }

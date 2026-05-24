@@ -22,9 +22,12 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.AbstractTerminalConnector;
 import io.github.totalschema.connector.ssh.spi.SshConnection;
 import io.github.totalschema.connector.ssh.spi.SshConnectionFactory;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.model.ChangeFile;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +92,15 @@ final class SshScriptConnector extends AbstractTerminalConnector<SshConnection> 
         this.remoteTempDir =
                 connectorConfiguration.getString("remote", "temp", "dir").orElse("/tmp");
         this.shell = connectorConfiguration.getString("shell").orElse("/bin/bash");
+    }
+
+    @Override
+    public void checkConnection(Context context, List<ChangeFile.Id> plannedChangeFileIds)
+            throws InterruptedException {
+        log.info("[{}] Verifying SSH connectivity", name);
+        // ':' is the POSIX shell no-op — it always succeeds and produces no output
+        session.execute(":");
+        log.info("[{}] SSH connection verified", name);
     }
 
     @Override

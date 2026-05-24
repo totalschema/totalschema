@@ -27,11 +27,11 @@ import java.util.List;
 public interface ValidationManager {
 
     /**
-     * Validates all change files matching the filter expression. Checks for issues like modified
-     * applied changes, missing files, etc.
+     * Validates all change files matching the selector. Checks for issues like modified applied
+     * changes, missing files, etc.
      *
-     * @param filterExpression filter for selecting files (can be null for all)
+     * @param selector path and/or label filters; must not be null
      * @return list of validation exceptions (empty if all valid)
      */
-    List<Exception> validateChangeFiles(String filterExpression);
+    List<Exception> validateChangeFiles(ChangeFileSelector selector);
 }

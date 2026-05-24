@@ -19,6 +19,7 @@
 package io.github.totalschema.engine.core.command.impl;
 
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.api.ChangeManager;
 import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
@@ -57,16 +58,10 @@ public final class ExecutePendingApplyFilesWithAutomaticRevertCommand implements
     private final Logger log =
             LoggerFactory.getLogger(ExecutePendingApplyFilesWithAutomaticRevertCommand.class);
 
-    private final String filterExpression;
+    private final ChangeFileSelector selector;
 
-    /**
-     * Creates a new command instance.
-     *
-     * @param filterExpression wildcard/glob expression used to select which change files are
-     *     considered; {@code null} selects all files
-     */
-    public ExecutePendingApplyFilesWithAutomaticRevertCommand(String filterExpression) {
-        this.filterExpression = filterExpression;
+    public ExecutePendingApplyFilesWithAutomaticRevertCommand(ChangeFileSelector selector) {
+        this.selector = selector != null ? selector : ChangeFileSelector.empty();
     }
 
     /**
@@ -92,13 +87,13 @@ public final class ExecutePendingApplyFilesWithAutomaticRevertCommand implements
         ChangeEngine changeEngine = context.get(ChangeEngine.class);
         ChangeManager changeManager = changeEngine.getChangeManager();
 
-        List<ApplyFile> allApplyFiles = changeManager.getAllApplyFiles(filterExpression);
+        List<ApplyFile> allApplyFiles = changeManager.getAllApplyFiles(selector);
         List<ApplyFile> pendingApplyFiles = changeManager.getPendingApplyFiles(allApplyFiles);
 
         requireAllPendingApplyFilesHaveRevertCounterpart(changeManager, pendingApplyFiles);
 
         try {
-            changeManager.executePendingApplies(filterExpression);
+            changeManager.executePendingApplies(selector);
 
         } catch (RuntimeException applyException) {
 
@@ -107,7 +102,7 @@ public final class ExecutePendingApplyFilesWithAutomaticRevertCommand implements
                     applyException);
 
             try {
-                changeManager.executeReverts(filterExpression);
+                changeManager.executeReverts(selector);
                 log.info(
                         "Automatic revert completed successfully. The system should be in a consistent state.");
 
@@ -128,7 +123,7 @@ public final class ExecutePendingApplyFilesWithAutomaticRevertCommand implements
     private void requireAllPendingApplyFilesHaveRevertCounterpart(
             ChangeManager changeManager, List<ApplyFile> pendingApplyFiles) {
 
-        List<RevertFile> allRevertFiles = changeManager.getAllRevertFiles(filterExpression);
+        List<RevertFile> allRevertFiles = changeManager.getAllRevertFiles(selector);
 
         Set<ChangeFile.Id> revertIds =
                 allRevertFiles.stream()

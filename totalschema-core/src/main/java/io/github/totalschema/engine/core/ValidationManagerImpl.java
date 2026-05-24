@@ -18,6 +18,7 @@
 
 package io.github.totalschema.engine.core;
 
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.api.ValidationManager;
 import io.github.totalschema.engine.core.command.impl.validate.ValidateApplyFilesCommand;
 import java.util.List;
@@ -33,7 +34,7 @@ public class ValidationManagerImpl extends AbstractManager implements Validation
     }
 
     @Override
-    public List<Exception> validateChangeFiles(String filterExpression) {
-        return executeCommand(new ValidateApplyFilesCommand(filterExpression));
+    public List<Exception> validateChangeFiles(ChangeFileSelector selector) {
+        return executeCommand(new ValidateApplyFilesCommand(selector));
     }
 }

@@ -72,11 +72,16 @@ bin/totalschema.sh show applicable-revert -e <env>     # changes that can be rev
 bin/totalschema.sh show applicable-revert -e <env> -f "<glob>"
 ```
 
-### `state` — inspect recorded state
+### `state` — inspect and manage recorded state
 
 ```bash
 bin/totalschema.sh state display -e <env>              # list all applied changes
 bin/totalschema.sh state display -e <env> -f "<glob>"
+
+bin/totalschema.sh state purge-orphaned                # remove state records with no matching file on disk
+bin/totalschema.sh state purge-orphaned -e <env>       # limit candidates to one environment
+bin/totalschema.sh state purge-orphaned --dry-run      # preview without making any changes
+bin/totalschema.sh state purge-orphaned -e <env> --dry-run
 ```
 
 ### `validate` — detect modified applied scripts
@@ -155,6 +160,21 @@ bin/totalschema.sh show applicable-revert -e DEV  # see what can be reverted
 bin/totalschema.sh revert -e DEV --dry-run
 bin/totalschema.sh revert -e DEV
 bin/totalschema.sh state display -e DEV            # confirm state
+```
+
+### Remove state records for deleted change scripts
+
+Over time, old change scripts are sometimes removed from the repository once their
+deployment is long since complete. TotalSchema can clean up the dangling state
+records they leave behind:
+
+```bash
+bin/totalschema.sh state purge-orphaned --dry-run  # see what would be removed
+bin/totalschema.sh state purge-orphaned            # remove orphaned records (all environments)
+
+# Or limit to a single environment
+bin/totalschema.sh state purge-orphaned -e DEV --dry-run
+bin/totalschema.sh state purge-orphaned -e DEV
 ```
 
 ### Production deployment with encrypted secrets

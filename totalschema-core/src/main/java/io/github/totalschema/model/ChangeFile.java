@@ -19,9 +19,7 @@
 package io.github.totalschema.model;
 
 import java.nio.file.Path;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Abstract base class representing a change file containing database modifications.
@@ -232,20 +230,41 @@ public abstract class ChangeFile {
 
     private final Id id;
 
+    private final Path baseDirectory;
     private final Path file;
     private final Path relativePath;
+    private final Map<String, List<String>> effectiveLabels;
 
     /**
-     * Constructs a ChangeFile with the specified properties.
+     * Constructs a ChangeFile with the specified properties and empty effective labels.
      *
      * @param baseDirectory the base directory for resolving relative paths
      * @param file the absolute path to the change file
      * @param id the unique identifier for this change file
      */
     protected ChangeFile(Path baseDirectory, Path file, Id id) {
+        this(baseDirectory, file, id, Collections.emptyMap());
+    }
+
+    /**
+     * Copy constructor that produces a new instance identical to {@code source} except for the
+     * effective labels.
+     *
+     * @param source the change file to copy; must not be null
+     * @param effectiveLabels the resolved labels for the new instance; must not be null
+     */
+    protected ChangeFile(ChangeFile source, Map<String, List<String>> effectiveLabels) {
+        this(source.baseDirectory, source.file, source.id, effectiveLabels);
+    }
+
+    private ChangeFile(
+            Path baseDirectory, Path file, Id id, Map<String, List<String>> effectiveLabels) {
+        Objects.requireNonNull(effectiveLabels, "effectiveLabels");
         this.id = id;
+        this.baseDirectory = baseDirectory;
         this.file = file;
         this.relativePath = baseDirectory.relativize(file);
+        this.effectiveLabels = Collections.unmodifiableMap(new LinkedHashMap<>(effectiveLabels));
     }
 
     /**
@@ -305,6 +324,23 @@ public abstract class ChangeFile {
     public int getOrder() {
         return id.getOrder();
     }
+
+    /**
+     * Gets the effective change file group labels resolved during discovery.
+     *
+     * @return an unmodifiable map of label key to list of values; never null, may be empty
+     */
+    public Map<String, List<String>> getEffectiveLabels() {
+        return effectiveLabels;
+    }
+
+    /**
+     * Returns a new instance of this change file with the given effective labels applied.
+     *
+     * @param labels the resolved labels; must not be null
+     * @return a new instance with the updated labels
+     */
+    public abstract ChangeFile withEffectiveLabels(Map<String, List<String>> labels);
 
     @Override
     public String toString() {

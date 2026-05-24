@@ -18,6 +18,8 @@
 
 package io.github.totalschema.connector.shell.impl;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -33,5 +35,25 @@ final class ShScriptRunner extends GenericShellScriptRunner {
 
     ShScriptRunner(String name, Map<String, String> environmentVariables) {
         super(name, COMMAND, environmentVariables);
+    }
+
+    /**
+     * Creates the temporary probe script and marks it executable, as required by POSIX shells when
+     * the script is invoked directly without an explicit interpreter argument.
+     */
+    @Override
+    protected Path createTempScript(String suffix, String content) throws IOException {
+        Path script = super.createTempScript(suffix, content);
+        boolean couldSetExecutable = script.toFile().setExecutable(true);
+        if (couldSetExecutable) {
+            throw new IllegalStateException(
+                    "Failed to set execute permission on probe script: " + script);
+        }
+        return script;
+    }
+
+    @Override
+    public void checkReady() throws InterruptedException {
+        executeProbeScript("sh", "#!/bin/sh\n");
     }
 }

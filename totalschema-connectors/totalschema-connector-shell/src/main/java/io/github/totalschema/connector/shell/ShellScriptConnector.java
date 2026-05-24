@@ -22,11 +22,14 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.Connector;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunnerFactory;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Connector for executing shell scripts on the local machine.
@@ -109,11 +112,40 @@ final class ShellScriptConnector extends Connector {
     }
 
     /**
+     * Verifies that every interpreter required by the planned change files is accessible.
+     *
+     * <p>Distinct file extensions are collected from {@code plannedChangeFileIds}; for each
+     * distinct extension a fresh {@link ShellScriptRunner} is obtained from the factory and its
+     * {@link ShellScriptRunner#checkReady()} method is called. This ensures that every interpreter
+     * that will actually be needed (e.g. both {@code sh} and {@code ps1}) is probed before any
+     * change is applied.
+     *
+     * @param context the command context (not used by this connector)
+     * @param plannedChangeFileIds the change file IDs whose extensions drive interpreter probing
+     */
+    @Override
+    public void checkConnection(Context context, List<ChangeFile.Id> plannedChangeFileIds)
+            throws InterruptedException {
+        List<String> distinctExtensions =
+                plannedChangeFileIds.stream()
+                        .map(ChangeFile.Id::getExtension)
+                        .distinct()
+                        .collect(Collectors.toList());
+
+        for (String extension : distinctExtensions) {
+            try (ShellScriptRunner runner =
+                    runnerFactory.getRunner(name, configuration, extension)) {
+                runner.checkReady();
+            }
+        }
+    }
+
+    /**
      * Executes a shell script against the local machine.
      *
-     * <p>The script's file name is passed to {@link ShellScriptRunnerFactory#getRunner} so the
-     * factory can select the right interpreter for this specific file. The runner is used once and
-     * immediately closed.
+     * <p>The script's file extension (taken from {@link ChangeFile#getId()}) is passed to {@link
+     * ShellScriptRunnerFactory#getRunner} so the factory can select the right interpreter for this
+     * specific file. The runner is used once and immediately closed.
      *
      * @param changeFile the change file to execute
      * @param context the command context (not used directly by this connector)
@@ -125,17 +157,12 @@ final class ShellScriptConnector extends Connector {
         Path file = changeFile.getFile();
         Objects.requireNonNull(file, "file is null");
 
-        Path fileName = file.getFileName();
-        Objects.requireNonNull(fileName, "fileName is null");
+        String extension = changeFile.getId().getExtension();
 
-        String fileNameAsString = fileName.toString();
+        Path absolutePath = file.toAbsolutePath();
+        Objects.requireNonNull(absolutePath, "absolutePath is null");
 
-        try (ShellScriptRunner runner =
-                runnerFactory.getRunner(name, configuration, fileNameAsString)) {
-
-            Path absolutePath = file.toAbsolutePath();
-            Objects.requireNonNull(absolutePath, "absolutePath is null");
-
+        try (ShellScriptRunner runner = runnerFactory.getRunner(name, configuration, extension)) {
             runner.execute(Collections.singletonList(absolutePath.toString()));
         }
     }

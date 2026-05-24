@@ -22,6 +22,8 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.container.FactoryNotFoundException;
+import io.github.totalschema.model.ChangeFile;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +67,7 @@ public class DefaultConnectorManager implements ConnectorManager {
                             connectorName,
                             configurationOfTheConnector);
 
-            logger.info("Using: {}", connector);
+            logger.info("Connector used: {}", connector);
 
             return connector;
 
@@ -73,6 +75,32 @@ public class DefaultConnectorManager implements ConnectorManager {
             throw new IllegalArgumentException(
                     String.format("No such connector: '%s'", connectorName), ex);
         }
+    }
+
+    @Override
+    public void checkConnector(
+            String connectorName, Context context, List<ChangeFile.Id> plannedChangeFileIds)
+            throws InterruptedException {
+
+        Configuration configurationOfTheConnector =
+                getConfigurationOfTheConnector(connectorName, context);
+
+        boolean connectionCheckEnabled =
+                configurationOfTheConnector.getBoolean("connectionCheck.enabled").orElse(true);
+
+        // Always load and validate the connector — this confirms the config is correct and the
+        // factory exists for the declared type.
+        Connector connector = getConnectorByName(connectorName, context);
+
+        if (!connectionCheckEnabled) {
+            logger.info(
+                    "Connection check is disabled for connector '{}', skipping.", connectorName);
+            return;
+        }
+
+        logger.info("Checking connection for connector '{}'", connectorName);
+        connector.checkConnection(context, plannedChangeFileIds);
+        logger.info("Connection check passed for connector '{}'", connectorName);
     }
 
     private Configuration getConfigurationOfTheConnector(String connectorName, Context context) {

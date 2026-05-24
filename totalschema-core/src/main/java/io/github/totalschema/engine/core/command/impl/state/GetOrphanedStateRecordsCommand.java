@@ -1,0 +1,55 @@
+/*
+ * totalschema: tool for managing database versioning and schema changes with ease.
+ * Copyright (C) 2025 totalschema development team
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package io.github.totalschema.engine.core.command.impl.state;
+
+import io.github.totalschema.config.environment.Environment;
+import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.core.command.api.Command;
+import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.model.ApplyFile;
+import io.github.totalschema.model.ChangeFile;
+import io.github.totalschema.model.StateRecord;
+import io.github.totalschema.spi.state.StateService;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * Command that returns state records for change files that no longer exist on disk, without making
+ * any changes.
+ */
+public class GetOrphanedStateRecordsCommand implements Command<List<StateRecord>> {
+
+    @Override
+    public List<StateRecord> execute(CommandContext context) {
+
+        ChangeEngine changeEngine = context.get(ChangeEngine.class);
+
+        List<ApplyFile> applyFilesOnDisk = changeEngine.getChangeManager().getAllApplyFiles(null);
+
+        Set<ChangeFile.Id> onDiskIds =
+                applyFilesOnDisk.stream().map(ChangeFile::getId).collect(Collectors.toSet());
+
+        Optional<String> environmentName =
+                context.getOptional(Environment.class).map(Environment::getName);
+
+        return context.get(StateService.class).getOrphanedStateRecords(onDiskIds, environmentName);
+    }
+}

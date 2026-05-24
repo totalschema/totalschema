@@ -24,5 +24,9 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "show",
         description = "Shows pending changes",
-        subcommands = {ShowPendingApplyCliCommand.class, ShowApplicableRevertCliCommand.class})
+        subcommands = {
+            ShowPendingApplyCliCommand.class,
+            ShowApplicableRevertCliCommand.class,
+            ShowLabelsCliCommand.class
+        })
 public class ShowSubCommands extends CliSubCommandContainer {}

@@ -18,8 +18,10 @@
 
 package io.github.totalschema.cli.show;
 
+import io.github.totalschema.cli.ChangeFileSelectorMixin;
 import io.github.totalschema.cli.EnvironmentAwareCliCommand;
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.model.RevertFile;
 import java.util.List;
 import picocli.CommandLine;
@@ -30,16 +32,14 @@ import picocli.CommandLine;
         description = "lists all revert operations applicable now")
 public class ShowApplicableRevertCliCommand extends EnvironmentAwareCliCommand {
 
-    @CommandLine.Option(
-            names = {"-f", "--filterExpression"},
-            description = "Include change files matching this expression only")
-    protected String filterExpression;
+    @CommandLine.Mixin
+    private ChangeFileSelectorMixin selectorMixin = new ChangeFileSelectorMixin();
 
     @Override
     public void run(ChangeEngine changeEngine) {
-
+        ChangeFileSelector selector = selectorMixin.buildSelector();
         List<RevertFile> revertFiles =
-                changeEngine.getChangeManager().getApplicableRevertFiles(filterExpression);
+                changeEngine.getChangeManager().getApplicableRevertFiles(selector);
 
         System.out.format("%s revertable changes found %n", revertFiles.size());
 

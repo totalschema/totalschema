@@ -26,5 +26,6 @@ import picocli.CommandLine;
         description = "state management commands",
         subcommands = {
             DisplayStateCliCommand.class,
+            PurgeOrphanedStateCliCommand.class,
         })
 public class StateSubCommands extends CliSubCommandContainer {}

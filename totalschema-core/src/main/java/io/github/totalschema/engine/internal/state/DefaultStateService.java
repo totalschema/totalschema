@@ -20,6 +20,7 @@ package io.github.totalschema.engine.internal.state;
 
 import io.github.totalschema.model.*;
 import io.github.totalschema.spi.hash.HashService;
+import io.github.totalschema.spi.state.StateManagementException;
 import io.github.totalschema.spi.state.StateRepository;
 import io.github.totalschema.spi.state.StateService;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.nio.file.Path;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -99,7 +101,7 @@ class DefaultStateService implements StateService {
                 return hashService.hashToHexString(fileContent);
 
             } catch (IOException ex) {
-                throw new RuntimeException("Failure reading file for hashing: " + file, ex);
+                throw new StateManagementException("Failure reading file for hashing: " + file, ex);
             }
         }
 
@@ -117,6 +119,51 @@ class DefaultStateService implements StateService {
             throw new IllegalStateException(
                     recordsDeleted + " records deleted from state for: " + revertFile);
         }
+    }
+
+    @Override
+    public List<StateRecord> getOrphanedStateRecords(
+            Set<ChangeFile.Id> onDiskIds, Optional<String> environmentName) {
+
+        List<StateRecord> allStateRecords = repository.getAllStateRecords();
+        return allStateRecords.stream()
+                .filter(
+                        stateRecord ->
+                                isRelevantForEnvironment(
+                                        stateRecord.getChangeFileId(), environmentName))
+                .filter(stateRecord -> !onDiskIds.contains(stateRecord.getChangeFileId()))
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    @Override
+    public List<StateRecord> purgeOrphanedStateRecords(
+            Set<ChangeFile.Id> onDiskIds, Optional<String> environmentName) {
+
+        List<StateRecord> orphaned = getOrphanedStateRecords(onDiskIds, environmentName);
+
+        if (!orphaned.isEmpty()) {
+            Set<ChangeFile.Id> idsToDelete =
+                    orphaned.stream().map(StateRecord::getChangeFileId).collect(Collectors.toSet());
+            repository.deleteStateRecordByIds(idsToDelete);
+            if (logger.isInfoEnabled()) {
+                logger.info(
+                        "Purged {} orphaned state record(s) for environment '{}'",
+                        orphaned.size(),
+                        environmentName.orElse("(all)"));
+            }
+        }
+
+        return orphaned;
+    }
+
+    private boolean isRelevantForEnvironment(ChangeFile.Id id, Optional<String> environmentName) {
+        if (environmentName.isEmpty()) {
+            // No environment filter: all records are candidates
+            return true;
+        }
+        // Env-agnostic records always qualify; env-specific records must match
+        return id.getEnvironment().isEmpty()
+                || id.getEnvironment().get().equalsIgnoreCase(environmentName.get());
     }
 
     private int deleteStateRecordsByChangeId(ChangeFile.Id id) {

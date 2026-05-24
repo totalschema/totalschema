@@ -29,20 +29,54 @@ import java.util.List;
 public interface ChangeManager {
 
     /**
-     * Returns all apply files matching the filter expression.
+     * Returns all apply files matching the given selector (path filter + label filters).
      *
-     * @param filterExpression filter for selecting files (can be null for all)
+     * @param selector the selector specifying path and/or label filters; must not be null
      * @return list of apply files
      */
-    List<ApplyFile> getAllApplyFiles(String filterExpression);
+    List<ApplyFile> getAllApplyFiles(ChangeFileSelector selector);
 
     /**
-     * Returns all revert files matching the filter expression.
+     * Returns all revert files matching the given selector.
      *
-     * @param filterExpression filter for selecting files (can be null for all)
+     * @param selector the selector specifying path and/or label filters; must not be null
      * @return list of revert files
      */
-    List<RevertFile> getAllRevertFiles(String filterExpression);
+    List<RevertFile> getAllRevertFiles(ChangeFileSelector selector);
+
+    /**
+     * Returns revert files that can be applied (have corresponding applied changes).
+     *
+     * @param selector the selector specifying path and/or label filters; must not be null
+     * @return list of applicable revert files
+     */
+    List<RevertFile> getApplicableRevertFiles(ChangeFileSelector selector);
+
+    /**
+     * Executes all pending changes matching the selector. If any change fails, already applied
+     * changes from this run are automatically reverted before the exception is propagated.
+     *
+     * @param selector the selector; must not be null
+     */
+    void executePendingAppliesWithAutomaticRevert(ChangeFileSelector selector);
+
+    /**
+     * Executes all pending changes matching the selector.
+     *
+     * @param selector the selector; must not be null
+     */
+    void executePendingApplies(ChangeFileSelector selector);
+
+    /**
+     * Executes revert operations for changes matching the selector.
+     *
+     * @param selector the selector; must not be null
+     */
+    void executeReverts(ChangeFileSelector selector);
+
+    // -------------------------------------------------------------------------
+    // Non-filter operations
+    // -------------------------------------------------------------------------
 
     /**
      * Returns apply files that are pending execution (not yet applied or changed since last apply).
@@ -51,38 +85,6 @@ public interface ChangeManager {
      * @return list of pending apply files
      */
     List<ApplyFile> getPendingApplyFiles(List<ApplyFile> allApplyFiles);
-
-    /**
-     * Returns revert files that can be applied (have corresponding applied changes).
-     *
-     * @param filterExpression filter for selecting files (can be {@code null} for all)
-     * @return list of applicable revert files
-     */
-    List<RevertFile> getApplicableRevertFiles(String filterExpression);
-
-    /**
-     * Executes all pending changes matching the filter expression. If any change fails, already
-     * applied changes from this run are automatically reverted before the exception is propagated.
-     *
-     * @param filterExpression wildcard/glob expression used to select which change files are
-     *     considered; {@code null} selects all files
-     * @throws RuntimeException if any change fails
-     */
-    void executePendingAppliesWithAutomaticRevert(String filterExpression);
-
-    /**
-     * Executes all pending changes matching the filter expression.
-     *
-     * @param filterExpression filter for selecting changes (can be {@code null} for all)
-     */
-    void executePendingApplies(String filterExpression);
-
-    /**
-     * Executes revert operations for changes matching the filter expression.
-     *
-     * @param filterExpression filter for selecting reverts (can be {@code null} for all)
-     */
-    void executeReverts(String filterExpression);
 
     /**
      * Applies a single change file immediately.

@@ -21,10 +21,13 @@ package io.github.totalschema.engine.core.command.impl;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
+import io.github.totalschema.model.ChangeFile;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +40,10 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
 
     private final Logger log = LoggerFactory.getLogger(ExecutePendingApplyFilesCommand.class);
 
-    private final String filterExpression;
+    private final ChangeFileSelector selector;
 
-    public ExecutePendingApplyFilesCommand(String filterExpression) {
-        this.filterExpression = filterExpression;
+    public ExecutePendingApplyFilesCommand(ChangeFileSelector selector) {
+        this.selector = selector != null ? selector : ChangeFileSelector.empty();
     }
 
     @Override
@@ -49,10 +52,9 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
         ChangeEngine changeEngine = context.get(ChangeEngine.class);
         Environment environment = context.get(Environment.class);
 
-        List<ApplyFile> allApplyFiles =
-                changeEngine.getChangeManager().getAllApplyFiles(filterExpression);
+        List<ApplyFile> allApplyFiles = changeEngine.getChangeManager().getAllApplyFiles(selector);
 
-        log.info("{} change files found", allApplyFiles.size());
+        log.info("Found {} change file(s) — {}", allApplyFiles.size(), selector.getDescription());
 
         List<ApplyFile> pendingApplyFiles =
                 changeEngine.getChangeManager().getPendingApplyFiles(allApplyFiles);
@@ -66,50 +68,48 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
         initializeConnectors(context, pendingApplyFiles);
 
         for (int i = 0; i < totalPending; i++) {
-
             int outputIndex = i + 1;
-
             log.info(
                     "Executing change file #{} out of {}, remaining: {}",
                     outputIndex,
                     totalPending,
                     totalPending - outputIndex);
-
-            ApplyFile applyFile = pendingApplyFiles.get(i);
-
-            changeEngine.getChangeManager().execute(applyFile);
+            changeEngine.getChangeManager().execute(pendingApplyFiles.get(i));
         }
 
         if (!pendingApplyFiles.isEmpty()) {
             log.info("Executed {} change files", pendingApplyFiles.size());
         }
 
-        if (filterExpression == null) {
+        if (selector.isEmpty()) {
             log.info("SUCCESS: The {} environment is in desired state.", environment.getName());
         } else {
             log.info(
-                    "SUCCESS: Apply scripts filtered by '{}' are executed against the {} environment.",
-                    filterExpression,
+                    "SUCCESS: Apply scripts matching the given selector are executed"
+                            + " against the {} environment.",
                     environment.getName());
         }
 
         return null;
     }
 
-    private void initializeConnectors(CommandContext context, List<ApplyFile> pendingApplyFiles) {
+    private void initializeConnectors(CommandContext context, List<ApplyFile> pendingApplyFiles)
+            throws InterruptedException {
 
-        List<String> connectorsUsed =
+        Map<String, List<ChangeFile.Id>> changeFileIdsByConnector =
                 pendingApplyFiles.stream()
-                        .map(ApplyFile::getConnector)
-                        .distinct()
-                        .collect(Collectors.toList());
+                        .collect(
+                                Collectors.groupingBy(
+                                        ApplyFile::getConnector,
+                                        Collectors.mapping(ApplyFile::getId, Collectors.toList())));
 
-        for (String connector : connectorsUsed) {
+        log.info("Connectors required for the changes: {}", changeFileIdsByConnector.keySet());
 
-            log.info("Initializing connector '{}'", connector);
+        ConnectorManager connectorManager = context.get(ConnectorManager.class);
 
-            ConnectorManager connectorManager = context.get(ConnectorManager.class);
-            connectorManager.getConnectorByName(connector, context);
+        for (Map.Entry<String, List<ChangeFile.Id>> entry : changeFileIdsByConnector.entrySet()) {
+            log.info("Initializing connector '{}'", entry.getKey());
+            connectorManager.checkConnector(entry.getKey(), context, entry.getValue());
         }
     }
 }

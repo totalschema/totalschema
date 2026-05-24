@@ -16,23 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.connector.python;
+package io.github.totalschema.connector.shell.impl;
 
-/**
- * Utility class for runtime operating-system detection.
- *
- * <p>All detection is based on the {@code os.name} system property, evaluated once at class-load
- * time to avoid repeated look-ups.
- */
-final class OperatingSystemInfo {
+public class ShellScriptException extends RuntimeException {
 
-    private static final String OS_NAME =
-            System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
+    public ShellScriptException(String message) {
+        super(message);
+    }
 
-    /** {@code true} when the JVM is running on a Microsoft Windows host. */
-    static final boolean IS_WINDOWS = OS_NAME.contains("win");
+    public ShellScriptException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-    private OperatingSystemInfo() {
-        // utility class — not instantiable
+    public ShellScriptException(Throwable cause) {
+        super(cause);
     }
 }

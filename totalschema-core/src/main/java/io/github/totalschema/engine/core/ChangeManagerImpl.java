@@ -18,6 +18,7 @@
 
 package io.github.totalschema.engine.core;
 
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.api.ChangeManager;
 import io.github.totalschema.engine.core.command.impl.*;
 import io.github.totalschema.engine.core.command.impl.revert.ExecuteRevertFilesCommand;
@@ -37,14 +38,14 @@ public class ChangeManagerImpl extends AbstractManager implements ChangeManager 
 
     /** {@inheritDoc} */
     @Override
-    public List<ApplyFile> getAllApplyFiles(String filterExpression) {
-        return executeCommand(new GetApplyFilesCommand(filterExpression));
+    public List<ApplyFile> getAllApplyFiles(ChangeFileSelector selector) {
+        return executeCommand(new GetApplyFilesCommand(selector));
     }
 
     /** {@inheritDoc} */
     @Override
-    public List<RevertFile> getAllRevertFiles(String filterExpression) {
-        return executeCommand(new GetRevertFilesCommand(filterExpression));
+    public List<RevertFile> getAllRevertFiles(ChangeFileSelector selector) {
+        return executeCommand(new GetRevertFilesCommand(selector));
     }
 
     /** {@inheritDoc} */
@@ -55,26 +56,26 @@ public class ChangeManagerImpl extends AbstractManager implements ChangeManager 
 
     /** {@inheritDoc} */
     @Override
-    public List<RevertFile> getApplicableRevertFiles(String filterExpression) {
-        return executeCommand(new GetApplicableRevertFilesCommand(filterExpression));
+    public List<RevertFile> getApplicableRevertFiles(ChangeFileSelector selector) {
+        return executeCommand(new GetApplicableRevertFilesCommand(selector));
     }
 
     /** {@inheritDoc} */
     @Override
-    public void executePendingAppliesWithAutomaticRevert(String filterExpression) {
-        executeCommand(new ExecutePendingApplyFilesWithAutomaticRevertCommand(filterExpression));
+    public void executePendingAppliesWithAutomaticRevert(ChangeFileSelector selector) {
+        executeCommand(new ExecutePendingApplyFilesWithAutomaticRevertCommand(selector));
     }
 
     /** {@inheritDoc} */
     @Override
-    public void executePendingApplies(String filterExpression) {
-        executeCommand(new ExecutePendingApplyFilesCommand(filterExpression));
+    public void executePendingApplies(ChangeFileSelector selector) {
+        executeCommand(new ExecutePendingApplyFilesCommand(selector));
     }
 
     /** {@inheritDoc} */
     @Override
-    public void executeReverts(String filterExpression) {
-        executeCommand(new ExecuteRevertFilesCommand(filterExpression));
+    public void executeReverts(ChangeFileSelector selector) {
+        executeCommand(new ExecuteRevertFilesCommand(selector));
     }
 
     /** {@inheritDoc} */

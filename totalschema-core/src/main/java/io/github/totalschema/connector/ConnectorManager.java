@@ -19,7 +19,9 @@
 package io.github.totalschema.connector;
 
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.spi.ServiceLoaderFactory;
+import java.util.List;
 
 /** Manager for creating and caching connector instances. */
 public interface ConnectorManager {
@@ -37,4 +39,22 @@ public interface ConnectorManager {
      * @return the connector instance
      */
     Connector getConnectorByName(String name, Context context);
+
+    /**
+     * Validates that a named connector exists and is correctly configured, then — unless the
+     * connection check has been disabled for that connector via {@code connectionCheck.enabled:
+     * false} in {@code totalschema.yml} — verifies that the connector can actually reach its target
+     * system.
+     *
+     * <p>Intended for pre-flight checks: call this for each connector before executing any change
+     * files to surface configuration or connectivity problems early, before any changes are
+     * applied.
+     *
+     * @param name the connector name from configuration
+     * @param context the command context
+     * @param plannedChangeFileIds the list of change file IDs that are planned to be executed using
+     *     this connector
+     */
+    void checkConnector(String name, Context context, List<ChangeFile.Id> plannedChangeFileIds)
+            throws InterruptedException;
 }

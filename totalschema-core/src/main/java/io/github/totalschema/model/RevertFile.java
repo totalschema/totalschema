@@ -19,9 +19,21 @@
 package io.github.totalschema.model;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
 public final class RevertFile extends ChangeFile {
+
     public RevertFile(Path baseDbaseDirectory, Path file, Id id) {
         super(baseDbaseDirectory, file, id);
+    }
+
+    private RevertFile(RevertFile source, Map<String, List<String>> effectiveLabels) {
+        super(source, effectiveLabels);
+    }
+
+    @Override
+    public RevertFile withEffectiveLabels(Map<String, List<String>> labels) {
+        return new RevertFile(this, labels);
     }
 }

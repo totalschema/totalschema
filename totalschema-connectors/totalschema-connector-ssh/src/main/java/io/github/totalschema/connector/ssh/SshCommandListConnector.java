@@ -22,7 +22,9 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.AbstractTerminalConnector;
 import io.github.totalschema.connector.ssh.spi.SshConnection;
 import io.github.totalschema.connector.ssh.spi.SshConnectionFactory;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.model.ChangeFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,6 +78,13 @@ final class SshCommandListConnector extends AbstractTerminalConnector<SshConnect
     public SshCommandListConnector(String name, SshConnection connection) {
         super(connection);
         this.name = name;
+    }
+
+    @Override
+    public void checkConnection(Context context, List<ChangeFile.Id> plannedChangeFileIds)
+            throws InterruptedException {
+        // ':' is the POSIX shell no-op — it always succeeds and produces no output
+        session.execute(":");
     }
 
     @Override

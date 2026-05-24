@@ -21,10 +21,15 @@ package io.github.totalschema.engine.core.command.impl;
 import io.github.totalschema.ProjectConventions;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
+import io.github.totalschema.engine.api.ChangeFileSelector;
 import io.github.totalschema.engine.core.command.api.Command;
 import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.engine.internal.changefile.ChangeFileIgnorePatterns;
+import io.github.totalschema.engine.internal.changefile.labels.ChangeFileLabels;
+import io.github.totalschema.engine.internal.changefile.labels.ChangeFileLabelsCascade;
+import io.github.totalschema.engine.internal.changefile.labels.LabelFilter;
+import io.github.totalschema.engine.internal.changefile.labels.LabelInheritanceMode;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.ChangeType;
 import io.github.totalschema.spi.hash.HashService;
@@ -112,20 +117,25 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
             };
 
     private final Pattern filterExpressionPattern;
+    private final LabelFilter labelFilter;
     private final EnumSet<ChangeType> includedChangeTypes;
 
     public GetChangeFilesCommand(
-            String filterExpression,
+            ChangeFileSelector selector,
             ChangeType firstChangeType,
             ChangeType... additionalChangeTypes) {
 
         includedChangeTypes = EnumSet.of(firstChangeType, additionalChangeTypes);
 
+        String filterExpression = selector != null ? selector.getFilterExpression() : null;
         if (filterExpression != null) {
             filterExpressionPattern = Pattern.compile(filterExpression);
         } else {
             filterExpressionPattern = null;
         }
+
+        this.labelFilter =
+                selector != null ? LabelFilter.of(selector.getLabelFilters()) : LabelFilter.empty();
     }
 
     @Override
@@ -133,7 +143,8 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
 
         ChangeFileFactory changeFileFactory = context.get(ChangeFileFactory.class);
 
-        String environmentName = context.get(Environment.class).getName();
+        String environmentName =
+                context.getOptional(Environment.class).map(Environment::getName).orElse(null);
 
         Configuration config = context.get(Configuration.class);
 
@@ -151,16 +162,25 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
 
         logger.info("Searching for change files in: {}", rootDirectory.toAbsolutePath());
 
+        LabelInheritanceMode inheritanceMode =
+                LabelInheritanceMode.fromConfig(
+                        config.getString("labels", "inheritance").orElse(null));
+
         ChangeFileIgnorePatterns rootIgnorePatterns = ChangeFileIgnorePatterns.load(rootDirectory);
 
         LinkedList<T> changeFiles = new LinkedList<>();
 
         try {
-            Deque<Path> directoriesToVisit = new LinkedList<>();
-            directoriesToVisit.add(rootDirectory);
+            // Each deque entry pairs a directory with its accumulated label cascade
+            Deque<DirectoryEntry> directoriesToVisit = new LinkedList<>();
+            ChangeFileLabelsCascade rootCascade =
+                    ChangeFileLabelsCascade.empty().withDirectory(rootDirectory, inheritanceMode);
+            directoriesToVisit.add(new DirectoryEntry(rootDirectory, rootCascade));
 
             while (!directoriesToVisit.isEmpty()) {
-                Path directoryToProcess = directoriesToVisit.poll();
+                DirectoryEntry entry = directoriesToVisit.poll();
+                Path directoryToProcess = entry.directory;
+                ChangeFileLabelsCascade cascade = entry.cascade;
 
                 ChangeFileIgnorePatterns effectiveIgnorePatterns =
                         getEffectiveIgnorePatterns(
@@ -169,7 +189,16 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
                 List<Path> directSubDirectories =
                         getDirectSubDirectories(
                                 directoryToProcess, rootDirectory, effectiveIgnorePatterns);
-                directoriesToVisit.addAll(directSubDirectories);
+
+                // Load labels for this directory once, then build child cascades
+                ChangeFileLabels dirLabels = ChangeFileLabels.load(directoryToProcess);
+
+                for (Path subDir : directSubDirectories) {
+                    ChangeFileLabelsCascade childCascade =
+                            cascade.withDirectory(dirLabels, inheritanceMode)
+                                    .withDirectory(subDir, inheritanceMode);
+                    directoriesToVisit.add(new DirectoryEntry(subDir, childCascade));
+                }
 
                 List<T> changeFilesInTheDirectory =
                         getChangeFilesInDirectory(
@@ -177,7 +206,9 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
                                 environmentName,
                                 rootDirectory,
                                 changeFileFactory,
-                                effectiveIgnorePatterns);
+                                effectiveIgnorePatterns,
+                                cascade,
+                                dirLabels);
 
                 changeFiles.addAll(changeFilesInTheDirectory);
             }
@@ -196,6 +227,17 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
 
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /** Pairs a directory path with its accumulated label cascade. */
+    private static final class DirectoryEntry {
+        final Path directory;
+        final ChangeFileLabelsCascade cascade;
+
+        DirectoryEntry(Path directory, ChangeFileLabelsCascade cascade) {
+            this.directory = directory;
+            this.cascade = cascade;
         }
     }
 
@@ -221,7 +263,9 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
             String environmentName,
             Path rootDirectory,
             ChangeFileFactory changeFileFactory,
-            ChangeFileIgnorePatterns ignorePatterns)
+            ChangeFileIgnorePatterns ignorePatterns,
+            ChangeFileLabelsCascade cascade,
+            ChangeFileLabels dirLabels)
             throws IOException {
 
         List<T> changeFilesInDirectory;
@@ -237,6 +281,7 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
                                     changeFile ->
                                             getChangeFile(
                                                     rootDirectory, changeFile, changeFileFactory))
+                            .map(it -> resolveAndSetEffectiveLabels(it, cascade, dirLabels))
                             .filter(it -> matchesDesiredConfig(environmentName, it))
                             .sorted(getChangeFileSortComparator())
                             .collect(Collectors.toList());
@@ -287,21 +332,40 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
         };
     }
 
-    private boolean matchesDesiredConfig(String environmentName, ChangeFile file) {
+    private T resolveAndSetEffectiveLabels(
+            T file, ChangeFileLabelsCascade cascade, ChangeFileLabels dirLabels) {
 
-        boolean matches = true;
+        Map<String, List<String>> effectiveLabels = cascade.resolve(dirLabels, file.getFile());
+        logger.debug(
+                "Resolved effective labels for file {}: {}",
+                file.getRelativePath(),
+                effectiveLabels);
 
-        if (file.getEnvironment().isPresent()) {
-            String fileNameEnvironment = file.getEnvironment().get();
+        // withEffectiveLabels will always return the same type as the file was itself
+        @SuppressWarnings("unchecked")
+        T fileWithLabels = (T) file.withEffectiveLabels(effectiveLabels);
 
-            matches = fileNameEnvironment.equalsIgnoreCase(environmentName);
+        return fileWithLabels;
+    }
+
+    private boolean matchesDesiredConfig(String environmentName, T file) {
+
+        if (environmentName != null && file.getEnvironment().isPresent()) {
+            String fileEnvironment = file.getEnvironment().get();
+            if (!fileEnvironment.equalsIgnoreCase(environmentName)) {
+                return false;
+            }
         }
 
-        if (matches && filterExpressionPattern != null) {
-            // short-circuit evaluation: if previous did not match, skip this check altogether
-            matches = filterExpressionPattern.matcher(file.getRelativePath().toString()).matches();
+        if (filterExpressionPattern != null
+                && !filterExpressionPattern.matcher(file.getRelativePath().toString()).matches()) {
+            return false;
         }
 
-        return matches;
+        if (!labelFilter.isEmpty()) {
+            return labelFilter.matches(file.getEffectiveLabels());
+        }
+
+        return true;
     }
 }
