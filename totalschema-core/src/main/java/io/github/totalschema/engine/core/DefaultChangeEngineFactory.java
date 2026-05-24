@@ -104,7 +104,7 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
             return new DefaultChangeEngine(commandExecutor, componentContainer, eventDispatcher);
 
         } catch (RuntimeException e) {
-            throw new RuntimeException("Failed to create ChangeEngine: " + e.getMessage(), e);
+            throw new ChangeEngineException("Failed to create ChangeEngine: " + e.getMessage(), e);
         }
     }
 
