@@ -145,10 +145,12 @@ class DefaultStateService implements StateService {
             Set<ChangeFile.Id> idsToDelete =
                     orphaned.stream().map(StateRecord::getChangeFileId).collect(Collectors.toSet());
             repository.deleteStateRecordByIds(idsToDelete);
-            logger.info(
-                    "Purged {} orphaned state record(s) for environment '{}'",
-                    orphaned.size(),
-                    environmentName.orElse("(all)"));
+            if (logger.isInfoEnabled()) {
+                logger.info(
+                        "Purged {} orphaned state record(s) for environment '{}'",
+                        orphaned.size(),
+                        environmentName.orElse("(all)"));
+            }
         }
 
         return orphaned;
