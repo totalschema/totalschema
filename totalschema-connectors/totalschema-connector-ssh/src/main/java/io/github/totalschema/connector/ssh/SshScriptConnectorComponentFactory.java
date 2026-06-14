@@ -21,7 +21,6 @@ package io.github.totalschema.connector.ssh;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.AbstractConnectorComponentFactory;
 import io.github.totalschema.connector.Connector;
-import java.util.Optional;
 
 /**
  * ComponentFactory for creating SSH script connectors.
@@ -33,9 +32,8 @@ import java.util.Optional;
  */
 public final class SshScriptConnectorComponentFactory extends AbstractConnectorComponentFactory {
 
-    @Override
-    public Optional<String> getQualifier() {
-        return Optional.of(SshScriptConnector.CONNECTOR_TYPE);
+    public SshScriptConnectorComponentFactory() {
+        super(SshScriptConnector.CONNECTOR_TYPE);
     }
 
     @Override

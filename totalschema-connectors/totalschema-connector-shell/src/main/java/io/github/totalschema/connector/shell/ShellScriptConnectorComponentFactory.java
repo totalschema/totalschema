@@ -21,7 +21,6 @@ package io.github.totalschema.connector.shell;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.AbstractConnectorComponentFactory;
 import io.github.totalschema.connector.Connector;
-import java.util.Optional;
 
 /**
  * {@link io.github.totalschema.spi.factory.ComponentFactory} for {@link ShellScriptConnector}.
@@ -38,19 +37,8 @@ import java.util.Optional;
 public final class ShellScriptConnectorComponentFactory extends AbstractConnectorComponentFactory {
 
     /** Creates a new {@code ShellScriptConnectorComponentFactory}. */
-    public ShellScriptConnectorComponentFactory() {}
-
-    /**
-     * Returns the qualifier that binds this factory to the {@code "shell"} connector type.
-     *
-     * <p>The returned value must match the {@code type} field in the connector's {@code
-     * totalschema.yml} block (e.g. {@code type: shell}).
-     *
-     * @return an {@link java.util.Optional} containing {@value ShellScriptConnector#CONNECTOR_TYPE}
-     */
-    @Override
-    public Optional<String> getQualifier() {
-        return Optional.of(ShellScriptConnector.CONNECTOR_TYPE);
+    public ShellScriptConnectorComponentFactory() {
+        super(ShellScriptConnector.CONNECTOR_TYPE);
     }
 
     /**

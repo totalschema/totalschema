@@ -56,6 +56,11 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
 
         log.info("Found {} change file(s) — {}", allApplyFiles.size(), selector.getDescription());
 
+        if (allApplyFiles.isEmpty()) {
+            log.info("Nothing to apply: no change files found matching the given selector.");
+            return null;
+        }
+
         List<ApplyFile> pendingApplyFiles =
                 changeEngine.getChangeManager().getPendingApplyFiles(allApplyFiles);
 

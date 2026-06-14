@@ -21,7 +21,6 @@ package io.github.totalschema.connector.python;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.AbstractConnectorComponentFactory;
 import io.github.totalschema.connector.Connector;
-import java.util.Optional;
 
 /**
  * {@link io.github.totalschema.spi.factory.ComponentFactory} for {@link PythonConnector}.
@@ -38,16 +37,8 @@ import java.util.Optional;
 public final class PythonConnectorComponentFactory extends AbstractConnectorComponentFactory {
 
     /** Creates a new {@code PythonConnectorComponentFactory}. */
-    public PythonConnectorComponentFactory() {}
-
-    /**
-     * Returns the qualifier that binds this factory to the {@code "python"} connector type.
-     *
-     * @return an {@link Optional} containing {@value PythonConnector#CONNECTOR_TYPE}
-     */
-    @Override
-    public Optional<String> getQualifier() {
-        return Optional.of(PythonConnector.CONNECTOR_TYPE);
+    public PythonConnectorComponentFactory() {
+        super(PythonConnector.CONNECTOR_TYPE);
     }
 
     @Override

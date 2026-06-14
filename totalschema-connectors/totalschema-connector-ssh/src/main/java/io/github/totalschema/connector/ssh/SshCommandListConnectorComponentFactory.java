@@ -21,7 +21,6 @@ package io.github.totalschema.connector.ssh;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.AbstractConnectorComponentFactory;
 import io.github.totalschema.connector.Connector;
-import java.util.Optional;
 
 /**
  * ComponentFactory for creating SSH command list connectors.
@@ -34,9 +33,8 @@ import java.util.Optional;
 public final class SshCommandListConnectorComponentFactory
         extends AbstractConnectorComponentFactory {
 
-    @Override
-    public Optional<String> getQualifier() {
-        return Optional.of(SshCommandListConnector.CONNECTOR_TYPE);
+    public SshCommandListConnectorComponentFactory() {
+        super(SshCommandListConnector.CONNECTOR_TYPE);
     }
 
     @Override

@@ -21,7 +21,6 @@ package io.github.totalschema.connector.jdbc;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.AbstractConnectorComponentFactory;
 import io.github.totalschema.connector.Connector;
-import java.util.Optional;
 
 /**
  * ComponentFactory for creating JDBC connectors.
@@ -33,9 +32,8 @@ import java.util.Optional;
  */
 public final class JdbcConnectorFactory extends AbstractConnectorComponentFactory {
 
-    @Override
-    public Optional<String> getQualifier() {
-        return Optional.of(JdbcConnector.CONNECTOR_TYPE);
+    public JdbcConnectorFactory() {
+        super(JdbcConnector.CONNECTOR_TYPE);
     }
 
     @Override

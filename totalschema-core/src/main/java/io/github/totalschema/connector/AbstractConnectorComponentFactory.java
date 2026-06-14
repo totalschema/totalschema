@@ -26,20 +26,58 @@ import io.github.totalschema.spi.factory.ArgumentHandler;
 import io.github.totalschema.spi.factory.ArgumentSpecification;
 import io.github.totalschema.spi.factory.ComponentFactory;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Abstract base class for Connector ComponentFactories.
  *
- * <p>This class handles all the complexity of configuration resolution (including
- * environment-specific overrides) and connector lifecycle management. Concrete implementations only
- * need to implement {@link #createConnector(String, Configuration)} to construct their specific
- * connector type.
+ * <p><strong>ALL custom connector factories MUST extend this class.</strong> This is the public API
+ * base class that handles configuration resolution, environment-specific overrides, connector
+ * lifecycle management, and argument validation. Do not reimplement this logic in custom connector
+ * factories, as the implementation may evolve over time.
  *
- * <p>All connector factories require one argument: the connector name from configuration. This
- * allows the factory to look up the correct configuration for the connector. The factory merges
- * global and environment specific configuration for the connector being instantiated.
+ * <p>Concrete implementations only need to:
+ *
+ * <ol>
+ *   <li>Call the superclass constructor with the connector type string (e.g., {@code "jdbc"},
+ *       {@code "ssh-script"}, {@code "python"}) that matches the {@code type} field in {@code
+ *       totalschema.yml}
+ *   <li>Implement {@link #createConnector(String, Configuration)} to construct their specific
+ *       connector instance
+ * </ol>
+ *
+ * <p><strong>Example:</strong>
+ *
+ * <pre>{@code
+ * public class MyCustomConnectorFactory extends AbstractConnectorComponentFactory {
+ *     public MyCustomConnectorFactory() {
+ *         super("my-custom-type");
+ *     }
+ *
+ *     @Override
+ *     protected Connector createConnector(String connectorName, Configuration configuration) {
+ *         return new MyCustomConnector(connectorName, configuration);
+ *     }
+ * }
+ * }</pre>
+ *
+ * <p><strong>Arguments:</strong> This factory requires exactly two arguments when instantiating a
+ * connector:
+ *
+ * <ul>
+ *   <li><strong>name</strong> (String): The connector name from the {@code connectors} section in
+ *       {@code totalschema.yml}
+ *   <li><strong>configuration</strong> (Configuration): The fully resolved connector configuration
+ *       (with environment-specific overrides already merged)
+ * </ul>
+ *
+ * <p>The factory automatically validates that the connector's {@code type} field matches this
+ * factory's qualifier, ensuring type safety during connector instantiation.
+ *
+ * @see Connector
+ * @see io.github.totalschema.spi.factory.ComponentFactory
  */
 public abstract class AbstractConnectorComponentFactory extends ComponentFactory<Connector> {
 
@@ -55,6 +93,46 @@ public abstract class AbstractConnectorComponentFactory extends ComponentFactory
     private static final ArgumentHandler ARGUMENTS =
             ArgumentHandler.getInstance(
                     AbstractConnectorComponentFactory.class, NAME, CONFIGURATION);
+
+    private final String connectorType;
+
+    /**
+     * Constructs a new connector factory with the specified connector type qualifier.
+     *
+     * <p>The connector type string identifies this factory and must match the {@code type} field in
+     * the connector configuration within {@code totalschema.yml}.
+     *
+     * <p>Built-in connector types include: {@code "jdbc"}, {@code "ssh-script"}, {@code
+     * "ssh-commands"}, {@code "shell"}, {@code "python"}.
+     *
+     * @param connectorType the connector type string (must not be null or blank)
+     * @throws IllegalArgumentException if connectorType is null or blank
+     */
+    protected AbstractConnectorComponentFactory(String connectorType) {
+        if (connectorType == null || connectorType.isBlank()) {
+            throw new IllegalArgumentException("Connector type must not be null or blank");
+        }
+        this.connectorType = connectorType;
+    }
+
+    /**
+     * Returns the connector type qualifier.
+     *
+     * <p>This method returns the connector type string that was provided to the constructor. The
+     * type is used to:
+     *
+     * <ul>
+     *   <li>Match connector configurations in {@code totalschema.yml}
+     *   <li>Validate that the correct factory is being used for a given connector
+     *   <li>Support multiple connector types within the same container
+     * </ul>
+     *
+     * @return An {@code Optional} containing the connector type string (always present)
+     */
+    @Override
+    public final Optional<String> getQualifier() {
+        return Optional.of(connectorType);
+    }
 
     @Override
     public final boolean isLazy() {

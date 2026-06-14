@@ -64,4 +64,14 @@
         <!-- the field returned is always unmodifiable -->
     </Match>
 
+    <Match>
+        <Class name="io.github.totalschema.connector.AbstractConnectorComponentFactory" />
+        <Method name="&lt;init&gt;"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW" />
+        <!--
+        Safe parameter validation before any field initialization;
+        subclasses pass constants, validation catches programmer errors at startup
+        -->
+    </Match>
+
 </FindBugsFilter>
