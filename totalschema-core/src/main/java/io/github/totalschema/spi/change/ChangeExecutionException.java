@@ -60,8 +60,8 @@ public class ChangeExecutionException extends RuntimeException {
     }
 
     /**
-     * Returns the string representation of the change file whose execution failed,
-     * or {@code null} if this diagnostic information is not available.
+     * Returns the string representation of the change file whose execution failed, or {@code null}
+     * if this diagnostic information is not available.
      *
      * @return the failed change file, or {@code null} if not available
      */
