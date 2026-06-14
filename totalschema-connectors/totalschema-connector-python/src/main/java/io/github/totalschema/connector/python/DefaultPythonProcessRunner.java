@@ -18,32 +18,26 @@
 
 package io.github.totalschema.connector.python;
 
-import java.io.BufferedReader;
+import io.github.totalschema.connector.common.process.GenericProcessRunner;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Default {@link PythonProcessRunner} that launches OS processes via {@link ProcessBuilder}.
+ * Default implementation of {@link PythonProcessRunner} that launches Python processes via {@link
+ * ProcessBuilder}.
  *
- * <p>Standard output and standard error are merged into a single stream ({@code
- * redirectErrorStream(true)}) and logged line-by-line at {@code INFO} level, preserving the
- * chronological order of all process output. A non-zero exit code results in a {@link
- * RuntimeException}.
+ * <p>Extends {@link GenericProcessRunner} to leverage generic process execution infrastructure,
+ * while adding Python-specific behavior required by the {@link PythonProcessRunner} contract:
+ *
+ * <ul>
+ *   <li>{@code PYTHONPATH} merging — prepends new paths instead of overwriting, preserving existing
+ *       module search paths
+ * </ul>
+ *
+ * @see PythonProcessRunner
+ * @see GenericProcessRunner
  */
-final class DefaultPythonProcessRunner implements PythonProcessRunner {
-
-    private static final Logger log = LoggerFactory.getLogger(DefaultPythonProcessRunner.class);
-
-    private final String connectorName;
-    private final Map<String, String> environmentVariables; // nullable — absent when not configured
+final class DefaultPythonProcessRunner extends GenericProcessRunner implements PythonProcessRunner {
 
     /**
      * Creates a runner with extra environment variables merged into the child process's
@@ -54,115 +48,64 @@ final class DefaultPythonProcessRunner implements PythonProcessRunner {
      *     be inherited unchanged
      */
     DefaultPythonProcessRunner(String connectorName, Map<String, String> environmentVariables) {
-        this.connectorName = Objects.requireNonNull(connectorName, "connectorName is null");
-        this.environmentVariables =
-                environmentVariables != null ? Map.copyOf(environmentVariables) : null;
-    }
-
-    @Override
-    public void run(List<String> command, Path workingDirectory, Map<String, String> extraEnvVars)
-            throws InterruptedException {
-
-        log.info("[{}] Executing: {}", connectorName, command);
-
-        ProcessBuilder pb = new ProcessBuilder(command);
-        pb.directory(workingDirectory.toFile());
-        pb.redirectErrorStream(true);
-
-        Map<String, String> effectiveEnvironment =
-                getEffectiveEnvironment(pb.environment(), extraEnvVars);
-
-        log.debug("[{}] effective Environment variables: {}", connectorName, effectiveEnvironment);
-        pb.environment().putAll(effectiveEnvironment);
-
-        Process process;
-        try {
-            process = pb.start();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to start process: " + command, e);
-        }
-
-        // Read stdout (stderr merged) synchronously. The loop completes when the process
-        // exits and closes its output stream, so waitFor() returns immediately afterwards.
-        try (BufferedReader reader =
-                new BufferedReader(
-                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                log.info("[{}] {}", connectorName, line);
-            }
-        } catch (IOException e) {
-            process.destroy();
-            throw new RuntimeException(
-                    "Failed reading process output for: " + String.join(" ", command), e);
-        }
-
-        int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new RuntimeException(
-                    "["
-                            + connectorName
-                            + "] Process exited with status "
-                            + exitCode
-                            + " for: "
-                            + String.join(" ", command));
-        }
+        super(connectorName, environmentVariables);
     }
 
     /**
-     * Builds the effective environment map for a process invocation.
+     * Overrides the default merge strategy to implement Python-specific {@code PYTHONPATH}
+     * handling.
      *
-     * <p>Layers are applied in this order (later layers win for plain overrides):
+     * <p>For the {@code PYTHONPATH} key, the new value is <em>prepended</em> to the existing value
+     * (separated by the platform path separator) instead of overwriting it. This ensures that
+     * injected paths (e.g., the SDK temp directory) take priority while preserving any existing
+     * module search paths. All other keys are overlaid verbatim.
      *
-     * <ol>
-     *   <li>{@code inherited} — the environment inherited from the parent JVM process (supplied by
-     *       {@link ProcessBuilder#environment()} before any modifications).
-     *   <li>{@link #environmentVariables} — connector-level variables configured at construction
-     *       time (e.g. {@code environmentVariables} in {@code totalschema.yml}).
-     *   <li>{@code extraEnvVars} — per-invocation variables (e.g. the SDK temp-dir {@code
-     *       PYTHONPATH}). For the {@code PYTHONPATH} key the extra value is <em>prepended</em> to
-     *       whatever {@code PYTHONPATH} is already in the accumulated environment; all other keys
-     *       are overlaid verbatim.
-     * </ol>
-     *
-     * @param inherited the base environment from {@link ProcessBuilder#environment()}
-     * @param extraEnvVars per-invocation additions; may be {@code null} or empty
-     * @return a new map representing the complete effective environment
+     * @param accumulated the environment accumulated so far (inherited + connector-level)
+     * @param extraEnvVars the per-invocation variables to merge
+     * @return a new map with Python-specific {@code PYTHONPATH} prepending applied
      */
-    private Map<String, String> getEffectiveEnvironment(
-            Map<String, String> inherited, Map<String, String> extraEnvVars) {
+    @Override
+    protected Map<String, String> mergeEnvironmentVariables(
+            Map<String, String> accumulated, Map<String, String> extraEnvVars) {
+        final Map<String, String> result = new java.util.LinkedHashMap<>(accumulated);
 
-        final Map<String, String> effectiveEnvironment = new java.util.LinkedHashMap<>(inherited);
-
-        if (environmentVariables != null) {
-            effectiveEnvironment.putAll(environmentVariables);
-        }
-
-        if (extraEnvVars != null) {
-            for (Map.Entry<String, String> entry : extraEnvVars.entrySet()) {
-                final String key = entry.getKey();
-                final String value = entry.getValue();
-                if (PythonConnector.PYTHONPATH_VARIABLE_NAME.equals(key)) {
-                    // Prepend so the SDK temp dir takes priority over any existing PYTHONPATH
-                    effectiveEnvironment.merge(
-                            key, value, (existing, extra) -> extra + File.pathSeparator + existing);
-                } else {
-                    effectiveEnvironment.put(key, value);
-                }
+        for (Map.Entry<String, String> entry : extraEnvVars.entrySet()) {
+            final String key = entry.getKey();
+            final String value = entry.getValue();
+            if (PythonConnector.PYTHONPATH_VARIABLE_NAME.equals(key)) {
+                // Prepend so the SDK temp dir takes priority over any existing PYTHONPATH
+                result.merge(key, value, this::prependPath);
+            } else {
+                result.put(key, value);
             }
         }
 
-        return effectiveEnvironment;
+        return result;
+    }
+
+    /**
+     * Prepends a new path component to an existing path, using the platform-specific path
+     * separator.
+     *
+     * <p>This merge function ensures that the new path component takes priority by appearing first
+     * in the resulting path string.
+     *
+     * @param existingPath the current path value (may contain multiple components)
+     * @param newPath the new path component to prepend
+     * @return the merged path with {@code newPath} prepended to {@code existingPath}
+     */
+    private String prependPath(String existingPath, String newPath) {
+        return newPath + File.pathSeparator + existingPath;
     }
 
     @Override
     public String toString() {
         return "DefaultPythonProcessRunner{"
                 + "connectorName='"
-                + connectorName
+                + getConnectorName()
                 + '\''
                 + ", environmentVariables="
-                + environmentVariables
+                + getEnvironmentVariables()
                 + '}';
     }
 }

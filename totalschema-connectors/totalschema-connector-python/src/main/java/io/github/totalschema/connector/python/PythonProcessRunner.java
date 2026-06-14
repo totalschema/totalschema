@@ -18,23 +18,38 @@
 
 package io.github.totalschema.connector.python;
 
+import io.github.totalschema.connector.common.process.ProcessRunner;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Abstraction over OS process execution used by {@link PythonConnector}.
+ * Python-specific extension of {@link ProcessRunner} for executing Python processes.
  *
- * <p>Keeping this behind an interface allows unit tests to inject a mock, exercising all connector
- * logic without spawning real OS processes. The production implementation is {@link
- * DefaultPythonProcessRunner}.
+ * <p>This sub-interface adds Python-specific contracts on top of the base {@link ProcessRunner}
+ * interface:
+ *
+ * <ul>
+ *   <li><b>PYTHONPATH handling</b> — implementations should prepend (not overwrite) {@code
+ *       PYTHONPATH} values to preserve existing module search paths
+ *   <li><b>Test isolation</b> — keeping this behind an interface allows unit tests to inject a
+ *       mock, exercising all connector logic without spawning real OS processes
+ * </ul>
+ *
+ * <p>The production implementation is {@link DefaultPythonProcessRunner}, which extends {@link
+ * io.github.totalschema.connector.common.process.GenericProcessRunner} and overrides environment
+ * variable merging to implement Python-specific {@code PYTHONPATH} prepending.
+ *
+ * @see ProcessRunner
+ * @see DefaultPythonProcessRunner
  */
-interface PythonProcessRunner {
+interface PythonProcessRunner extends ProcessRunner {
 
     /**
      * Runs the given command in the specified working directory, streaming all output to the logger
      * prefixed with the connector name supplied at construction time.
+     *
+     * <p>Inherits the base contract from {@link ProcessRunner#run(List, Path)}.
      *
      * @param command the command tokens to execute (e.g. {@code ["python3", "/tmp/script.py"]})
      * @param workingDirectory the directory from which the process is started
@@ -43,9 +58,8 @@ interface PythonProcessRunner {
      * @throws RuntimeException if the process exits with a non-zero status, or if the process
      *     cannot be started
      */
-    default void run(List<String> command, Path workingDirectory) throws InterruptedException {
-        run(command, workingDirectory, Collections.emptyMap());
-    }
+    @Override
+    void run(List<String> command, Path workingDirectory) throws InterruptedException;
 
     /**
      * Runs the given command in the specified working directory, merging {@code extraEnvVars} into
@@ -67,6 +81,7 @@ interface PythonProcessRunner {
      * @throws RuntimeException if the process exits with a non-zero status, or if the process
      *     cannot be started
      */
+    @Override
     void run(List<String> command, Path workingDirectory, Map<String, String> extraEnvVars)
             throws InterruptedException;
 }
