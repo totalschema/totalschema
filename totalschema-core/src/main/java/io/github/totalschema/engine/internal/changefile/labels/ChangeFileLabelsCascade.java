@@ -32,7 +32,7 @@ import java.util.*;
  * ChangeFileLabelsCascade cascade = ChangeFileLabelsCascade.empty();
  * cascade = cascade.withDirectory(rootDir, mode);   // picks up root-level labels
  * cascade = cascade.withDirectory(subDir, mode);    // inherits and extends
- * Map<String, List<String>> effective = cascade.resolve(changeFileLabels, filename);
+ * Map<String, List<String>> effective = cascade.resolve(changeFileLabels, filePath);
  * }</pre>
  */
 public final class ChangeFileLabelsCascade {
@@ -109,9 +109,17 @@ public final class ChangeFileLabelsCascade {
     }
 
     /**
-     * Resolves the effective labels for a specific change file identified by its {@link Path}.
-     * Extracts the bare filename from the path and delegates to {@link #resolve(ChangeFileLabels,
-     * String)}.
+     * Resolves the effective labels for a specific change file. Combines:
+     *
+     * <ol>
+     *   <li>The accumulated cascaded labels from ancestor directories (this cascade).
+     *   <li>The current directory's global labels (already in this cascade if applied via {@link
+     *       #withDirectory}).
+     *   <li>The current directory's file-pattern labels for the given file (via {@code
+     *       currentDirLabels.getEffectiveLabelsForFile}).
+     * </ol>
+     *
+     * <p>File-pattern labels override cascaded labels for clashing keys.
      *
      * @param currentDirLabels the labels loaded from the file's immediate parent directory
      * @param filePath the absolute or relative path of the change file; must have a non-null
@@ -125,28 +133,6 @@ public final class ChangeFileLabelsCascade {
             throw new NullPointerException("File name cannot be null for: " + filePath);
         }
 
-        return resolve(currentDirLabels, fileName.toString());
-    }
-
-    /**
-     * Resolves the effective labels for a specific change file. Combines:
-     *
-     * <ol>
-     *   <li>The accumulated cascaded labels from ancestor directories (this cascade).
-     *   <li>The current directory's global labels (already in this cascade if applied via {@link
-     *       #withDirectory}).
-     *   <li>The current directory's file-pattern labels for the given filename (via {@code
-     *       currentDirLabels.getEffectiveLabelsForFile}).
-     * </ol>
-     *
-     * <p>File-pattern labels override cascaded labels for clashing keys.
-     *
-     * @param currentDirLabels the labels loaded from the file's immediate parent directory
-     * @param filename the bare filename of the change file
-     * @return the fully resolved effective labels
-     */
-    public Map<String, List<String>> resolve(ChangeFileLabels currentDirLabels, String filename) {
-
         // Start with accumulated cascade (includes ancestor globals + current dir globals
         // if withDirectory was already called for the current directory).
         Map<String, List<String>> result = new LinkedHashMap<>(accumulatedLabels);
@@ -155,7 +141,7 @@ public final class ChangeFileLabelsCascade {
         // Note: only the filePatterns portion matters here since global labels from currentDir
         // are already in accumulatedLabels after withDirectory() was called.
         Map<String, List<String>> filePatternLabels =
-                currentDirLabels.getEffectiveLabelsForFile(filename);
+                currentDirLabels.getEffectiveLabelsForFile(fileName);
 
         // filePatternLabels contains globals + matched patterns; we only want to overlay
         // the additional labels that patterns contribute on top of what is already cascaded.

@@ -21,6 +21,7 @@ For the CLI command reference see **[CLI-USAGE.md](CLI-USAGE.md)**.
   - [Connectors](#connectors)
 - [Change Script Naming Convention](#change-script-naming-convention)
 - [Change Types](#change-types)
+- [Change File Labels](#change-file-labels)
 - [Connector Types](#connector-types)
   - [JDBC](#jdbc-databases)
   - [SSH Script](#ssh-script)
@@ -348,6 +349,268 @@ CREATE OR REPLACE PROCEDURE calculate_totals() ...
 -- 0001.create_orders.DEV.revert.mydb.sql
 DROP TABLE orders;
 ```
+
+---
+
+## Change File Labels
+
+Labels are key-value metadata tags that you attach to change files to create logical groupings
+that cut across directory boundaries. They enable you to deploy subsets of changes based on
+criteria like release version, JIRA ticket, or team ownership — independently of where those
+files live in the directory tree.
+
+### Why Use Labels?
+
+TotalSchema's `--filterExpression` flag already lets you select changes by path pattern (e.g.,
+`postgresql/.*`). This works well when your directory structure encodes deployment scope.
+
+But consider a workspace organized by **technology → namespace → object → version**:
+
+```
+changes/
+├── postgresql/crmdb/customers_table/1.x/0001.create_customer.apply.mydb.sql
+├── bigquery/analytics/sales_dataset/1.x/0001.create_sales.apply.bq.sql
+└── bigtable/user_data/profiles_namespace/1.x/0001.create_profiles.apply.bt.sql
+```
+
+Here a "release" is a cross-cutting concern — it spans multiple technologies. Labels solve
+this by letting you tag the `1.x` directories across all three subtrees with
+`targetRelease: 2027-Q1-01`, then deploy the entire release with a single command:
+
+```bash
+totalschema.sh apply -e PROD -l targetRelease=2027-Q1-01
+```
+
+No complex regex required. Teams working on different subtrees can manage their own labels
+independently.
+
+### Creating a Label File
+
+Place a `totalschema-labels.yml` file in any directory within the `changes/` tree. The file is
+automatically excluded from change file discovery by the engine (along with `.totalschemaignore`
+and any files starting with `.`).
+
+**Basic format:**
+
+```yaml
+# Simple labels — apply to all files in this directory and descendants
+targetRelease: 2027-Q1-01
+JIRA: FOOBAR-1234
+owner: team-data-platform
+```
+
+**Multi-value labels:**
+
+```yaml
+# This directory belongs to two releases (e.g., a hotfix)
+targetRelease:
+  - 2027-Q1-01
+  - 2027-Q2-01
+```
+
+**File-specific labels using `filePatterns`:**
+
+Apply labels to a subset of files in the directory by filename glob:
+
+```yaml
+# Global labels — apply to all files in this directory and descendants
+targetRelease: 2027-Q1-01
+targetSystem: postgresql
+
+# File-level labels — apply only to matching files in THIS directory
+filePatterns:
+  - match: "0001.*"
+    labels:
+      JIRA: FOOBAR-1234
+
+  - match:                # multiple patterns (OR semantics)
+      - "0002.*"
+      - "*.revert.*"
+    labels:
+      JIRA: FOOBAR-5678
+      targetRelease: 2027-Q2-01    # overrides global for these files
+```
+
+### Label Rules
+
+| Rule | Detail |
+|---|---|
+| **Format** | Valid YAML; parse errors are hard errors |
+| **Key format** | Must begin and end with alphanumeric; may contain alphanumeric, `-`, and `_` |
+| **Values** | Any scalar YAML value (string, number, boolean) |
+| **Case** | Both keys and values are **case-sensitive** |
+| **Reserved key** | `filePatterns` is reserved for file-level pattern sections |
+
+### Label Inheritance (Cascading)
+
+Labels defined in a parent directory automatically apply to all change files in descendant
+directories. This lets you set high-level tags once without repeating them:
+
+```
+postgresql/
+├── totalschema-labels.yml       # targetSystem: postgresql
+└── crmdb/
+    └── customers_table/
+        └── 1.x/
+            ├── totalschema-labels.yml   # targetRelease: 2027-Q1-01, JIRA: FOOBAR-1234
+            └── 0001.create_customer.apply.mydb.sql
+```
+
+**Effective labels for `0001.create_customer.apply.mydb.sql`:**
+
+```
+targetSystem=postgresql
+targetRelease=2027-Q1-01
+JIRA=FOOBAR-1234
+```
+
+#### Conflict Resolution
+
+When a parent and child define the **same key**, the behavior depends on the `labels.inheritance`
+setting in `totalschema.yml`:
+
+```yaml
+labels:
+  inheritance: override   # default — child replaces parent
+  # inheritance: merge    # child adds to parent (both values kept)
+```
+
+**Override mode (default):**
+
+```
+parent: targetRelease=2026-Q4-01
+child:  targetRelease=2027-Q1-01
+→ result: [2027-Q1-01]
+```
+
+**Merge mode:**
+
+```
+parent: targetRelease=2026-Q4-01
+child:  targetRelease=2027-Q1-01
+→ result: [2026-Q4-01, 2027-Q1-01]
+```
+
+### Using Labels at the CLI
+
+Use the `--label` / `-l` flag to filter which change files are selected:
+
+```bash
+# Deploy all changes tagged for the 2027-Q1-01 release
+totalschema.sh apply -e PROD -l targetRelease=2027-Q1-01
+
+# Deploy only FOOBAR-1234 ticket changes
+totalschema.sh apply -e DEV -l JIRA=FOOBAR-1234
+
+# Deploy FOOBAR-1234 changes for Q1 release (AND semantics)
+totalschema.sh apply -e DEV -l JIRA=FOOBAR-1234 -l targetRelease=2027-Q1-01
+
+# Show pending changes for Q1 release
+totalschema.sh show pending-apply -e PROD -l targetRelease=2027-Q1-01
+
+# Revert only Q1 release changes
+totalschema.sh revert execute -e PROD -l targetRelease=2027-Q1-01
+
+# Validate Q1 release files
+totalschema.sh validate -e PROD -l targetRelease=2027-Q1-01
+```
+
+#### Combining with Path Filters
+
+`--label` and `--filterExpression` can be used together (AND semantics):
+
+```bash
+# Q1 release changes, but only for PostgreSQL
+totalschema.sh apply -e PROD -l targetRelease=2027-Q1-01 -f "postgresql/.*"
+```
+
+### Inspecting Labels
+
+Use `show labels` to see what effective labels are assigned to each file after cascading:
+
+```bash
+# Show effective labels for all change files
+totalschema.sh show labels -e DEV
+
+# Show only files matching a specific label
+totalschema.sh show labels -e DEV -l targetRelease=2027-Q1-01
+```
+
+**Example output:**
+
+```
+postgresql/crmdb/customers_table/1.x/0001.create_customer.apply.mydb.sql
+  targetSystem=postgresql
+  targetRelease=2027-Q1-01
+  JIRA=FOOBAR-1234
+
+bigquery/analytics/sales_dataset/1.x/0001.create_sales.apply.bq.sql
+  targetSystem=bigquery
+  targetRelease=2027-Q1-01
+  JIRA=FOOBAR-1234
+
+2 change file(s) found matching label filter(s).
+```
+
+### File Patterns in Detail
+
+The `filePatterns` section lets you apply labels to specific files within a directory without
+creating subdirectories:
+
+```yaml
+targetRelease: 2027-Q1-01
+
+filePatterns:
+  # Single pattern
+  - match: "0001.*"
+    labels:
+      JIRA: FOOBAR-1234
+
+  # Multiple patterns (OR semantics)
+  - match:
+      - "0002.*"
+      - "*.revert.*"
+    labels:
+      JIRA: FOOBAR-5678
+```
+
+**Key rules:**
+
+- Patterns match the **filename only** (not the full path)
+- Glob syntax: `*` matches any characters, `?` matches one character
+- Multiple patterns in one entry use OR semantics (file matches if any pattern matches)
+- If multiple entries match a file, their labels are **unioned** together
+- `filePatterns` labels **override** global labels for the same key
+- `filePatterns` labels do **not cascade** to subdirectories
+
+**When to use `filePatterns`:**
+
+Use it for small, focused exceptions within an otherwise uniform directory. If most files need
+different labels, split into subdirectories with their own `totalschema-labels.yml` files
+instead — it's clearer and easier to maintain.
+
+### Commands Supporting Labels
+
+The `--label` / `-l` flag is available on:
+
+- `apply`
+- `revert execute`
+- `show pending-apply`
+- `show applicable-revert`
+- `show all-apply`
+- `show all-revert`
+- `validate`
+- `show labels`
+
+**Not supported on `state purge-orphaned`:** Orphaned state records are for files that no
+longer exist on disk, so their label files may also be gone. Use `--filterExpression` to scope
+purge operations by path instead.
+
+### Backward Compatibility
+
+Labels are **fully opt-in**. If you don't use `--label` at the CLI, all change files are
+selected regardless of whether they have labels or not. Existing workspaces with no label files
+behave exactly as before.
 
 ---
 

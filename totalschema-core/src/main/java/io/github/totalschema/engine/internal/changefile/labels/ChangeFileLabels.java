@@ -20,8 +20,7 @@ package io.github.totalschema.engine.internal.changefile.labels;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.*;
 import org.yaml.snakeyaml.Yaml;
 
@@ -277,14 +276,23 @@ public final class ChangeFileLabels {
      * <p>Note: ancestor cascade labels are handled by {@link ChangeFileLabelsCascade}; this method
      * only contributes the current-directory portion.
      *
-     * @param filename the bare filename (not a path) to match against patterns
+     * @param fileName the bare filename (single path element, no directory component) to match
+     *     against patterns
      * @return the effective labels contributed by this file for the given filename
+     * @throws NullPointerException if {@code fileName} is null
+     * @throws IllegalArgumentException if {@code fileName} contains a directory component
      */
-    public Map<String, List<String>> getEffectiveLabelsForFile(String filename) {
+    public Map<String, List<String>> getEffectiveLabelsForFile(Path fileName) {
+        Objects.requireNonNull(fileName, "fileName must not be null");
+        if (fileName.getNameCount() != 1) {
+            throw new IllegalArgumentException(
+                    "fileName must be a bare filename with no directory component, got: "
+                            + fileName);
+        }
         Map<String, List<String>> result = new LinkedHashMap<>(globalLabels);
 
         for (FilePatternEntry entry : filePatternEntries) {
-            if (entry.matches(filename)) {
+            if (entry.matches(fileName)) {
                 // Pattern-entry labels override global for clashing keys
                 result.putAll(entry.getLabels());
             }
@@ -302,10 +310,24 @@ public final class ChangeFileLabels {
     static final class FilePatternEntry {
 
         private final List<String> patterns;
+        private final List<PathMatcher> matchers;
         private final Map<String, List<String>> labels;
 
         FilePatternEntry(List<String> patterns, Map<String, List<String>> labels) {
+            List<PathMatcher> pathMatchers = new ArrayList<>(patterns.size());
+
+            // stored for logging/debug purposes only, as the
+            // PathMatchers do not show meaningful details in their toString()
             this.patterns = patterns;
+
+            // patterns are compiled to PathMatcher here, once
+            FileSystem fileSystem = FileSystems.getDefault();
+            for (String pattern : patterns) {
+                PathMatcher pathMatcher = fileSystem.getPathMatcher("glob:" + pattern);
+                pathMatchers.add(pathMatcher);
+            }
+
+            this.matchers = Collections.unmodifiableList(pathMatchers);
             this.labels = labels;
         }
 
@@ -313,9 +335,9 @@ public final class ChangeFileLabels {
          * Returns true if the given filename matches any of this entry's glob patterns (OR
          * semantics).
          */
-        boolean matches(String filename) {
-            for (String pattern : patterns) {
-                if (globMatches(pattern, filename)) {
+        boolean matches(Path fileName) {
+            for (PathMatcher matcher : matchers) {
+                if (matcher.matches(fileName)) {
                     return true;
                 }
             }
@@ -326,41 +348,9 @@ public final class ChangeFileLabels {
             return labels;
         }
 
-        /**
-         * Simple glob matcher supporting {@code *} (any sequence of chars except '/') and {@code ?}
-         * (exactly one char).
-         */
-        private static boolean globMatches(String pattern, String text) {
-            return globMatchesRecursive(pattern, 0, text, 0);
-        }
-
-        private static boolean globMatchesRecursive(String pattern, int pi, String text, int ti) {
-            while (pi < pattern.length() && ti < text.length()) {
-                char pc = pattern.charAt(pi);
-                if (pc == '*') {
-                    // '*' matches zero or more characters
-                    if (pi + 1 == pattern.length()) {
-                        return true; // trailing * matches everything remaining
-                    }
-                    while (ti <= text.length()) {
-                        if (globMatchesRecursive(pattern, pi + 1, text, ti)) {
-                            return true;
-                        }
-                        ti++;
-                    }
-                    return false;
-                } else if (pc == '?' || pc == text.charAt(ti)) {
-                    pi++;
-                    ti++;
-                } else {
-                    return false;
-                }
-            }
-            // Consume remaining '*' wildcards
-            while (pi < pattern.length() && pattern.charAt(pi) == '*') {
-                pi++;
-            }
-            return pi == pattern.length() && ti == text.length();
+        @Override
+        public String toString() {
+            return "FilePatternEntry{" + "patterns=" + patterns + ", labels=" + labels + '}';
         }
     }
 }
