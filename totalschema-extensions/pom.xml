@@ -26,6 +26,7 @@
 
     <modules>
         <module>totalschema-groovy-extensions</module>
+        <module>totalschema-kotlin-extensions</module>
     </modules>
 
     <build>

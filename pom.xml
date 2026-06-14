@@ -76,6 +76,8 @@
 
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
 
+        <kotlin.version>1.9.24</kotlin.version>
+
         <testng.version>7.10.2</testng.version>
     </properties>
 
@@ -139,6 +141,18 @@
                 <artifactId>groovy-all</artifactId>
                 <version>3.0.23</version>
                 <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-scripting-jsr223</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib</artifactId>
+                <version>${kotlin.version}</version>
             </dependency>
 
             <dependency>

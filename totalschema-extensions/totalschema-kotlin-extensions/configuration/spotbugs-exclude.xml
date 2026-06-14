@@ -1,0 +1,11 @@
+<FindBugsFilter>
+    <!-- KotlinSql.connection exposure is intentional - provides raw JDBC access for advanced usage -->
+    <Match>
+        <Class name="io.github.totalschema.extensions.kotlin.KotlinSql"/>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+        </Or>
+    </Match>
+</FindBugsFilter>
+

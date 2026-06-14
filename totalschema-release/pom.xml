@@ -38,6 +38,18 @@
                     <groupId>org.codehaus.groovy</groupId>
                     <artifactId>groovy-all</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.github.totalschema</groupId>
+                    <artifactId>totalschema-kotlin-extensions</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-scripting-jsr223</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-stdlib</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -64,6 +76,23 @@
                 <exclusion>
                     <groupId>org.codehaus.groovy</groupId>
                     <artifactId>groovy-all</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.totalschema</groupId>
+            <artifactId>totalschema-kotlin-extensions</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <!-- Kotlin scripting JARs should be provided by the user -->
+                <exclusion>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-scripting-jsr223</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-stdlib</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
