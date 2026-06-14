@@ -25,7 +25,7 @@ public class ChangeExecutionException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    private final ChangeFile changeFile;
+    private final String changeFile;
 
     /**
      * Constructs a new change execution exception with the failed change file and a detail message.
@@ -35,7 +35,7 @@ public class ChangeExecutionException extends RuntimeException {
      */
     public ChangeExecutionException(ChangeFile changeFile, String message) {
         super(message);
-        this.changeFile = changeFile;
+        this.changeFile = asString(changeFile);
     }
 
     /**
@@ -48,15 +48,24 @@ public class ChangeExecutionException extends RuntimeException {
      */
     public ChangeExecutionException(ChangeFile changeFile, String message, Throwable cause) {
         super(message, cause);
-        this.changeFile = changeFile;
+        this.changeFile = asString(changeFile);
+    }
+
+    private static String asString(ChangeFile changeFile) {
+        if (changeFile != null) {
+            return changeFile.toString();
+        } else {
+            return null;
+        }
     }
 
     /**
-     * Returns the change file whose execution failed.
+     * Returns the string representation of the change file whose execution failed,
+     * or {@code null} if this diagnostic information is not available.
      *
-     * @return the failed change file
+     * @return the failed change file, or {@code null} if not available
      */
-    public ChangeFile getChangeFile() {
+    public String getChangeFile() {
         return changeFile;
     }
 }
