@@ -19,6 +19,7 @@
 package io.github.totalschema;
 
 import java.nio.file.FileSystems;
+import java.util.Locale;
 
 public final class ProjectConventions {
 
@@ -26,7 +27,10 @@ public final class ProjectConventions {
         throw new AssertionError("static utility class, no instances allowed");
     }
 
-    public static final String PROJECT_SYSTEM_NAME = "totalschema";
+    public static final String PROJECT_DISPLAY_NAME = "Totalschema";
+
+    public static final String PROJECT_SYSTEM_NAME =
+            PROJECT_DISPLAY_NAME.toLowerCase(Locale.ENGLISH);
 
     public static final String YML_CONFIG_FILE = String.format("%s.yml", PROJECT_SYSTEM_NAME);
 

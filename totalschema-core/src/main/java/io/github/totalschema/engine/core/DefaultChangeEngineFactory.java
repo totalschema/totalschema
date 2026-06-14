@@ -20,6 +20,8 @@ package io.github.totalschema.engine.core;
 
 import static java.util.Objects.requireNonNull;
 
+import io.github.totalschema.ProjectConventions;
+import io.github.totalschema.VersionInfo;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.ConfigurationFactory;
 import io.github.totalschema.config.environment.Environment;
@@ -73,6 +75,12 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
             String environmentName) {
 
         try {
+            logger.info(
+                    "Initializing {} engine version {} ({})",
+                    ProjectConventions.PROJECT_DISPLAY_NAME,
+                    VersionInfo.getVersion(),
+                    VersionInfo.getCommitIdAbbrev());
+
             Environment environment =
                     environmentName != null ? new Environment(environmentName) : null;
 
