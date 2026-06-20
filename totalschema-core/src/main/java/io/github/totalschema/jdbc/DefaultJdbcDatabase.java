@@ -208,6 +208,10 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
         private static final long CONNECTION_TIMEOUT_MS = 30000;
         private static final long IDLE_TIMEOUT_MS = 600000; // 10 minutes
         private static final long MAX_LIFETIME_MS = 1800000; // 30 minutes
+
+        // disabled by default: "A value of 0 means leak detection is disabled." from the
+        // Javadoc of com.zaxxer.hikari.HikariConfig.setLeakDetectionThreshold(long)
+        private static final long LEAK_DETECTION_THRESHOLD = 0;
     }
 
     private final String name;
@@ -234,6 +238,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
     private final long connectionTimeoutMs;
     private final long idleTimeoutMs;
     private final long maxLifetimeMs;
+    private final long leakDetectionThreshold;
 
     private final HikariDataSource dataSource;
 
@@ -317,6 +322,11 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
                         .getLong("pool", "maxLifetime")
                         .orElse(DefaultValues.MAX_LIFETIME_MS);
 
+        this.leakDetectionThreshold =
+                connectorConfiguration
+                        .getLong("pool", "leakDetectionThreshold")
+                        .orElse(DefaultValues.LEAK_DETECTION_THRESHOLD);
+
         // Load driver class if specified
         if (driverClass != null) {
             try {
@@ -373,8 +383,8 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
         // Pool name for identification
         config.setPoolName(String.format("[%s] database connection pool", name));
 
-        // Enable connection leak detection in debug mode
-        config.setLeakDetectionThreshold(60000); // 60 seconds
+        // Allows enabling connection leak detection for debugging purposes (disabled by default)
+        config.setLeakDetectionThreshold(leakDetectionThreshold);
 
         return new HikariDataSource(config);
     }
