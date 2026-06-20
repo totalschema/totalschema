@@ -666,21 +666,21 @@ totalschema-connector-python           ← OPTIONAL (included in CLI/release by 
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-core</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.3.0</version>
 </dependency>
 
 <!-- SSH connectors (optional) -->
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-ssh</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.3.0</version>
 </dependency>
 
 <!-- Shell connector (optional) -->
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-shell</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
