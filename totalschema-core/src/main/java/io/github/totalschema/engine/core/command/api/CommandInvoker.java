@@ -18,6 +18,8 @@
 
 package io.github.totalschema.engine.core.command.api;
 
+import io.github.totalschema.engine.api.Context;
+
 /**
  * Direct command invoker that executes commands without interception.
  *
@@ -25,7 +27,7 @@ package io.github.totalschema.engine.core.command.api;
  */
 public final class CommandInvoker extends CommandExecutor {
     @Override
-    public <R> R execute(CommandContext context, Command<R> command) throws InterruptedException {
+    public <R> R execute(Context context, Command<R> command) throws InterruptedException {
         return command.execute(context);
     }
 }

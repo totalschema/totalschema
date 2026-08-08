@@ -26,7 +26,17 @@ import java.util.Set;
 /**
  * Service Provider Interface for persisting change execution state.
  *
- * <p>Implementations store and retrieve records of executed changes.
+ * <p>Implementations store and retrieve records of executed changes, providing a persistent history
+ * of which change files have been applied and when.
+ *
+ * <h2>Thread Safety</h2>
+ *
+ * <p>Implementations of this interface must be thread-safe and support concurrent access from
+ * multiple threads without external synchronization. All methods must be safe to call concurrently,
+ * and the implementation must ensure consistency of state records across concurrent operations.
+ *
+ * @see StateRecord
+ * @see ChangeFile
  */
 public interface StateRepository {
     /**

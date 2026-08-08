@@ -19,10 +19,20 @@
 package io.github.totalschema.spi.expression.evaluator;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.variables.VariableService;
 import java.util.Map;
 
 public interface ExpressionEvaluator {
     String evaluate(String expression, Configuration configuration);
+
+    default String evaluate(String expression, Context context) {
+        VariableService variableService = context.get(VariableService.class);
+
+        Map<String, String> effectiveVariables = variableService.getEffectiveVariables(context);
+
+        return evaluate(expression, effectiveVariables);
+    }
 
     String evaluate(String expressionString, Map<String, String> values);
 }

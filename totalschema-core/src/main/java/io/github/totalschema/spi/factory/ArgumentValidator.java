@@ -1,3 +1,21 @@
+/*
+ * totalschema: tool for managing database versioning and schema changes with ease.
+ * Copyright (C) 2025-2026 totalschema development team
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.github.totalschema.spi.factory;
 
 import java.util.List;
@@ -54,7 +72,9 @@ public final class ArgumentValidator {
                             + providedCount
                             + " were provided. "
                             + "Expected: "
-                            + formatSpecs(specs));
+                            + formatList(specs)
+                            + ", Was: "
+                            + formatList(arguments));
         }
 
         // Validate each argument type
@@ -102,20 +122,20 @@ public final class ArgumentValidator {
     /**
      * Formats argument specifications for error messages.
      *
-     * @param specs The argument specifications
+     * @param elements The argument specifications
      * @return A formatted string describing the expected arguments
      */
-    private static String formatSpecs(List<ArgumentSpecification<?>> specs) {
-        if (specs.isEmpty()) {
+    private static String formatList(List<?> elements) {
+        if (elements == null || elements.isEmpty()) {
             return "(none)";
         }
 
         StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < specs.size(); i++) {
+        for (int i = 0; i < elements.size(); i++) {
             if (i > 0) {
                 sb.append(", ");
             }
-            sb.append(specs.get(i).toString());
+            sb.append(elements.get(i).toString());
         }
         sb.append("]");
         return sb.toString();

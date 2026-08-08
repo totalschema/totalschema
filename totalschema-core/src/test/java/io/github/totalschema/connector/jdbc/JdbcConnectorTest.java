@@ -22,15 +22,24 @@ import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
+import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
+import io.github.totalschema.engine.core.container.ObjectSpecification;
 import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.ChangeType;
-import io.github.totalschema.spi.script.ScriptExecutor;
+import io.github.totalschema.spi.change.executor.ChangeExecutor;
+import io.github.totalschema.spi.change.executor.ObjectBindingChangeExecutor;
+import io.github.totalschema.spi.change.executor.SimpleChangeExecutor;
+import io.github.totalschema.spi.storage.StorageService;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.SQLException;
+import java.util.Map;
+import javax.sql.DataSource;
 import org.easymock.Capture;
 import org.easymock.CaptureType;
 import org.testng.annotations.AfterMethod;
@@ -40,32 +49,95 @@ import org.testng.annotations.Test;
 /**
  * Unit tests for {@link JdbcConnector}.
  *
- * <p>Variable substitution has moved to {@link
- * io.github.totalschema.engine.internal.script.SqlScriptExecutor}. The connector is now responsible
- * only for:
+ * <p>The connector is responsible for:
  *
  * <ol>
- *   <li>Reading the change file from disk.
- *   <li>Acquiring the {@link JdbcDatabase} from the IoC container and exposing it through a child
- *       context.
- *   <li>Retrieving the appropriate {@link ScriptExecutor} via the context.
- *   <li>Invoking the executor with the raw file content and the child context.
+ *   <li>Acquiring the {@link JdbcDatabase} from the IoC container.
+ *   <li>Retrieving the appropriate {@link ChangeExecutor} via the context using file extension as
+ *       qualifier.
+ *   <li>Obtaining a DataSource via {@link JdbcDatabase#getDataSource()}.
+ *   <li>Building a script bindings map containing jdbcDatabase, dataSource, and configuration.
+ *   <li>Invoking the appropriate execute method based on executor type (ObjectBindingChangeExecutor
+ *       vs SimpleChangeExecutor).
  * </ol>
  */
 public class JdbcConnectorTest {
 
     private static final String CONNECTOR_NAME = "mydb";
 
-    private ScriptExecutor mockScriptExecutor;
+    private SimpleChangeExecutor testSqlExecutor;
+    private ObjectBindingChangeExecutor testScriptExecutor;
     private JdbcDatabase mockJdbcDatabase;
     private Context mockParentContext;
+    private Context mockExecutorContext;
+    private DataSource mockDataSource;
+    private StorageService mockStorageService;
     private Path tempFile;
 
+    private Capture<Context> capturedSqlContext;
+    private Capture<Context> capturedScriptContext;
+    private Capture<Map<String, Object>> capturedScriptBindings;
+
     @BeforeMethod
-    public void setUp() {
-        mockScriptExecutor = createMock(ScriptExecutor.class);
+    public void setUp() throws Exception {
         mockJdbcDatabase = createMock(JdbcDatabase.class);
         mockParentContext = createMock(Context.class);
+        mockExecutorContext = createMock(Context.class);
+        mockDataSource = createMock(DataSource.class);
+        mockStorageService = createMock(StorageService.class);
+
+        // Set up executor context to provide StorageService for openChangeFileStream
+        expect(mockExecutorContext.get(eq(StorageService.class)))
+                .andAnswer(() -> mockStorageService)
+                .anyTimes();
+
+        // Make StorageService return file input streams
+        expect(mockStorageService.openInputStream(anyObject(ChangeFile.class)))
+                .andAnswer(
+                        () -> {
+                            ChangeFile cf = (ChangeFile) getCurrentArguments()[0];
+                            return Files.newInputStream(cf.getFile());
+                        })
+                .anyTimes();
+
+        replay(mockExecutorContext, mockStorageService);
+
+        // Create real test executors with proper context
+        capturedSqlContext = newCapture(CaptureType.ALL);
+        capturedScriptContext = newCapture(CaptureType.ALL);
+        capturedScriptBindings = newCapture(CaptureType.ALL);
+
+        testSqlExecutor =
+                new SimpleChangeExecutor(mockExecutorContext) {
+                    @Override
+                    public void execute(InputStream inputStream, Context context)
+                            throws InterruptedException {
+                        capturedSqlContext.setValue(context);
+                        // Consume the stream to simulate execution
+                        try {
+                            inputStream.readAllBytes();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                };
+
+        testScriptExecutor =
+                new ObjectBindingChangeExecutor(mockExecutorContext) {
+                    @Override
+                    protected void execute(
+                            InputStream inputStream, Context context, Map<String, Object> bindings)
+                            throws InterruptedException {
+                        capturedScriptContext.setValue(context);
+                        capturedScriptBindings.setValue(bindings);
+                        // Consume the stream to simulate execution
+                        try {
+                            inputStream.readAllBytes();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                };
     }
 
     @AfterMethod
@@ -92,11 +164,11 @@ public class JdbcConnectorTest {
     }
 
     // -------------------------------------------------------------------------
-    // Raw content forwarding — connector no longer does substitution
+    // ChangeFile and bindings forwarding
     // -------------------------------------------------------------------------
 
     @Test
-    public void testRawFileContentIsForwardedToExecutor() throws Exception {
+    public void testChangeFileIsForwardedToExecutor() throws Exception {
         Configuration connectorConfig = Configuration.builder().build();
 
         tempFile = Files.createTempFile("test-", ".sql");
@@ -105,47 +177,46 @@ public class JdbcConnectorTest {
 
         ApplyFile applyFile = makeApplyFile(tempFile, "sql");
 
-        Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        expectStandardMocks("sql", connectorConfig);
-        mockScriptExecutor.execute(capture(capturedScript), isA(Context.class));
-        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+        expectSqlExecutorMocks("sql", connectorConfig);
+        replay(mockParentContext, mockJdbcDatabase, mockDataSource);
 
         new JdbcConnector(CONNECTOR_NAME, connectorConfig)
-                .execute(applyFile, new CommandContext(mockParentContext));
+                .execute(applyFile, new ObjectsContext(mockParentContext));
 
-        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
-        assertEquals(capturedScript.getValue(), rawContent);
+        verify(mockParentContext, mockJdbcDatabase, mockDataSource);
+
+        // Verify JdbcDatabase is available in the execution context
+        Context executionContext = capturedSqlContext.getValue();
+        assertNotNull(executionContext);
+        assertSame(executionContext.get(JdbcDatabase.class), mockJdbcDatabase);
     }
 
     @Test
-    public void testPlaceholdersAreNotSubstitutedByConnector() throws Exception {
-        // Substitution is now the executor's concern — the connector passes raw content.
-        Configuration connectorConfig =
-                Configuration.builder()
-                        .set("scriptExecutors.sql.variableSubstitution", "true")
-                        .build();
+    public void testJdbcDatabaseAndDataSourceArePassedInBindings() throws Exception {
+        Configuration connectorConfig = Configuration.builder().build();
 
-        tempFile = Files.createTempFile("test-", ".sql");
-        String rawContent = "CREATE SCHEMA ${mySchema};";
-        Files.writeString(tempFile, rawContent);
+        tempFile = Files.createTempFile("test-", ".groovy");
+        Files.writeString(tempFile, "sql.execute('SELECT 1')");
 
-        ApplyFile applyFile = makeApplyFile(tempFile, "sql");
+        ApplyFile applyFile = makeApplyFile(tempFile, "groovy");
 
-        Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        expectStandardMocks("sql", connectorConfig);
-        mockScriptExecutor.execute(capture(capturedScript), isA(Context.class));
-        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+        expectScriptExecutorMocks("groovy", connectorConfig);
+        replay(mockParentContext, mockJdbcDatabase, mockDataSource);
 
         new JdbcConnector(CONNECTOR_NAME, connectorConfig)
-                .execute(applyFile, new CommandContext(mockParentContext));
+                .execute(applyFile, new ObjectsContext(mockParentContext));
 
-        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
-        // Content must be passed raw — no substitution at the connector level.
-        assertEquals(capturedScript.getValue(), rawContent);
+        verify(mockParentContext, mockJdbcDatabase, mockDataSource);
+
+        // Verify the jdbcDatabase, dataSource, and configuration are available in bindings
+        Map<String, Object> bindings = capturedScriptBindings.getValue();
+        assertSame(bindings.get("jdbcDatabase"), mockJdbcDatabase);
+        assertSame(bindings.get("dataSource"), mockDataSource);
+        assertSame(bindings.get("configuration"), connectorConfig);
     }
 
     @Test
-    public void testGroovyContentIsForwardedUnchanged() throws Exception {
+    public void testGroovyExecutorIsSelectedByExtension() throws Exception {
         Configuration connectorConfig = Configuration.builder().build();
 
         tempFile = Files.createTempFile("test-", ".groovy");
@@ -154,24 +225,21 @@ public class JdbcConnectorTest {
 
         ApplyFile applyFile = makeApplyFile(tempFile, "groovy");
 
-        Capture<String> capturedScript = newCapture(CaptureType.FIRST);
-        expectStandardMocks("groovy", connectorConfig);
-        mockScriptExecutor.execute(capture(capturedScript), isA(Context.class));
-        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+        expectScriptExecutorMocks("groovy", connectorConfig);
+        replay(mockParentContext, mockJdbcDatabase, mockDataSource);
 
         new JdbcConnector(CONNECTOR_NAME, connectorConfig)
-                .execute(applyFile, new CommandContext(mockParentContext));
+                .execute(applyFile, new ObjectsContext(mockParentContext));
 
-        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
-        assertEquals(capturedScript.getValue(), rawContent);
+        verify(mockParentContext, mockJdbcDatabase, mockDataSource);
     }
 
     // -------------------------------------------------------------------------
-    // JdbcDatabase injection into the child context
+    // Connection lifecycle
     // -------------------------------------------------------------------------
 
     @Test
-    public void testJdbcDatabaseIsAvailableInContextReceivedByExecutor() throws Exception {
+    public void testDataSourceIsObtainedViaGetDataSource() throws Exception {
         Configuration connectorConfig = Configuration.builder().build();
 
         tempFile = Files.createTempFile("test-", ".sql");
@@ -179,24 +247,19 @@ public class JdbcConnectorTest {
 
         ApplyFile applyFile = makeApplyFile(tempFile, "sql");
 
-        Capture<Context> capturedContext = newCapture(CaptureType.FIRST);
-        expectStandardMocks("sql", connectorConfig);
-        mockScriptExecutor.execute(anyString(), capture(capturedContext));
-        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+        expectSqlExecutorMocks("sql", connectorConfig);
+        replay(mockParentContext, mockJdbcDatabase, mockDataSource);
 
         new JdbcConnector(CONNECTOR_NAME, connectorConfig)
-                .execute(applyFile, new CommandContext(mockParentContext));
+                .execute(applyFile, new ObjectsContext(mockParentContext));
 
-        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
-
-        // The executor receives a child context that exposes the JdbcDatabase directly.
-        assertSame(capturedContext.getValue().get(JdbcDatabase.class), mockJdbcDatabase);
+        verify(mockParentContext, mockJdbcDatabase, mockDataSource);
     }
 
     @Test
-    public void testExtensionDeterminesScriptExecutorQualifier() throws Exception {
+    public void testExtensionDeterminesChangeExecutorQualifier() throws Exception {
         // Verify that the connector uses the file extension as the qualifier when looking
-        // up the ScriptExecutor.
+        // up the ChangeExecutor.
         Configuration connectorConfig = Configuration.builder().build();
 
         tempFile = Files.createTempFile("test-", ".groovy");
@@ -204,15 +267,14 @@ public class JdbcConnectorTest {
 
         ApplyFile applyFile = makeApplyFile(tempFile, "groovy");
 
-        expectStandardMocks("groovy", connectorConfig);
-        mockScriptExecutor.execute(anyString(), isA(Context.class));
-        replay(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+        expectScriptExecutorMocks("groovy", connectorConfig);
+        replay(mockParentContext, mockJdbcDatabase, mockDataSource);
 
         new JdbcConnector(CONNECTOR_NAME, connectorConfig)
-                .execute(applyFile, new CommandContext(mockParentContext));
+                .execute(applyFile, new ObjectsContext(mockParentContext));
 
         // verify() confirms the correct "groovy" qualifier was used when getting the executor.
-        verify(mockParentContext, mockScriptExecutor, mockJdbcDatabase);
+        verify(mockParentContext, mockJdbcDatabase, mockDataSource);
     }
 
     // -------------------------------------------------------------------------
@@ -220,18 +282,62 @@ public class JdbcConnectorTest {
     // -------------------------------------------------------------------------
 
     /**
-     * Sets up the two mandatory mock expectations every test shares:
+     * Sets up mock expectations for SQL executors (SimpleChangeExecutor):
      *
      * <ol>
      *   <li>JdbcDatabase lookup from the parent context.
-     *   <li>ScriptExecutor lookup with the given extension qualifier.
+     *   <li>ChangeExecutor lookup with the given extension qualifier (returns testSqlExecutor).
+     *   <li>JdbcDatabase.getDataSource() invocation that returns mockDataSource.
      * </ol>
      */
-    private void expectStandardMocks(String extension, Configuration connectorConfig) {
-        expect(mockParentContext.get(JdbcDatabase.class, null, CONNECTOR_NAME, connectorConfig))
-                .andReturn(mockJdbcDatabase);
-        expect(mockParentContext.get(eq(ScriptExecutor.class), eq(extension), eq(connectorConfig)))
-                .andReturn(mockScriptExecutor);
+    private void expectSqlExecutorMocks(String extension, Configuration connectorConfig)
+            throws SQLException, InterruptedException {
+        // Expect JdbcDatabase lookup with ObjectSpecification
+        ObjectSpecification jdbcDatabaseSpec =
+                ObjectSpecification.from(
+                        JdbcDatabase.class, null, new Object[] {CONNECTOR_NAME, connectorConfig});
+        expect(mockParentContext.get(eq(jdbcDatabaseSpec))).andReturn(mockJdbcDatabase);
+
+        // Expect ChangeExecutor lookup with extension as qualifier
+        ObjectSpecification changeExecutorSpec =
+                ObjectSpecification.from(
+                        ChangeExecutor.class, extension, new Object[] {connectorConfig});
+        expect(mockParentContext.get(eq(changeExecutorSpec))).andReturn(testSqlExecutor);
+
+        // Expect getDataSource() to return mockDataSource
+        expect(mockJdbcDatabase.getDataSource()).andReturn(mockDataSource);
+    }
+
+    /**
+     * Sets up mock expectations for script executors (ObjectBindingChangeExecutor):
+     *
+     * <ol>
+     *   <li>JdbcDatabase lookup from the parent context (called twice: once in getExecutionContext,
+     *       once in getBindings).
+     *   <li>ChangeExecutor lookup with the given extension qualifier (returns testScriptExecutor).
+     *   <li>Environment.class presence check (for script bindings).
+     *   <li>JdbcDatabase.getDataSource() invocation that returns mockDataSource (called twice).
+     * </ol>
+     */
+    private void expectScriptExecutorMocks(String extension, Configuration connectorConfig)
+            throws SQLException, InterruptedException {
+        // Expect JdbcDatabase lookup with ObjectSpecification (called twice)
+        ObjectSpecification jdbcDatabaseSpec =
+                ObjectSpecification.from(
+                        JdbcDatabase.class, null, new Object[] {CONNECTOR_NAME, connectorConfig});
+        expect(mockParentContext.get(eq(jdbcDatabaseSpec))).andReturn(mockJdbcDatabase).times(2);
+
+        // Expect ChangeExecutor lookup with extension as qualifier
+        ObjectSpecification changeExecutorSpec =
+                ObjectSpecification.from(
+                        ChangeExecutor.class, extension, new Object[] {connectorConfig});
+        expect(mockParentContext.get(eq(changeExecutorSpec))).andReturn(testScriptExecutor);
+
+        // Expect Environment.class check in getScriptBindings
+        expect(mockParentContext.has(eq(Environment.class))).andReturn(false);
+
+        // Expect getDataSource() to return mockDataSource (called twice)
+        expect(mockJdbcDatabase.getDataSource()).andReturn(mockDataSource).times(2);
     }
 
     private ApplyFile makeApplyFile(Path file, String extension) {

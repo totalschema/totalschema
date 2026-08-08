@@ -24,7 +24,8 @@ import static org.testng.Assert.*;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunnerFactory;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.ChangeType;
@@ -49,7 +50,7 @@ public class ShellScriptConnectorTest {
     private ShellScriptRunnerFactory mockFactory;
     private ShellScriptRunner mockRunner;
     private Configuration configuration;
-    private CommandContext context;
+    private Context context;
     private ShellScriptConnector connector;
 
     @BeforeMethod
@@ -57,7 +58,7 @@ public class ShellScriptConnectorTest {
         mockFactory = createMock(ShellScriptRunnerFactory.class);
         mockRunner = createMock(ShellScriptRunner.class);
         configuration = Configuration.builder().build();
-        context = new CommandContext();
+        context = new ObjectsContext();
         connector = new ShellScriptConnector(CONNECTOR_NAME, configuration, mockFactory);
     }
 

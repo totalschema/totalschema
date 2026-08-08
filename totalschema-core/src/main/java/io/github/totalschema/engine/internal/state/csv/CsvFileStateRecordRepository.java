@@ -52,6 +52,55 @@ import org.apache.commons.csv.CSVRecord;
  * source code repository as the change files themselves. This approach offers version control
  * benefits, allowing teams to track state changes alongside schema changes.
  *
+ * <p>The CSV file path is environment-aware by default:
+ *
+ * <ul>
+ *   <li><b>With environment set:</b> Uses separate subdirectories per environment (e.g., {@code
+ *       .totalschema/state/DEV/state-DEV.csv}, {@code .totalschema/state/PROD/state-PROD.csv})
+ *   <li><b>Without environment:</b> Uses a simpler path without environment subdirectory (e.g.,
+ *       {@code .totalschema/state/state.csv}), allowing environment-agnostic operations like {@code
+ *       state purge-orphaned} to function correctly
+ * </ul>
+ *
+ * <h2>Thread Safety</h2>
+ *
+ * <p>This implementation is thread-safe and satisfies the thread-safety contract required by the
+ * {@link StateRepository} interface for concurrent access <b>within a single repository
+ * instance</b>:
+ *
+ * <ul>
+ *   <li><b>Immutable State:</b> All instance fields are final and effectively immutable after
+ *       construction, eliminating race conditions on field access.
+ *   <li><b>Read-Write Lock Coordination:</b> Uses {@link
+ *       java.util.concurrent.locks.ReentrantReadWriteLock} to coordinate access:
+ *       <ul>
+ *         <li>Read operations ({@link #getAllStateRecords()}) acquire a shared read lock, allowing
+ *             multiple concurrent readers when no writer is active.
+ *         <li>Write operations ({@link #saveStateRecord(StateRecord)}, {@link
+ *             #deleteStateRecordByIds(Set)}) acquire an exclusive write lock, preventing any other
+ *             readers or writers.
+ *       </ul>
+ *   <li><b>Automatic Lock Management:</b> {@link LockTemplate} ensures locks are properly acquired
+ *       with a configurable timeout (default: 30 seconds) and always released, even when exceptions
+ *       occur.
+ * </ul>
+ *
+ * <p><b>Critical Limitations:</b>
+ *
+ * <ul>
+ *   <li><b>Instance-Level Locking Only:</b> The read-write lock is an instance field and only
+ *       coordinates concurrent access through <b>the same repository instance</b>. If multiple
+ *       {@code ChangeEngine} instances are created in the same JVM, each with its own {@code
+ *       CsvFileStateRecordRepository} pointing to the same CSV file, their locks will not
+ *       coordinate with each other, potentially causing file corruption.
+ *   <li><b>No Cross-Process Protection:</b> The lock does <b>not</b> protect against concurrent
+ *       execution across different processes, machines, or CI/CD pipeline instances.
+ *   <li><b>Recommended Pattern:</b> Use a singleton {@code CsvFileStateRecordRepository} instance
+ *       per CSV file within the JVM. For distributed environments or multiple concurrent {@code
+ *       ChangeEngine} instances, use a database-backed state repository with proper distributed
+ *       locking.
+ * </ul>
+ *
  * <h2>Benefits</h2>
  *
  * <ul>
@@ -88,6 +137,45 @@ import org.apache.commons.csv.CSVRecord;
  *       repository with proper transaction support and distributed locking mechanisms
  * </ul>
  *
+ * <h2>Configuration</h2>
+ *
+ * <p>The following configuration options are available:
+ *
+ * <ul>
+ *   <li><b>file.path.pattern</b> - Pattern for the CSV state file path. Defaults depend on whether
+ *       an environment is set:
+ *       <ul>
+ *         <li>With environment: {@code .totalschema/state/${environment}/state-${environment}.csv}
+ *         <li>Without environment: {@code .totalschema/state/state.csv}
+ *       </ul>
+ *       The {@code ${environment}} placeholder is replaced with the environment name when present.
+ *   <li><b>lock.timeout</b> - Lock acquisition timeout in the units specified by {@code
+ *       lock.timeoutUnit} (default: 30). Increase this for slow file systems or network-mounted
+ *       drives.
+ *   <li><b>lock.timeoutUnit</b> - Time unit for the lock timeout as a {@link TimeUnit} enum value
+ *       (default: SECONDS). Valid values: NANOSECONDS, MICROSECONDS, MILLISECONDS, SECONDS,
+ *       MINUTES, HOURS, DAYS.
+ * </ul>
+ *
+ * <p><b>Environment Handling:</b> If an {@link Environment} is present in the context, the default
+ * file path includes an environment-specific subdirectory and filename. If no environment is set
+ * (e.g., when the {@code ChangeEngine} is created without the {@code -e} flag), a simpler path
+ * without environment subdirectory is used. This allows environment-agnostic operations to work
+ * correctly while keeping environment-specific state files separate.
+ *
+ * <p>Example configuration in {@code totalschema.yml}:
+ *
+ * <pre>{@code
+ * stateRepository:
+ *   type: csv
+ *   file:
+ *     path:
+ *       pattern: custom/path/state-${environment}.csv
+ *   lock:
+ *     timeout: 60
+ *     timeoutUnit: SECONDS
+ * }</pre>
+ *
  * <h2>File Format</h2>
  *
  * <p>The CSV file contains the following columns:
@@ -100,11 +188,12 @@ import org.apache.commons.csv.CSVRecord;
  * </ul>
  *
  * @see StateRepository
+ * @see LockTemplate
  */
 public final class CsvFileStateRecordRepository implements StateRepository {
 
-    private static final int LOCK_TIMEOUT = 30;
-    private static final TimeUnit LOCK_TIMEOUT_UNIT = TimeUnit.SECONDS;
+    private static final int DEFAULT_LOCK_TIMEOUT = 30;
+    private static final TimeUnit DEFAULT_LOCK_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     private enum CsvHeaders {
         CHANGE_FILE_ID,
@@ -133,13 +222,9 @@ public final class CsvFileStateRecordRepository implements StateRepository {
                     .setSkipHeaderRecord(true)
                     .get();
 
-    private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private final LockTemplate readLockTemplate;
 
-    private final LockTemplate readLockTemplate =
-            new LockTemplate(LOCK_TIMEOUT, LOCK_TIMEOUT_UNIT, readWriteLock.readLock());
-
-    private final LockTemplate writeLockTemplate =
-            new LockTemplate(LOCK_TIMEOUT, LOCK_TIMEOUT_UNIT, readWriteLock.writeLock());
+    private final LockTemplate writeLockTemplate;
 
     public static CsvFileStateRecordRepository newInstance(
             Context context, Configuration configuration) {
@@ -161,21 +246,26 @@ public final class CsvFileStateRecordRepository implements StateRepository {
 
         changeFileFactory = context.get(ChangeFileFactory.class);
 
-        Environment environment = context.get(Environment.class);
+        // Read lock timeout configuration with defaults
+        int lockTimeout = configuration.getInt("lock.timeout").orElse(DEFAULT_LOCK_TIMEOUT);
+        TimeUnit lockTimeoutUnit =
+                configuration
+                        .getEnumValue(TimeUnit.class, "lock.timeoutUnit")
+                        .orElse(DEFAULT_LOCK_TIMEOUT_UNIT);
+
+        // Create read-write lock and templates
+        ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+        readLockTemplate = new LockTemplate(lockTimeout, lockTimeoutUnit, readWriteLock.readLock());
+        writeLockTemplate =
+                new LockTemplate(lockTimeout, lockTimeoutUnit, readWriteLock.writeLock());
+
+        // Get optional environment
+        Optional<Environment> environmentOpt = context.getOptional(Environment.class);
+
         ExpressionEvaluator expressionEvaluator = context.get(ExpressionEvaluator.class);
 
-        String filePathPattern =
-                configuration
-                        .getString("file.path.pattern")
-                        .orElse(
-                                String.format(
-                                        "%s/state/${environment}/state-${environment}.csv",
-                                        ProjectConventions.PROJECT_SYSTEM_NAME));
-
-        Map<String, String> templateValue =
-                Collections.singletonMap("environment", environment.getName());
-
-        String filePath = expressionEvaluator.evaluate(filePathPattern, templateValue);
+        String filePath =
+                getFilePath(configuration, environmentOpt.orElse(null), expressionEvaluator);
 
         stateFile = Paths.get(".", filePath);
         Path absolutePath = stateFile.toAbsolutePath();
@@ -191,6 +281,42 @@ public final class CsvFileStateRecordRepository implements StateRepository {
                 Paths.get(
                         parentPath.toAbsolutePath().toString(),
                         fileNamePath + ".pending-commit.tmp");
+    }
+
+    private static String getFilePath(
+            Configuration configuration,
+            Environment environment,
+            ExpressionEvaluator expressionEvaluator) {
+
+        String filePathPattern =
+                configuration
+                        .getString("file.path.pattern")
+                        .orElseGet(
+                                () -> {
+                                    if (environment != null) {
+                                        // Environment-aware path with subdirectory per environment
+                                        return String.format(
+                                                "%s/state/${environment}/state-${environment}.csv",
+                                                ProjectConventions.PROJECT_SYSTEM_NAME);
+                                    } else {
+                                        // Simpler path when no environment is set
+                                        return String.format(
+                                                "%s/state/state.csv",
+                                                ProjectConventions.PROJECT_SYSTEM_NAME);
+                                    }
+                                });
+
+        String filePath;
+        if (environment != null) {
+            Map<String, String> templateValue =
+                    Collections.singletonMap("environment", environment.getName());
+            filePath = expressionEvaluator.evaluate(filePathPattern, templateValue);
+        } else {
+            // No environment, no template substitution needed
+            filePath = filePathPattern;
+        }
+
+        return filePath;
     }
 
     private void init() throws IOException {

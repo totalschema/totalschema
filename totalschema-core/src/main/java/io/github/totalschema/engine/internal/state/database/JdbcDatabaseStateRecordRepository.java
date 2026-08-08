@@ -33,6 +33,49 @@ import java.sql.*;
 import java.time.ZonedDateTime;
 import java.util.*;
 
+/**
+ * JDBC-based implementation of {@link StateRepository} that persists state records in a database
+ * table.
+ *
+ * <p>This repository stores change execution history in a relational database, providing durable
+ * and centralized state management suitable for distributed deployments.
+ *
+ * <h2>Thread Safety</h2>
+ *
+ * <p>This implementation is thread-safe and satisfies the thread-safety contract required by the
+ * {@link StateRepository} interface:
+ *
+ * <ul>
+ *   <li><b>Immutable State:</b> All instance fields are effectively immutable after construction,
+ *       eliminating race conditions on field access.
+ *   <li><b>Delegated Thread Safety:</b> All state operations ({@link
+ *       #saveStateRecord(StateRecord)}, {@link #getAllStateRecords()}, {@link
+ *       #deleteStateRecordByIds(Set)}) delegate to {@link JdbcDatabase}, which is documented as
+ *       thread-safe with internal connection pooling.
+ *   <li><b>Database Guarantees:</b> Thread safety for concurrent database operations is ensured by
+ *       the underlying database's ACID properties and the HikariCP connection pool's thread-safe
+ *       design. This provides coordination not only across threads within a single {@code
+ *       ChangeEngine} instance, but also across multiple {@code ChangeEngine} instances in the same
+ *       JVM (each with its own {@code ComponentContainer}) and even across distributed processes
+ *       accessing the same database.
+ * </ul>
+ *
+ * <h2>Initialization</h2>
+ *
+ * <p>The {@link #init()} method (inherited from {@link AbstractJdbcTableRepository}) performs lazy
+ * table creation with a check-then-act pattern. While this pattern has an inherent race condition,
+ * it is mitigated by the fact that a singleton instance of {@code
+ * JdbcDatabaseStateRecordRepository} exists per {@code ComponentContainer}/{@code ChangeEngine}.
+ * The container ensures that initialization occurs exactly once during component creation, before
+ * the repository is exposed to concurrent access.
+ *
+ * <p><b>Note:</b> This implementation assumes that the {@link JdbcDatabase} instance provided to
+ * the constructor is fully initialized and thread-safe.
+ *
+ * @see StateRepository
+ * @see AbstractJdbcTableRepository
+ * @see JdbcDatabase
+ */
 public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableRepository
         implements StateRepository {
 

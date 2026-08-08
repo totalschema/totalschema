@@ -23,7 +23,8 @@ import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.ssh.spi.SshConnection;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.model.ChangeFile;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -44,7 +45,7 @@ public class SshScriptConnectorTest {
 
     private SshConnection mockConnection;
     private SshScriptConnector connector;
-    private CommandContext context;
+    private Context context;
     private Path tempScript;
 
     @BeforeMethod
@@ -53,7 +54,7 @@ public class SshScriptConnectorTest {
         connector =
                 new SshScriptConnector(
                         CONNECTOR_NAME, mockConnection, Configuration.builder().build());
-        context = new CommandContext();
+        context = new ObjectsContext();
         tempScript = Files.createTempFile("ssh-script-test-", ".sh");
         Files.writeString(tempScript, "#!/bin/bash\necho hello\n");
     }

@@ -22,7 +22,8 @@ import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.ChangeType;
@@ -50,13 +51,13 @@ public class PythonConnectorTest {
     private static final String SCRIPT_CONTENT = "print('hello from totalschema')";
 
     private PythonProcessRunner mockRunner;
-    private CommandContext context;
+    private Context context;
     private Path tempScriptFile;
 
     @BeforeMethod
     public void setUp() throws IOException {
         mockRunner = createMock(PythonProcessRunner.class);
-        context = new CommandContext();
+        context = new ObjectsContext();
         tempScriptFile = Files.createTempFile("ts_test_script_", ".py");
         Files.writeString(tempScriptFile, SCRIPT_CONTENT);
     }

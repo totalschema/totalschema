@@ -20,8 +20,8 @@ package io.github.totalschema.engine.core.command.impl.state;
 
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.api.ChangeEngine;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.StateRecord;
@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 public class GetOrphanedStateRecordsCommand implements Command<List<StateRecord>> {
 
     @Override
-    public List<StateRecord> execute(CommandContext context) {
+    public List<StateRecord> execute(Context context) {
 
         ChangeEngine changeEngine = context.get(ChangeEngine.class);
 

@@ -19,6 +19,7 @@
 package io.github.totalschema.engine.core.command.api;
 
 import io.github.totalschema.concurrent.LockTemplate;
+import io.github.totalschema.engine.api.Context;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -45,7 +46,7 @@ public abstract class ContextInitializerInterceptor extends CommandInterceptor {
     }
 
     @Override
-    public final <R> R intercept(CommandContext context, Command<R> command, CommandExecutor next) {
+    public final <R> R intercept(Context context, Command<R> command, CommandExecutor next) {
 
         try {
             lockTemplate.withTryLock(() -> initializeFromContext(context));
@@ -75,5 +76,5 @@ public abstract class ContextInitializerInterceptor extends CommandInterceptor {
      *
      * @param context the command context to initialize from
      */
-    protected abstract void initializeFromContext(CommandContext context);
+    protected abstract void initializeFromContext(Context context);
 }

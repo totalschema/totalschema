@@ -25,7 +25,7 @@ import io.github.totalschema.config.MapConfiguration;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.connector.DefaultConnectorManager;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.engine.core.event.EventDispatcher;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
@@ -39,14 +39,14 @@ import org.testng.annotations.Test;
 public class DefaultChangeServiceTest {
 
     private Environment environment;
-    private CommandContext context;
+    private ObjectsContext context;
     private DefaultChangeService changeService;
     private Configuration config;
 
     @BeforeMethod
     public void setUp() {
         environment = new Environment("DEV");
-        context = new CommandContext();
+        context = new ObjectsContext();
 
         // Set up basic configuration
         config =

@@ -21,7 +21,6 @@ package io.github.totalschema.connector.python;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.connector.Connector;
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.os.OperatingSystemInfo;
 import java.io.File;
@@ -220,7 +219,7 @@ public final class PythonConnector extends Connector {
     }
 
     @Override
-    public void execute(ChangeFile changeFile, CommandContext context) throws InterruptedException {
+    public void execute(ChangeFile changeFile, Context context) throws InterruptedException {
 
         Path file = changeFile.getFile();
         Objects.requireNonNull(file, "file is null");

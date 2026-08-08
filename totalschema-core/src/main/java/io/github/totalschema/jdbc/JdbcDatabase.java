@@ -21,6 +21,7 @@ package io.github.totalschema.jdbc;
 import java.io.Closeable;
 import java.sql.SQLException;
 import java.util.List;
+import javax.sql.DataSource;
 
 /**
  * JDBC database abstraction providing connection pooling, SQL execution, and query capabilities.
@@ -180,4 +181,23 @@ public interface JdbcDatabase extends Closeable {
      * @see ConnectionAction
      */
     <R> R withConnection(ConnectionAction<R> action) throws InterruptedException, SQLException;
+
+    /**
+     * Returns the {@code DataSource} used by this {@code JdbcDatabase}.
+     *
+     * <p>The method {@link #withConnection(ConnectionAction)} is recommended for any use-case where
+     * an operation needs to be performed with a connection, as that method automatically manages
+     * the connection lifecycle. If full control over the connections is needed, the {@code
+     * DataSource} returned by this method gives full control over the connections. Caller is
+     * responsible for properly closing any connections obtained from the DataSource.
+     *
+     * <p>The returned DataSource is unmodifiable, any attempt to change its properties will result
+     * in an {@link UnsupportedOperationException} being thrown.
+     *
+     * <p>Client code must abstain from modifying the returned connections: any attempt to call a
+     * setter method on a connection is illegal.
+     *
+     * @return the {@code DataSource} used by this {@code JdbcDatabase} (never {@code null})
+     */
+    DataSource getDataSource();
 }

@@ -23,13 +23,13 @@ import static org.testng.Assert.*;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class CommandContextTest {
+public class ObjectsContextTest {
 
-    private CommandContext context;
+    private ObjectsContext context;
 
     @BeforeMethod
     public void setUp() {
-        context = new CommandContext();
+        context = new ObjectsContext();
     }
 
     @Test
@@ -80,7 +80,7 @@ public class CommandContextTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testGetWithNullClass() {
-        context.get(null);
+        context.get((Class<?>) null);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -129,7 +129,7 @@ public class CommandContextTest {
         String str = context.toString();
 
         assertNotNull(str);
-        assertTrue(str.contains("CommandContext"));
+        assertTrue(str.contains("ObjectsContext"));
         assertTrue(str.contains("values"));
     }
 
@@ -138,7 +138,7 @@ public class CommandContextTest {
         String str = context.toString();
 
         assertNotNull(str);
-        assertTrue(str.contains("CommandContext"));
+        assertTrue(str.contains("ObjectsContext"));
     }
 
     @Test
@@ -152,8 +152,8 @@ public class CommandContextTest {
 
     @Test
     public void testIndependentContextInstances() {
-        CommandContext context1 = new CommandContext();
-        CommandContext context2 = new CommandContext();
+        ObjectsContext context1 = new ObjectsContext();
+        ObjectsContext context2 = new ObjectsContext();
 
         context1.setValue(String.class, "value1");
         context2.setValue(String.class, "value2");

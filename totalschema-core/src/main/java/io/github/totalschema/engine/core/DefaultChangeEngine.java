@@ -20,15 +20,8 @@ package io.github.totalschema.engine.core;
 
 import static java.util.Objects.requireNonNull;
 
-import io.github.totalschema.engine.api.ChangeEngine;
-import io.github.totalschema.engine.api.ChangeManager;
-import io.github.totalschema.engine.api.EnvironmentManager;
-import io.github.totalschema.engine.api.StateManager;
-import io.github.totalschema.engine.api.ValidationManager;
-import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
-import io.github.totalschema.engine.core.command.api.CommandExecutor;
-import io.github.totalschema.engine.core.command.api.CommandInvoker;
+import io.github.totalschema.engine.api.*;
+import io.github.totalschema.engine.core.command.api.*;
 import io.github.totalschema.engine.core.container.ComponentContainer;
 import io.github.totalschema.engine.core.event.ChangeEngineCloseEvent;
 import io.github.totalschema.engine.core.event.EventDispatcher;
@@ -57,7 +50,7 @@ public class DefaultChangeEngine implements ChangeEngine {
     private final StateManager stateManager;
     private final ValidationManager validationManager;
 
-    private final ThreadLocal<CommandContext> commandContextHolder = new ThreadLocal<>();
+    private final ThreadLocal<ObjectsContext> commandContextHolder = new ThreadLocal<>();
 
     public DefaultChangeEngine(
             CommandExecutor commandExecutor,
@@ -103,22 +96,22 @@ public class DefaultChangeEngine implements ChangeEngine {
         try {
             R result;
 
-            CommandContext commandContext = commandContextHolder.get();
+            ObjectsContext objectsContext = commandContextHolder.get();
 
-            if (commandContext == null) {
-                commandContext = new CommandContext(componentContainer);
-                commandContext.setValue(ChangeEngine.class, this);
+            if (objectsContext == null) {
+                objectsContext = new ObjectsContext(componentContainer);
+                objectsContext.setValue(ChangeEngine.class, this);
 
-                commandContextHolder.set(commandContext);
+                commandContextHolder.set(objectsContext);
 
                 try {
-                    result = commandExecutor.execute(commandContext, command);
+                    result = commandExecutor.execute(objectsContext, command);
                 } finally {
                     commandContextHolder.remove();
                 }
 
             } else {
-                result = directCommandInvoker.execute(commandContext, command);
+                result = directCommandInvoker.execute(objectsContext, command);
             }
 
             return result;

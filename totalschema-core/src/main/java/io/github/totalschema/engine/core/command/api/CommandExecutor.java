@@ -18,6 +18,8 @@
 
 package io.github.totalschema.engine.core.command.api;
 
+import io.github.totalschema.engine.api.Context;
+
 /**
  * Abstract base class for executing commands.
  *
@@ -34,6 +36,5 @@ public abstract class CommandExecutor {
      * @return the result of command execution
      * @throws InterruptedException if the execution is interrupted
      */
-    public abstract <R> R execute(CommandContext context, Command<R> command)
-            throws InterruptedException;
+    public abstract <R> R execute(Context context, Command<R> command) throws InterruptedException;
 }

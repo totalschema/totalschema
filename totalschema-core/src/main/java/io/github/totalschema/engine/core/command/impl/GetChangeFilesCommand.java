@@ -22,8 +22,8 @@ import io.github.totalschema.ProjectConventions;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.api.ChangeFileSelector;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
 import io.github.totalschema.engine.internal.changefile.ChangeFileIgnorePatterns;
 import io.github.totalschema.engine.internal.changefile.labels.ChangeFileLabels;
@@ -139,7 +139,7 @@ abstract class GetChangeFilesCommand<T extends ChangeFile> implements Command<Li
     }
 
     @Override
-    public List<T> execute(CommandContext context) {
+    public List<T> execute(Context context) {
 
         ChangeFileFactory changeFileFactory = context.get(ChangeFileFactory.class);
 

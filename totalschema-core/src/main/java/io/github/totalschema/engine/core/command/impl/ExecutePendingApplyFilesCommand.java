@@ -22,8 +22,8 @@ import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.connector.ConnectorManager;
 import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeFileSelector;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import java.util.List;
@@ -47,7 +47,7 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
     }
 
     @Override
-    public Void execute(CommandContext context) throws InterruptedException {
+    public Void execute(Context context) throws InterruptedException {
 
         ChangeEngine changeEngine = context.get(ChangeEngine.class);
         Environment environment = context.get(Environment.class);
@@ -98,7 +98,7 @@ public final class ExecutePendingApplyFilesCommand implements Command<Void> {
         return null;
     }
 
-    private void initializeConnectors(CommandContext context, List<ApplyFile> pendingApplyFiles)
+    private void initializeConnectors(Context context, List<ApplyFile> pendingApplyFiles)
             throws InterruptedException {
 
         Map<String, List<ChangeFile.Id>> changeFileIdsByConnector =

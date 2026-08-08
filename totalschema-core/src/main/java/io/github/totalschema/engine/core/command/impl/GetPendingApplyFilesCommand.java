@@ -18,8 +18,8 @@
 
 package io.github.totalschema.engine.core.command.impl;
 
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.ChangeType;
@@ -59,7 +59,7 @@ public final class GetPendingApplyFilesCommand implements Command<List<ApplyFile
     }
 
     @Override
-    public List<ApplyFile> execute(CommandContext context) {
+    public List<ApplyFile> execute(Context context) {
 
         StateService stateService = context.get(StateService.class);
 
@@ -102,7 +102,7 @@ public final class GetPendingApplyFilesCommand implements Command<List<ApplyFile
     }
 
     private static Predicate<ChangeFile> isApplyOnChangeAndChangedPredicate(
-            List<StateRecord> stateRecords, CommandContext context) {
+            List<StateRecord> stateRecords, Context context) {
 
         if (!context.has(HashService.class)) {
             throw new IllegalStateException(

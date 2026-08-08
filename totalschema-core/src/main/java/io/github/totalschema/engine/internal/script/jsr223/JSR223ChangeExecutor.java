@@ -1,14 +1,31 @@
+/*
+ * totalschema: tool for managing database versioning and schema changes with ease.
+ * Copyright (C) 2025-2026 totalschema development team
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.github.totalschema.engine.internal.script.jsr223;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.change.executor.ObjectBindingChangeExecutor;
 import io.github.totalschema.spi.script.ScriptExecutor;
-import java.sql.Connection;
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
+import java.io.InputStream;
+import java.util.Map;
+import javax.script.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,31 +44,31 @@ import org.slf4j.LoggerFactory;
  *   <li>{@code environment} — the active {@link Environment}
  * </ul>
  *
- * <p>Instances should be obtained via {@link JSR223ScriptExecutorFactory#createExecutors()} rather
+ * <p>Instances should be obtained via {@link JSR223ChangeExecutorFactory#createFactories()} rather
  * than constructed directly.
  */
-public class JSR223ScriptExecutor implements ScriptExecutor {
+public class JSR223ChangeExecutor extends ObjectBindingChangeExecutor {
 
-    private static final Logger log = LoggerFactory.getLogger(JSR223ScriptExecutor.class);
+    private static final Logger log = LoggerFactory.getLogger(JSR223ChangeExecutor.class);
 
     /** The file extension (without leading dot) this executor handles, e.g. {@code "js"}. */
     private final String extension;
 
     /** The JSR-223 engine used to evaluate scripts. */
-    private final ScriptEngine engine;
+    private final ScriptEngine scriptEngine;
 
     /**
-     * Creates a new {@link JSR223ScriptExecutor} for the given file extension.
+     * Creates a new {@link JSR223ChangeExecutor} for the given file extension.
      *
      * <p>The corresponding {@link ScriptEngine} is resolved from the current thread's context class
      * loader via {@link ScriptEngineManager#getEngineByExtension(String)}.
      *
      * @param extension the file extension to associate with this executor (e.g. {@code "js"}); must
      *     not be {@code null}
-     * @return a new {@link JSR223ScriptExecutor} bound to the resolved engine
+     * @return a new {@link JSR223ChangeExecutor} bound to the resolved engine
      * @throws IllegalStateException if the engine cannot be loaded for the given extension
      */
-    static JSR223ScriptExecutor newInstance(String extension) {
+    static JSR223ChangeExecutor newInstance(String extension, Context context) {
 
         try {
             ScriptEngineManager manager =
@@ -61,16 +78,17 @@ public class JSR223ScriptExecutor implements ScriptExecutor {
 
             log.debug("Created ScriptEngine for extension: {}", extension);
 
-            return new JSR223ScriptExecutor(extension, scriptEngine);
+            return new JSR223ChangeExecutor(extension, scriptEngine, context);
 
         } catch (RuntimeException ex) {
             throw new IllegalStateException("Failed to load JSR223 engine: " + extension, ex);
         }
     }
 
-    private JSR223ScriptExecutor(String extension, ScriptEngine engine) {
+    private JSR223ChangeExecutor(String extension, ScriptEngine scriptEngine, Context context) {
+        super(context);
         this.extension = extension;
-        this.engine = engine;
+        this.scriptEngine = scriptEngine;
     }
 
     /**
@@ -85,37 +103,27 @@ public class JSR223ScriptExecutor implements ScriptExecutor {
     /**
      * Evaluates the supplied script using the underlying JSR-223 engine.
      *
-     * <p>Before evaluation, the following objects are bound into the engine's {@link Bindings} when
-     * present in {@code context}:
+     * <p>The provided bindings are passed directly to the JSR-223 engine for script execution.
      *
-     * <ul>
-     *   <li>{@code "configuration"} → the active {@link Configuration}
-     *   <li>{@code "connection"} → the active JDBC {@link java.sql.Connection}
-     *   <li>{@code "environment"} → the active {@link Environment}
-     * </ul>
-     *
-     * @param script the source code to evaluate; must not be {@code null}
-     * @param context the execution context providing optional bindings; must not be {@code null}
+     * @param inputStream stream containing the script source code; must not be {@code null}
+     * @param context the dependency injection context for accessing engine services; must not be
+     *     {@code null}
+     * @param bindings named objects to expose as variables in the script execution environment;
+     *     must not be {@code null}
      * @throws InterruptedException if the current thread is interrupted during execution
      * @throws RuntimeException if the script raises a {@link ScriptException}
      */
     @Override
-    public void execute(String script, Context context) throws InterruptedException {
+    protected void execute(InputStream inputStream, Context context, Map<String, Object> bindings)
+            throws InterruptedException {
+
+        String script = readAsString(inputStream);
 
         try {
+            Bindings engineBindings = scriptEngine.createBindings();
+            engineBindings.putAll(bindings);
 
-            Bindings bindings = engine.createBindings();
-
-            context.getOptional(Configuration.class)
-                    .ifPresent(configuration -> bindings.put("configuration", configuration));
-
-            context.getOptional(Connection.class)
-                    .ifPresent(connection -> bindings.put("connection", connection));
-
-            context.getOptional(Environment.class)
-                    .ifPresent(environment -> bindings.put("environment", environment));
-
-            engine.eval(script, bindings);
+            scriptEngine.eval(script, engineBindings);
 
         } catch (ScriptException ex) {
             throw new RuntimeException("Failure evaluating script", ex);
@@ -124,6 +132,6 @@ public class JSR223ScriptExecutor implements ScriptExecutor {
 
     @Override
     public String toString() {
-        return "JSR223ScriptExecutor{" + "extension='" + extension + '\'' + '}';
+        return "JSR223ChangeExecutor{" + "extension='" + extension + '\'' + '}';
     }
 }

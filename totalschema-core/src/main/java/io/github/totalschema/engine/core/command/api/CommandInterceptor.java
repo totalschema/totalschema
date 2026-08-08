@@ -18,6 +18,7 @@
 
 package io.github.totalschema.engine.core.command.api;
 
+import io.github.totalschema.engine.api.Context;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,14 +30,14 @@ import org.slf4j.LoggerFactory;
  *
  * <p>This pattern is central to the engine's architecture, enabling cross-cutting concerns such as
  * logging, transaction management, and security to be applied transparently. Each interceptor can
- * add values to the {@link CommandContext}, which are then available to subsequent interceptors and
+ * add values to the {@link ObjectsContext}, which are then available to subsequent interceptors and
  * the final command.
  *
- * <p>Subclasses must implement the {@link #intercept(CommandContext, Command, CommandExecutor)}
- * method to define their specific logic.
+ * <p>Subclasses must implement the {@link #intercept(Context, Command, CommandExecutor)} method to
+ * define their specific logic.
  *
  * @see Command
- * @see CommandContext
+ * @see Context
  * @see CommandInvoker
  */
 public abstract class CommandInterceptor extends CommandExecutor {
@@ -57,8 +58,7 @@ public abstract class CommandInterceptor extends CommandExecutor {
     }
 
     @Override
-    public final <R> R execute(CommandContext context, Command<R> command)
-            throws InterruptedException {
+    public final <R> R execute(Context context, Command<R> command) throws InterruptedException {
         log.trace("Intercepted: {}, next: {}", command, next);
         R returnValue = intercept(context, command, next);
         log.trace("return value: {}", returnValue);
@@ -73,7 +73,7 @@ public abstract class CommandInterceptor extends CommandExecutor {
      * <p>Implementations can:
      *
      * <ul>
-     *   <li>Modify the {@link CommandContext} by adding or updating values.
+     *   <li>Modify the {@link ObjectsContext} by adding or updating values.
      *   <li>Perform pre-processing before calling {@code next.execute(context, command)}.
      *   <li>Perform post-processing after the next executor returns.
      *   <li>Short-circuit the execution chain by not calling the next executor at all.
@@ -86,7 +86,6 @@ public abstract class CommandInterceptor extends CommandExecutor {
      * @return The result of the command's execution.
      * @throws InterruptedException if the execution is interrupted.
      */
-    public abstract <R> R intercept(
-            CommandContext context, Command<R> command, CommandExecutor next)
+    public abstract <R> R intercept(Context context, Command<R> command, CommandExecutor next)
             throws InterruptedException;
 }

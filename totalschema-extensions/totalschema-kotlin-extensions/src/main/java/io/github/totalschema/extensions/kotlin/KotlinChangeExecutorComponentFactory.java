@@ -16,22 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.extensions.groovy;
+package io.github.totalschema.extensions.kotlin;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.spi.script.AbstractScriptExecutorComponentFactory;
-import io.github.totalschema.spi.script.ScriptExecutor;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.change.executor.AbstractChangeExecutorComponentFactory;
+import io.github.totalschema.spi.change.executor.ChangeExecutor;
 
-/** {@link ScriptExecutor} factory for {@code .groovy} files. */
-public final class GroovyScriptExecutorComponentFactory
-        extends AbstractScriptExecutorComponentFactory {
+/**
+ * {@link ChangeExecutor} factory for {@code .kts} files.
+ *
+ * <p>Uses the stable JSR-223 API (Kotlin 1.x compatible).
+ */
+public final class KotlinChangeExecutorComponentFactory
+        extends AbstractChangeExecutorComponentFactory {
 
-    public GroovyScriptExecutorComponentFactory() {
-        super("groovy");
+    public KotlinChangeExecutorComponentFactory() {
+        super("kts");
     }
 
     @Override
-    protected ScriptExecutor createExecutor(Configuration configuration) {
-        return new GroovyScriptExecutor(configuration);
+    protected ChangeExecutor createExecutor(Configuration configuration, Context context) {
+        return new Jsr223ChangeExecutor(configuration, context);
     }
 }

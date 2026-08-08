@@ -22,7 +22,7 @@ import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MapConfiguration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.engine.internal.expression.evaluator.DefaultExpressionEvaluatorFactory;
 import io.github.totalschema.engine.internal.secrets.DefaultSecretManagerFactory;
 import io.github.totalschema.engine.internal.variables.DefaultVariableServiceFactory;
@@ -38,11 +38,11 @@ import org.testng.annotations.Test;
 
 public class ListVariablesCommandTest {
 
-    private CommandContext context;
+    private ObjectsContext context;
 
     @BeforeMethod
     public void setUp() {
-        context = new CommandContext();
+        context = new ObjectsContext();
     }
 
     @Test

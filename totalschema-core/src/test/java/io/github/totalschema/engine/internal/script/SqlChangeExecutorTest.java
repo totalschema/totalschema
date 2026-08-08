@@ -24,41 +24,70 @@ import static org.testng.Assert.*;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MapConfiguration;
 import io.github.totalschema.config.environment.Environment;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.engine.internal.expression.evaluator.DefaultExpressionEvaluatorFactory;
 import io.github.totalschema.engine.internal.secrets.DefaultSecretManagerFactory;
 import io.github.totalschema.engine.internal.variables.DefaultVariableServiceFactory;
 import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.variables.VariableService;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.easymock.EasyMock;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
- * Unit tests for {@link SqlScriptExecutor}.
+ * Unit tests for {@link SqlChangeExecutor}.
  *
  * <p>Covers variable substitution (on/off), statement splitting, blank-statement filtering, and
- * error propagation. Each test wires {@link JdbcDatabase} into the {@link CommandContext} directly,
- * matching the runtime setup performed by {@link
- * io.github.totalschema.connector.jdbc.JdbcConnector}.
+ * error propagation. Each test provides the {@link JdbcDatabase} via the context for SQL statement
+ * execution (matching the runtime setup performed by {@link
+ * io.github.totalschema.connector.jdbc.JdbcConnector}). The bindings map is used for script-visible
+ * variables (empty for SQL executor since SQL doesn't support script variables). The context is
+ * also used for dependency injection of engine services like {@link ExpressionEvaluator} and {@link
+ * VariableService}.
  */
-public class SqlScriptExecutorTest {
+public class SqlChangeExecutorTest {
 
     private JdbcDatabase mockDatabase;
     private ExpressionEvaluator expressionEvaluator;
+    private Path tempDir;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws IOException {
         mockDatabase = createMock(JdbcDatabase.class);
         expressionEvaluator =
                 new DefaultExpressionEvaluatorFactory()
                         .getExpressionEvaluator(
                                 new DefaultSecretManagerFactory().getSecretsManager(null, null));
+        tempDir = Files.createTempDirectory("sql-change-executor-test");
+    }
+
+    @AfterMethod
+    public void tearDown() throws IOException {
+        // Clean up temp directory
+        try (var paths = Files.walk(tempDir)) {
+            paths.sorted(java.util.Comparator.reverseOrder())
+                    .forEach(
+                            path -> {
+                                try {
+                                    Files.deleteIfExists(path);
+                                } catch (IOException e) {
+                                    // ignore
+                                }
+                            });
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -76,8 +105,10 @@ public class SqlScriptExecutorTest {
         mockDatabase.execute("CREATE SCHEMA public");
         replay(mockDatabase);
 
-        CommandContext context = buildContext(fullConfig, null);
-        new SqlScriptExecutor(connectorConfig).execute("CREATE SCHEMA ${schema}", context);
+        Context context = buildContext(fullConfig, null, mockDatabase);
+        String script = "CREATE SCHEMA ${schema}";
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), script, context);
 
         verify(mockDatabase);
     }
@@ -94,8 +125,10 @@ public class SqlScriptExecutorTest {
         mockDatabase.execute("CREATE SCHEMA dev_schema");
         replay(mockDatabase);
 
-        CommandContext context = buildContext(fullConfig, new Environment("DEV"));
-        new SqlScriptExecutor(connectorConfig).execute("CREATE SCHEMA ${schema}", context);
+        Context context = buildContext(fullConfig, new Environment("DEV"), mockDatabase);
+        String changeFile = "CREATE SCHEMA ${schema}";
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), changeFile, context);
 
         verify(mockDatabase);
     }
@@ -112,9 +145,10 @@ public class SqlScriptExecutorTest {
         mockDatabase.execute("CREATE USER svc IN SCHEMA app");
         replay(mockDatabase);
 
-        CommandContext context = buildContext(fullConfig, null);
-        new SqlScriptExecutor(connectorConfig)
-                .execute("CREATE USER ${user} IN SCHEMA ${schema}", context);
+        Context context = buildContext(fullConfig, null, mockDatabase);
+        String changeFile = "CREATE USER ${user} IN SCHEMA ${schema}";
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), changeFile, context);
 
         verify(mockDatabase);
     }
@@ -130,8 +164,10 @@ public class SqlScriptExecutorTest {
         mockDatabase.execute("CREATE SCHEMA ${schema}");
         replay(mockDatabase);
 
-        CommandContext context = buildContext(new MapConfiguration(Map.of()), null);
-        new SqlScriptExecutor(connectorConfig).execute("CREATE SCHEMA ${schema}", context);
+        Context context = buildContext(new MapConfiguration(Map.of()), null, mockDatabase);
+        String changeFile = "CREATE SCHEMA ${schema}";
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), changeFile, context);
 
         verify(mockDatabase);
     }
@@ -146,8 +182,10 @@ public class SqlScriptExecutorTest {
         mockDatabase.execute("CREATE SCHEMA ${schema}");
         replay(mockDatabase);
 
-        CommandContext context = buildContext(new MapConfiguration(Map.of()), null);
-        new SqlScriptExecutor(connectorConfig).execute("CREATE SCHEMA ${schema}", context);
+        Context context = buildContext(new MapConfiguration(Map.of()), null, mockDatabase);
+        String changeFile = "CREATE SCHEMA ${schema}";
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), changeFile, context);
 
         verify(mockDatabase);
     }
@@ -171,8 +209,10 @@ public class SqlScriptExecutorTest {
                 .times(2);
         replay(mockDatabase);
 
-        CommandContext context = buildContext(new MapConfiguration(Map.of()), null);
-        new SqlScriptExecutor(connectorConfig).execute("SELECT 1; SELECT 2", context);
+        Context context = buildContext(new MapConfiguration(Map.of()), null, mockDatabase);
+        String changeFile = "SELECT 1; SELECT 2";
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), changeFile, context);
 
         verify(mockDatabase);
         assertEquals(executed, List.of("SELECT 1", "SELECT 2"));
@@ -185,9 +225,11 @@ public class SqlScriptExecutorTest {
         mockDatabase.execute("SELECT 1");
         replay(mockDatabase);
 
-        CommandContext context = buildContext(new MapConfiguration(Map.of()), null);
+        Context context = buildContext(new MapConfiguration(Map.of()), null, mockDatabase);
         // trailing semicolon produces a blank trailing token — must be filtered
-        new SqlScriptExecutor(connectorConfig).execute("SELECT 1;", context);
+        String changeFile = "SELECT 1;";
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), changeFile, context);
 
         verify(mockDatabase);
     }
@@ -208,8 +250,10 @@ public class SqlScriptExecutorTest {
                 .times(2);
         replay(mockDatabase);
 
-        CommandContext context = buildContext(new MapConfiguration(Map.of()), null);
-        new SqlScriptExecutor(connectorConfig).execute("SELECT 1;; SELECT 2", context);
+        Context context = buildContext(new MapConfiguration(Map.of()), null, mockDatabase);
+        String changeFile = "SELECT 1;; SELECT 2";
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), changeFile, context);
 
         verify(mockDatabase);
         assertEquals(executed, List.of("SELECT 1", "SELECT 2"));
@@ -224,8 +268,10 @@ public class SqlScriptExecutorTest {
         mockDatabase.execute(script);
         replay(mockDatabase);
 
-        CommandContext context = buildContext(new MapConfiguration(Map.of()), null);
-        new SqlScriptExecutor(connectorConfig).execute(script, context);
+        Context context = buildContext(new MapConfiguration(Map.of()), null, mockDatabase);
+
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), script, context);
 
         verify(mockDatabase);
     }
@@ -244,26 +290,42 @@ public class SqlScriptExecutorTest {
         expectLastCall().andThrow(new SQLException("syntax error"));
         replay(mockDatabase);
 
-        CommandContext context = buildContext(new MapConfiguration(Map.of()), null);
-        new SqlScriptExecutor(connectorConfig).execute("BAD SQL", context);
+        Context context = buildContext(new MapConfiguration(Map.of()), null, mockDatabase);
+        String changeFile = "BAD SQL";
+        Map<String, Object> bindings = Map.of();
+        executeScript(new SqlChangeExecutor(connectorConfig, context), changeFile, context);
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    private CommandContext buildContext(Configuration fullConfig, Environment environment) {
+    /**
+     * Helper method to execute a SQL script string through SqlChangeExecutor.
+     *
+     * <p>Converts the script string to an InputStream and calls the protected execute method.
+     */
+    private void executeScript(SqlChangeExecutor executor, String script, Context context)
+            throws InterruptedException {
+        InputStream inputStream = new ByteArrayInputStream(script.getBytes(StandardCharsets.UTF_8));
+        executor.execute(inputStream, context);
+    }
+
+    private ObjectsContext buildContext(
+            Configuration fullConfig, Environment environment, JdbcDatabase jdbcDatabase) {
         VariableService variableService =
                 new DefaultVariableServiceFactory()
                         .getVariableService(fullConfig, expressionEvaluator);
 
-        CommandContext context = new CommandContext();
-        context.setValue(JdbcDatabase.class, mockDatabase);
+        ObjectsContext context = new ObjectsContext();
         context.setValue(ExpressionEvaluator.class, expressionEvaluator);
         context.setValue(VariableService.class, variableService);
         context.setValue(Configuration.class, fullConfig);
         if (environment != null) {
             context.setValue(Environment.class, environment);
+        }
+        if (jdbcDatabase != null) {
+            context.setValue(JdbcDatabase.class, jdbcDatabase);
         }
         return context;
     }

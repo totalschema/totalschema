@@ -16,22 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.script;
+package io.github.totalschema.engine.internal.storage;
 
-import io.github.totalschema.config.Configuration;
-import io.github.totalschema.spi.script.AbstractScriptExecutorComponentFactory;
-import io.github.totalschema.spi.script.ScriptExecutor;
+import io.github.totalschema.model.ChangeFile;
+import io.github.totalschema.spi.storage.StorageService;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
 
-/** {@link ScriptExecutor} factory for {@code .sql} files. */
-public final class SqlScriptExecutorComponentFactory
-        extends AbstractScriptExecutorComponentFactory {
-
-    public SqlScriptExecutorComponentFactory() {
-        super("sql");
-    }
-
+public class DefaultStorageService implements StorageService {
     @Override
-    protected ScriptExecutor createExecutor(Configuration configuration) {
-        return new SqlScriptExecutor(configuration);
+    public InputStream openInputStream(ChangeFile changeFile) throws IOException {
+        Objects.requireNonNull(changeFile, "changeFile cannot be null");
+
+        Path file = changeFile.getFile();
+
+        Objects.requireNonNull(file, "file cannot be null");
+
+        return Files.newInputStream(file);
     }
 }

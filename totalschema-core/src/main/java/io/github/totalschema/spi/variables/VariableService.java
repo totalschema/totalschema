@@ -19,9 +19,19 @@
 package io.github.totalschema.spi.variables;
 
 import io.github.totalschema.config.environment.Environment;
+import io.github.totalschema.engine.api.Context;
 import java.util.Map;
+import java.util.Objects;
 
 public interface VariableService {
+
+    default Map<String, String> getEffectiveVariables(Context context) {
+        Objects.requireNonNull(context, "context must not be null");
+
+        return context.getOptional(Environment.class)
+                .map(this::getVariablesInEnvironment)
+                .orElseGet(this::getVariables);
+    }
 
     Map<String, String> getVariables();
 

@@ -22,7 +22,8 @@ import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
 import io.github.totalschema.connector.ssh.spi.SshConnection;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.model.ChangeFile;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,14 +43,14 @@ public class SshCommandListConnectorTest {
 
     private SshConnection mockConnection;
     private SshCommandListConnector connector;
-    private CommandContext context;
+    private Context context;
     private Path tempFile;
 
     @BeforeMethod
     public void setUp() throws IOException {
         mockConnection = createMock(SshConnection.class);
         connector = new SshCommandListConnector(CONNECTOR_NAME, mockConnection);
-        context = new CommandContext();
+        context = new ObjectsContext();
         tempFile = Files.createTempFile("ssh-cmd-test-", ".txt");
     }
 

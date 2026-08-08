@@ -16,26 +16,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.extensions.kotlin;
+package io.github.totalschema.engine.internal.script;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.spi.script.AbstractScriptExecutorComponentFactory;
-import io.github.totalschema.spi.script.ScriptExecutor;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.change.executor.AbstractChangeExecutorComponentFactory;
+import io.github.totalschema.spi.change.executor.ChangeExecutor;
 
-/**
- * {@link ScriptExecutor} factory for {@code .kts} files.
- *
- * <p>Uses the stable JSR-223 API (Kotlin 1.x compatible).
- */
-public final class KotlinScriptExecutorComponentFactory
-        extends AbstractScriptExecutorComponentFactory {
+/** {@link ChangeExecutor} factory for {@code .sql} files. */
+public final class SqlChangeExecutorComponentFactory
+        extends AbstractChangeExecutorComponentFactory {
 
-    public KotlinScriptExecutorComponentFactory() {
-        super("kts");
+    public SqlChangeExecutorComponentFactory() {
+        super("sql");
     }
 
     @Override
-    protected ScriptExecutor createExecutor(Configuration configuration) {
-        return new Jsr223ScriptExecutor(configuration);
+    protected ChangeExecutor createExecutor(Configuration configuration, Context context) {
+        return new SqlChangeExecutor(configuration, context);
     }
 }

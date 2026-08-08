@@ -20,8 +20,8 @@ package io.github.totalschema.engine.core.command.impl.validate;
 
 import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeFileSelector;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.StateRecord;
@@ -49,7 +49,7 @@ public final class ValidateApplyFilesCommand implements Command<List<Exception>>
     }
 
     @Override
-    public List<Exception> execute(CommandContext context) throws InterruptedException {
+    public List<Exception> execute(Context context) throws InterruptedException {
 
         LinkedList<Exception> validationFailures = new LinkedList<>();
 

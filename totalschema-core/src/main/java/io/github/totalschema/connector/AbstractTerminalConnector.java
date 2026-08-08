@@ -19,7 +19,6 @@
 package io.github.totalschema.connector;
 
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.engine.internal.shell.direct.TerminalSession;
 import io.github.totalschema.model.ChangeFile;
 import java.io.Closeable;
@@ -50,7 +49,7 @@ public abstract class AbstractTerminalConnector<S extends TerminalSession<?>> ex
     }
 
     @Override
-    public void execute(ChangeFile changeFile, CommandContext context) throws InterruptedException {
+    public void execute(ChangeFile changeFile, Context context) throws InterruptedException {
         execute(changeFile.getFile(), context);
     }
 
@@ -61,8 +60,7 @@ public abstract class AbstractTerminalConnector<S extends TerminalSession<?>> ex
      * @param context the command context
      * @throws InterruptedException if execution is interrupted
      */
-    protected abstract void execute(Path scriptFile, CommandContext context)
-            throws InterruptedException;
+    protected abstract void execute(Path scriptFile, Context context) throws InterruptedException;
 
     /**
      * Checks whether the underlying terminal session can reach its target system.

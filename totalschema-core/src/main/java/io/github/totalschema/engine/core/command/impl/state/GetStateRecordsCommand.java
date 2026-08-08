@@ -18,15 +18,15 @@
 
 package io.github.totalschema.engine.core.command.impl.state;
 
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.StateRecord;
 import io.github.totalschema.spi.state.StateService;
 import java.util.List;
 
 public class GetStateRecordsCommand implements Command<List<StateRecord>> {
     @Override
-    public List<StateRecord> execute(CommandContext context) {
+    public List<StateRecord> execute(Context context) {
         return context.get(StateService.class).getStateRecords();
     }
 }

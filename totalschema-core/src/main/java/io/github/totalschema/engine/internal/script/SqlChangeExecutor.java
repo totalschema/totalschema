@@ -19,12 +19,12 @@
 package io.github.totalschema.engine.internal.script;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.jdbc.JdbcDatabase;
+import io.github.totalschema.spi.change.executor.SimpleChangeExecutor;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
-import io.github.totalschema.spi.script.ScriptExecutor;
 import io.github.totalschema.spi.variables.VariableService;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -44,11 +44,10 @@ import java.util.stream.Collectors;
  *       {@code ";"}) and executes each non-blank statement via JDBC.
  * </ul>
  *
- * <p>The {@link io.github.totalschema.jdbc.JdbcDatabase} is retrieved from the {@link
- * io.github.totalschema.engine.api.Context} at execution time; it is placed there by {@link
- * io.github.totalschema.connector.jdbc.JdbcConnector} before this executor is invoked.
+ * <p>The {@link io.github.totalschema.jdbc.JdbcDatabase} is retrieved from the context at execution
+ * time.
  */
-public final class SqlScriptExecutor implements ScriptExecutor {
+final class SqlChangeExecutor extends SimpleChangeExecutor {
 
     private final boolean variableSubstitutionEnabled;
     private final String statementSeparator;
@@ -59,30 +58,31 @@ public final class SqlScriptExecutor implements ScriptExecutor {
     }
 
     /**
-     * @param connectorConfiguration Configuration for the script executor
+     * @param configuration Configuration for the script executor
      */
-    public SqlScriptExecutor(Configuration connectorConfiguration) {
+    SqlChangeExecutor(Configuration configuration, Context context) {
+        super(context);
 
         this.variableSubstitutionEnabled =
-                connectorConfiguration
-                        .getBoolean("scriptExecutors.sql.variableSubstitution")
-                        .orElse(false);
+                configuration.getBoolean("scriptExecutors.sql.variableSubstitution").orElse(false);
 
-        if (connectorConfiguration.getBoolean("disableStatementSeparator").orElse(false)) {
+        if (configuration.getBoolean("disableStatementSeparator").orElse(false)) {
             this.statementSeparator = null;
         } else {
             this.statementSeparator =
-                    connectorConfiguration
+                    configuration
                             .getString("statementSeparator")
-                            .orElse(DefaultValues.STATEMENT_SEPARATOR);
+                            .orElse(SqlChangeExecutor.DefaultValues.STATEMENT_SEPARATOR);
         }
     }
 
     @Override
-    public void execute(String script, Context context) throws InterruptedException {
+    public void execute(InputStream inputStream, Context context) throws InterruptedException {
+
+        String script = readAsString(inputStream);
 
         if (variableSubstitutionEnabled) {
-            script = substituteVariables(script, context);
+            script = substituteVariables(script);
         }
 
         JdbcDatabase jdbcDatabase = context.get(JdbcDatabase.class);
@@ -105,18 +105,14 @@ public final class SqlScriptExecutor implements ScriptExecutor {
      * for the current environment.
      *
      * @param content raw SQL content
-     * @param context the current command context
      * @return content with all known variable references replaced
      */
-    private String substituteVariables(String content, Context context) {
+    private String substituteVariables(String content) {
 
         ExpressionEvaluator expressionEvaluator = context.get(ExpressionEvaluator.class);
         VariableService variableService = context.get(VariableService.class);
 
-        Map<String, String> variables =
-                context.getOptional(Environment.class)
-                        .map(variableService::getVariablesInEnvironment)
-                        .orElseGet(variableService::getVariables);
+        Map<String, String> variables = variableService.getEffectiveVariables(context);
 
         return expressionEvaluator.evaluate(content, variables);
     }

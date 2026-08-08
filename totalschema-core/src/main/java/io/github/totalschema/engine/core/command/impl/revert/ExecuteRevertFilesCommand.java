@@ -20,8 +20,8 @@ package io.github.totalschema.engine.core.command.impl.revert;
 
 import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeFileSelector;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.RevertFile;
 import io.github.totalschema.spi.change.ChangeService;
 import io.github.totalschema.spi.state.StateService;
@@ -40,7 +40,7 @@ public class ExecuteRevertFilesCommand implements Command<Void> {
     }
 
     @Override
-    public Void execute(CommandContext context) throws InterruptedException {
+    public Void execute(Context context) throws InterruptedException {
 
         ChangeEngine changeEngine = context.get(ChangeEngine.class);
 
@@ -54,13 +54,13 @@ public class ExecuteRevertFilesCommand implements Command<Void> {
 
         for (RevertFile revertFile : revertFiles) {
 
-            log.info("Executing: {}", revertFile.getFile());
+            log.info("Executing: {}", revertFile.getRelativePath());
 
             changeService.execute(revertFile, context);
 
             stateService.registerCompletion(revertFile);
 
-            log.info("SUCCESS executing revert: {}", revertFile.getFile());
+            log.info("SUCCESS executing revert: {}", revertFile.getRelativePath());
         }
 
         return null;

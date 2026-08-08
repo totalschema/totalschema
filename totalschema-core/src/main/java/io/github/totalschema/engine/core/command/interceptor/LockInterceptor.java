@@ -18,10 +18,8 @@
 
 package io.github.totalschema.engine.core.command.interceptor;
 
-import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
-import io.github.totalschema.engine.core.command.api.CommandExecutor;
-import io.github.totalschema.engine.core.command.api.CommandInterceptor;
+import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.engine.core.command.api.*;
 import io.github.totalschema.model.LockRecord;
 import io.github.totalschema.spi.lock.LockService;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +38,7 @@ public final class LockInterceptor extends CommandInterceptor {
     }
 
     @Override
-    public <R> R intercept(CommandContext context, Command<R> command, CommandExecutor next) {
+    public <R> R intercept(Context context, Command<R> command, CommandExecutor next) {
 
         try {
             R result;
@@ -64,10 +62,7 @@ public final class LockInterceptor extends CommandInterceptor {
     }
 
     private <R> R executeWithLockService(
-            LockService lockService,
-            CommandContext context,
-            Command<R> command,
-            CommandExecutor next)
+            LockService lockService, Context context, Command<R> command, CommandExecutor next)
             throws InterruptedException {
 
         R result;

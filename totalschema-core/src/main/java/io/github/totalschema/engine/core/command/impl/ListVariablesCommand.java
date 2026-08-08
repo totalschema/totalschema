@@ -19,8 +19,8 @@
 package io.github.totalschema.engine.core.command.impl;
 
 import io.github.totalschema.config.environment.Environment;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.spi.variables.VariableService;
 import java.util.Map;
 
@@ -33,7 +33,7 @@ public class ListVariablesCommand implements Command<Map<String, String>> {
     }
 
     @Override
-    public Map<String, String> execute(CommandContext context) {
+    public Map<String, String> execute(Context context) {
 
         return context.get(VariableService.class)
                 .getVariablesInEnvironment(new Environment(environment));

@@ -88,10 +88,29 @@ public final class ChangeFileLabels {
 
         try (InputStream is = Files.newInputStream(labelFile)) {
             Yaml yaml = new Yaml();
-            @SuppressWarnings("unchecked")
-            Map<String, Object> raw = yaml.loadAs(is, Map.class);
+            Object loaded = yaml.load(is);
 
-            if (raw == null || raw.isEmpty()) {
+            if (loaded == null) {
+                return empty();
+            }
+
+            if (!(loaded instanceof Map)) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "In label file '%s': the root must be a YAML mapping (key-value pairs). "
+                                        + "If you want to define file patterns, wrap them under the '%s' key. "
+                                        + "Example:%n"
+                                        + "  %s:%n"
+                                        + "    - match: \"*.sql\"%n"
+                                        + "      labels:%n"
+                                        + "        JIRA: TICKET-123",
+                                labelFile, FILE_PATTERNS_KEY, FILE_PATTERNS_KEY));
+            }
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> raw = (Map<String, Object>) loaded;
+
+            if (raw.isEmpty()) {
                 return empty();
             }
 
@@ -212,7 +231,6 @@ public final class ChangeFileLabels {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static Map<String, List<String>> parseLabelsMap(
             Map<String, Object> labelsMap, Path labelFile) {
         Map<String, List<String>> result = new LinkedHashMap<>();

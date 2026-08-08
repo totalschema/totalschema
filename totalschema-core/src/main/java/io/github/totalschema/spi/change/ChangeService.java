@@ -18,7 +18,7 @@
 
 package io.github.totalschema.spi.change;
 
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.model.ChangeFile;
 
 /**
@@ -34,6 +34,6 @@ public interface ChangeService {
      * @throws ChangeExecutionException if the change could not be executed successfully
      * @throws InterruptedException if the operation is interrupted
      */
-    void execute(ChangeFile changeFile, CommandContext context)
+    void execute(ChangeFile changeFile, Context context)
             throws ChangeExecutionException, InterruptedException;
 }

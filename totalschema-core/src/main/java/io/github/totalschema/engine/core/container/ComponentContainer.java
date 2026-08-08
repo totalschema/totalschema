@@ -132,7 +132,6 @@ public final class ComponentContainer implements Closeable, Context {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <R> R get(Class<R> clazz, String qualifier, Object... additionalArgument) {
 
         requireNotClosed();
@@ -140,6 +139,12 @@ public final class ComponentContainer implements Closeable, Context {
         ObjectSpecification objectSpecification =
                 ObjectSpecification.from(clazz, qualifier, additionalArgument);
 
+        return get(objectSpecification);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <R> R get(ObjectSpecification objectSpecification) {
         // Fast path: check if component already exists (no locking)
         Object component = objects.get(objectSpecification);
         if (component != null) {
@@ -289,8 +294,6 @@ public final class ComponentContainer implements Closeable, Context {
 
     @Override
     public void close() {
-
-        requireNotClosed();
 
         // we set the state here, if close fails, the official state remains closed.
         boolean setWasSuccessful = this.isClosed.compareAndSet(false, true);

@@ -19,16 +19,14 @@
 package io.github.totalschema.connector.jdbc;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.connector.Connector;
+import io.github.totalschema.connector.ChangeExecutorConnector;
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.model.ChangeFile;
-import io.github.totalschema.spi.script.ScriptExecutor;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,29 +36,14 @@ import org.slf4j.LoggerFactory;
  * <p>Supports any JDBC-compliant database including PostgreSQL, MySQL, Oracle, H2, SQL Server,
  * BigQuery, and others.
  */
-public class JdbcConnector extends Connector {
+public class JdbcConnector extends ChangeExecutorConnector {
 
     public static final String CONNECTOR_TYPE = "jdbc";
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcConnector.class);
 
-    private final String name;
-    private final Configuration connectorConfiguration;
-
     public JdbcConnector(String name, Configuration connectorConfiguration) {
-        this.name = name;
-        this.connectorConfiguration = connectorConfiguration;
-    }
-
-    @Override
-    public String toString() {
-        return "JDBC Connector named '"
-                + name
-                + "'{"
-                + " configuration='"
-                + connectorConfiguration
-                + '\''
-                + '}';
+        super(name, connectorConfiguration);
     }
 
     @Override
@@ -83,28 +66,47 @@ public class JdbcConnector extends Connector {
     }
 
     @Override
-    public void execute(ChangeFile changeFile, CommandContext context) throws InterruptedException {
-        Path file = changeFile.getFile();
+    protected Context getExecutionContext(Context parentContext) {
 
-        try {
-            String fileContent = Files.readString(file);
-            String extension = changeFile.getId().getExtension();
+        JdbcDatabase jdbcDatabase =
+                parentContext.get(JdbcDatabase.class, null, name, connectorConfiguration);
 
-            logger.debug("[{}] executing change file '{}' (extension: {})", name, file, extension);
+        DataSource dataSource = jdbcDatabase.getDataSource();
 
-            JdbcDatabase jdbcDatabase =
-                    context.get(JdbcDatabase.class, null, name, connectorConfiguration);
+        return ObjectsContext.builder()
+                .parentContext(parentContext)
+                .setValue(JdbcDatabase.class, jdbcDatabase)
+                .setValue(DataSource.class, dataSource)
+                .build();
+    }
 
-            CommandContext executorContext = new CommandContext(context);
-            executorContext.setValue(JdbcDatabase.class, jdbcDatabase);
+    @Override
+    protected Map<String, Object> getBindings(ChangeFile changeFile, Context context) {
 
-            ScriptExecutor scriptExecutor =
-                    executorContext.get(ScriptExecutor.class, extension, connectorConfiguration);
+        // Start with default bindings (configuration, environment)
+        Map<String, Object> bindings = super.getBindings(changeFile, context);
 
-            scriptExecutor.execute(fileContent, executorContext);
+        // Acquire the JdbcDatabase (cached by context so subsequent calls reuse it)
+        JdbcDatabase jdbcDatabase =
+                context.get(JdbcDatabase.class, null, name, connectorConfiguration);
 
-        } catch (IOException e) {
-            throw new RuntimeException("Failure reading: " + file);
-        }
+        DataSource dataSource = jdbcDatabase.getDataSource();
+
+        // Add JDBC-specific bindings
+        bindings.put("jdbcDatabase", jdbcDatabase);
+        bindings.put("dataSource", dataSource);
+
+        return bindings;
+    }
+
+    @Override
+    public String toString() {
+        return "JDBC Connector named '"
+                + name
+                + "'{"
+                + " configuration='"
+                + connectorConfiguration
+                + '\''
+                + '}';
     }
 }

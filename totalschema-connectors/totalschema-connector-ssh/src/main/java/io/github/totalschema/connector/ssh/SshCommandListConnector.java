@@ -23,7 +23,6 @@ import io.github.totalschema.connector.AbstractTerminalConnector;
 import io.github.totalschema.connector.ssh.spi.SshConnection;
 import io.github.totalschema.connector.ssh.spi.SshConnectionFactory;
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -88,7 +87,7 @@ final class SshCommandListConnector extends AbstractTerminalConnector<SshConnect
     }
 
     @Override
-    protected void execute(Path commandListFile, CommandContext context) {
+    protected void execute(Path commandListFile, Context context) {
         try {
             List<String> commands = parseCommands(Files.readAllLines(commandListFile));
             for (String command : commands) {

@@ -32,6 +32,29 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Subclasses must implement template methods to customize table-specific behavior while
  * inheriting common table management logic.
+ *
+ * <h2>Initialization and Thread Safety</h2>
+ *
+ * <p>The {@link #init()} method uses a check-then-act pattern for lazy table creation. This pattern
+ * has an inherent time-of-check-to-time-of-use (TOCTOU) race condition where multiple threads could
+ * theoretically attempt to create the table concurrently.
+ *
+ * <p><b>Mitigation Strategy:</b> This race condition is acceptable in practice because:
+ *
+ * <ul>
+ *   <li><b>Singleton Lifecycle:</b> Subclasses are typically instantiated as singletons by the IoC
+ *       container, which ensures that {@code init()} is called exactly once per component during
+ *       initialization, before concurrent access begins.
+ *   <li><b>Database DDL Serialization:</b> If concurrent table creation attempts somehow occur, the
+ *       database will serialize DDL operations. One thread will succeed, and subsequent validation
+ *       will detect the table's existence.
+ *   <li><b>Idempotent Operations:</b> Subsequent calls to {@code init()} are safe—if the table
+ *       exists, no action is taken.
+ * </ul>
+ *
+ * <p><b>Thread Safety of Repository Operations:</b> Subclasses must ensure that their repository
+ * operations (after initialization) are thread-safe, typically by delegating to a thread-safe
+ * {@link JdbcDatabase} instance.
  */
 public abstract class AbstractJdbcTableRepository {
 
@@ -126,6 +149,18 @@ public abstract class AbstractJdbcTableRepository {
     /**
      * Initializes the repository by ensuring the required table exists. This method follows a
      * template pattern allowing subclasses to customize the initialization process.
+     *
+     * <p>This method is idempotent—calling it multiple times is safe. If the table already exists,
+     * no action is taken. If the table does not exist, it will be created along with any configured
+     * before/after hooks.
+     *
+     * <p><b>Thread Safety:</b> While this method contains a check-then-act race condition, it is
+     * designed to be called during component initialization by the IoC container, which serializes
+     * factory execution per component. In the unlikely event of concurrent calls, the database will
+     * handle DDL serialization, and subsequent validation will ensure table existence.
+     *
+     * <p><b>Best Practice:</b> Call this method exactly once during component construction/factory
+     * initialization, before the repository is used by application code.
      *
      * @throws RuntimeException if initialization fails
      */

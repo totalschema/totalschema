@@ -21,18 +21,19 @@ package io.github.totalschema.engine.core.command.api;
 import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
+import io.github.totalschema.engine.api.Context;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class CommandInvokerTest {
 
     private CommandInvoker invoker;
-    private CommandContext context;
+    private Context context;
 
     @BeforeMethod
     public void setUp() {
         invoker = new CommandInvoker();
-        context = new CommandContext();
+        context = new ObjectsContext();
     }
 
     @Test

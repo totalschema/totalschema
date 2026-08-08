@@ -18,6 +18,7 @@
 
 package io.github.totalschema.engine.api;
 
+import io.github.totalschema.engine.core.container.ObjectSpecification;
 import java.util.Optional;
 
 public interface Context {
@@ -85,6 +86,8 @@ public interface Context {
      * @throws IllegalStateException if the context does not have an association for the given class
      */
     <R> R get(Class<R> clazz, String qualifier, Object... additionalArgument);
+
+    <R> R get(ObjectSpecification objectSpecification);
 
     /**
      * Returns the value to which the specified class is mapped, or throws {@code

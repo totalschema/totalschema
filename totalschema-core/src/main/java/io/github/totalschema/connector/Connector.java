@@ -19,7 +19,6 @@
 package io.github.totalschema.connector;
 
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import java.util.List;
 
@@ -67,6 +66,6 @@ public abstract class Connector {
      * @param context the command context
      * @throws InterruptedException if execution is interrupted
      */
-    public abstract void execute(ChangeFile changeFile, CommandContext context)
+    public abstract void execute(ChangeFile changeFile, Context context)
             throws InterruptedException;
 }

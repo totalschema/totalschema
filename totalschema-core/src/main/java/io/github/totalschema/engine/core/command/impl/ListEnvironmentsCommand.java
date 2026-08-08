@@ -21,13 +21,13 @@ package io.github.totalschema.engine.core.command.impl;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.config.environment.EnvironmentFactory;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import java.util.List;
 
 public final class ListEnvironmentsCommand implements Command<List<Environment>> {
     @Override
-    public List<Environment> execute(CommandContext context) {
+    public List<Environment> execute(Context context) {
 
         Configuration configuration = context.get(Configuration.class);
 

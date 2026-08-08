@@ -25,7 +25,7 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.environment.DefaultEnvironmentFactory;
 import io.github.totalschema.config.environment.Environment;
 import io.github.totalschema.config.environment.EnvironmentFactory;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import java.util.List;
 import java.util.Optional;
 import org.testng.annotations.BeforeMethod;
@@ -35,11 +35,11 @@ import org.testng.annotations.Test;
 @Ignore
 public class ListEnvironmentsCommandTest {
 
-    private CommandContext context;
+    private ObjectsContext context;
 
     @BeforeMethod
     public void setUp() {
-        context = new CommandContext();
+        context = new ObjectsContext();
         EnvironmentFactory environmentFactory = new DefaultEnvironmentFactory();
         context.setValue(EnvironmentFactory.class, environmentFactory);
     }

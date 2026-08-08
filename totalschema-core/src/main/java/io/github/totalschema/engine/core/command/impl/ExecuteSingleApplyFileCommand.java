@@ -18,8 +18,8 @@
 
 package io.github.totalschema.engine.core.command.impl;
 
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ApplyFile;
 import io.github.totalschema.model.ChangeType;
 import io.github.totalschema.spi.change.ChangeExecutionException;
@@ -44,13 +44,13 @@ public final class ExecuteSingleApplyFileCommand implements Command<Void> {
     }
 
     @Override
-    public Void execute(CommandContext context) throws InterruptedException {
+    public Void execute(Context context) throws InterruptedException {
 
         try {
             StateService stateService = context.get(StateService.class);
             ChangeService changeService = context.get(ChangeService.class);
 
-            Path changeFilePath = applyFile.getFile();
+            Path changeFilePath = applyFile.getRelativePath();
             log.info("Applying: {}", changeFilePath);
 
             changeService.execute(applyFile, context);

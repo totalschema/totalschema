@@ -1,6 +1,6 @@
 /*
  * totalschema: tool for managing database versioning and schema changes with ease.
- * Copyright (C) 2026 totalschema development team
+ * Copyright (C) 2025-2026 totalschema development team
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package io.github.totalschema.config;
 
 import static org.testng.Assert.*;

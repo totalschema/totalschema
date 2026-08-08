@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -609,6 +610,11 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
 
             throw interruptedException;
         }
+    }
+
+    @Override
+    public DataSource getDataSource() {
+        return new UnmodifiableDataSource(dataSource);
     }
 
     @Override

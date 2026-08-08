@@ -20,8 +20,8 @@ package io.github.totalschema.engine.core.command.impl;
 
 import io.github.totalschema.engine.api.ChangeEngine;
 import io.github.totalschema.engine.api.ChangeFileSelector;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.Command;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.RevertFile;
 import io.github.totalschema.spi.state.StateService;
@@ -38,7 +38,7 @@ public final class GetApplicableRevertFilesCommand implements Command<List<Rever
     }
 
     @Override
-    public List<RevertFile> execute(CommandContext context) {
+    public List<RevertFile> execute(Context context) {
 
         StateService stateService = context.get(StateService.class);
         ChangeEngine changeEngine = context.get(ChangeEngine.class);

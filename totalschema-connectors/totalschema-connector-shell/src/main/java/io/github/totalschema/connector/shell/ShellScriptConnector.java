@@ -23,7 +23,6 @@ import io.github.totalschema.connector.Connector;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunner;
 import io.github.totalschema.connector.shell.spi.ShellScriptRunnerFactory;
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.engine.core.command.api.CommandContext;
 import io.github.totalschema.model.ChangeFile;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -81,7 +80,7 @@ final class ShellScriptConnector extends Connector {
      * ShellScriptRunnerFactory}.
      *
      * <p>The connector is cheap to create: no runner or OS process is started here. Runner
-     * acquisition is deferred to the first call to {@link #execute(ChangeFile, CommandContext)}.
+     * acquisition is deferred to the first call to {@link #execute(ChangeFile, ObjectsContext)}.
      *
      * @param name the connector name as declared in {@code totalschema.yml}; used for logging and
      *     {@link #toString()}
@@ -152,7 +151,7 @@ final class ShellScriptConnector extends Connector {
      * @throws InterruptedException if the underlying process execution is interrupted
      */
     @Override
-    public void execute(ChangeFile changeFile, CommandContext context) throws InterruptedException {
+    public void execute(ChangeFile changeFile, Context context) throws InterruptedException {
 
         Path file = changeFile.getFile();
         Objects.requireNonNull(file, "file is null");

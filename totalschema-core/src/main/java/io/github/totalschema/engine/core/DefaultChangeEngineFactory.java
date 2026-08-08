@@ -36,7 +36,8 @@ import io.github.totalschema.engine.core.container.ComponentContainer;
 import io.github.totalschema.engine.core.container.ComponentContainerBuilder;
 import io.github.totalschema.engine.core.event.EventDispatcher;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
-import io.github.totalschema.engine.internal.script.jsr223.JSR223ScriptExecutorFactory;
+import io.github.totalschema.engine.internal.script.jsr223.JSR223ChangeExecutorFactory;
+import io.github.totalschema.engine.internal.storage.DefaultStorageService;
 import io.github.totalschema.spi.ServiceLoaderFactory;
 import io.github.totalschema.spi.config.ConfigurationSupplier;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
@@ -45,9 +46,9 @@ import io.github.totalschema.spi.factory.ComponentFactory;
 import io.github.totalschema.spi.hash.HashService;
 import io.github.totalschema.spi.hash.HashServiceFactory;
 import io.github.totalschema.spi.lock.LockService;
-import io.github.totalschema.spi.script.ScriptExecutor;
 import io.github.totalschema.spi.secrets.SecretManagerFactory;
 import io.github.totalschema.spi.secrets.SecretsManager;
+import io.github.totalschema.spi.storage.StorageService;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,20 +154,15 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
         getHashService(configuration)
                 .ifPresent(hashService -> builder.withComponent(HashService.class, hashService));
 
+        builder.withComponent(StorageService.class, new DefaultStorageService());
         builder.withComponent(ChangeFileFactory.class, new ChangeFileFactory(configuration));
 
         // Register all ComponentFactory implementations discovered via ServiceLoader
         // This includes SqlScriptExecutorComponentFactory, GroovyScriptExecutorFactory, etc.
         ServiceLoaderFactory.getAllServices(ComponentFactory.class).forEach(builder::withFactory);
 
-        if (JSR223ScriptExecutorFactory.isEnabled(configuration)) {
-            JSR223ScriptExecutorFactory.createExecutors()
-                    .forEach(
-                            scriptExecutor ->
-                                    builder.withComponent(
-                                            ScriptExecutor.class,
-                                            scriptExecutor.getExtension(),
-                                            scriptExecutor));
+        if (JSR223ChangeExecutorFactory.isEnabled(configuration)) {
+            JSR223ChangeExecutorFactory.createFactories().forEach(builder::withFactory);
         }
 
         return builder.allowUnqualifiedAccessToSingleComponents(true).build();
