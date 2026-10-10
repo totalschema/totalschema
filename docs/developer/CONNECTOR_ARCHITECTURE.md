@@ -666,21 +666,21 @@ totalschema-connector-python           ← OPTIONAL (included in CLI/release by 
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-core</artifactId>
-    <version>1.3.0</version>
+    <version>1.4.0-SNAPSHOT</version>
 </dependency>
 
 <!-- SSH connectors (optional) -->
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-ssh</artifactId>
-    <version>1.3.0</version>
+    <version>1.4.0-SNAPSHOT</version>
 </dependency>
 
 <!-- Shell connector (optional) -->
 <dependency>
     <groupId>io.github.totalschema</groupId>
     <artifactId>totalschema-connector-shell</artifactId>
-    <version>1.3.0</version>
+    <version>1.4.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -795,7 +795,7 @@ package com.example.connector.ftp;
 
 import io.github.totalschema.connector.Connector;
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.core.command.api.CommandContext;
+import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.model.ChangeFile;
 
 public class FtpConnector extends Connector {
