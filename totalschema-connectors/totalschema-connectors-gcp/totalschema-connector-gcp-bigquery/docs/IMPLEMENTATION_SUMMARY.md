@@ -267,8 +267,8 @@ mvn clean compile -Dspotbugs.skip=true
 - `org.testng:testng`
 - `org.easymock:easymock:5.5.0`
 - `org.mockito:mockito-inline:5.2.0`
-- `io.github.totalschema:totalschema-cli:1.4.0-SNAPSHOT`
-- `io.github.totalschema:totalschema-groovy-extensions:1.4.0-SNAPSHOT`
+- `io.github.totalschema:totalschema-cli:1.4.0`
+- `io.github.totalschema:totalschema-groovy-extensions:1.4.0`
 
 ---
 

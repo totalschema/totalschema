@@ -1030,7 +1030,7 @@ See [LICENSE](../../LICENSE) file for details.
 
 ## Version
 
-**Current Version:** 1.4.0-SNAPSHOT
+**Current Version:** 1.4.0
 
 **Compatibility:**
 - TotalSchema Core: 1.3.0+

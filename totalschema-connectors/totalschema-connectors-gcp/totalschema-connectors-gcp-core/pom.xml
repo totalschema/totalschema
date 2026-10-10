@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.github.totalschema</groupId>
         <artifactId>totalschema-connectors-gcp</artifactId>
-        <version>1.4.0-SNAPSHOT</version>
+        <version>1.4.0</version>
     </parent>
 
     <artifactId>totalschema-connectors-gcp-core</artifactId>

@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.github.totalschema</groupId>
         <artifactId>totalschema-connectors-gcp</artifactId>
-        <version>1.4.0-SNAPSHOT</version>
+        <version>1.4.0</version>
     </parent>
 
     <artifactId>totalschema-connector-gcp-bigquery</artifactId>
@@ -39,19 +39,19 @@
         <dependency>
             <groupId>io.github.totalschema</groupId>
             <artifactId>totalschema-core</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>1.4.0</version>
         </dependency>
 
         <dependency>
             <groupId>io.github.totalschema</groupId>
             <artifactId>totalschema-connectors-gcp-core</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>1.4.0</version>
         </dependency>
 
         <dependency>
             <groupId>io.github.totalschema</groupId>
             <artifactId>totalschema-gcp-bigquery</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>1.4.0</version>
         </dependency>
 
         <dependency>
@@ -130,7 +130,7 @@
         <dependency>
             <groupId>io.github.totalschema</groupId>
             <artifactId>totalschema-cli</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>1.4.0</version>
             <scope>test</scope>
         </dependency>
 
@@ -143,7 +143,7 @@
         <dependency>
             <groupId>io.github.totalschema</groupId>
             <artifactId>totalschema-groovy-extensions</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>1.4.0</version>
             <scope>test</scope>
         </dependency>
 
