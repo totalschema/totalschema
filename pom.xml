@@ -10,11 +10,11 @@
     <name>totalschema</name>
 
     <description>
-        totalschema is a streamlined SQL change tool designed for
-        managing database versioning and schema changes with ease.
+        totalschema is a streamlined data platform change tool designed
+        for managing database versioning and data system changes with ease.
         It offers a straightforward approach for handling change
         files, enabling developers to efficiently apply, track and
-        rollback database changes.
+        rollback changes of databases and other data processing systems.
     </description>
 
     <licenses>
@@ -57,13 +57,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
 
         <xml-maven-plugin.version>1.0.2</xml-maven-plugin.version>
 
 
-        <spotbugs.version>4.9.8</spotbugs.version>
+        <spotbugs.version>4.10.4</spotbugs.version>
 
         <maven-core.version>3.9.9</maven-core.version>
 
@@ -71,14 +71,16 @@
         <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
 
         <license-maven-plugin.version>2.7.0</license-maven-plugin.version>
-        <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
+        <spotbugs-maven-plugin.version>4.10.4.1</spotbugs-maven-plugin.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <spotless-maven-plugin.version>2.43.0</spotless-maven-plugin.version>
 
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
 
         <kotlin.version>1.9.24</kotlin.version>
-        <jackson-databind.version>2.22.1</jackson-databind.version>
+
+        <jackson-api.version>2.22</jackson-api.version>
+        <jackson-impl.version>${jackson-api.version}.1</jackson-impl.version>
 
         <testng.version>7.10.2</testng.version>
     </properties>
@@ -158,12 +160,6 @@
             </dependency>
 
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson-databind.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>2.3.232</version>
@@ -239,6 +235,25 @@
                 <artifactId>mockito-core</artifactId>
                 <version>5.15.2</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Jackson dependencies - used by GCP connectors -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson-impl.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson-impl.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson-api.version}</version>
             </dependency>
 
         </dependencies>
@@ -435,7 +450,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <source>11</source>
+                    <source>${maven.compiler.source}</source>
                     <doclint>all</doclint>
                     <failOnWarnings>false</failOnWarnings>
                 </configuration>
