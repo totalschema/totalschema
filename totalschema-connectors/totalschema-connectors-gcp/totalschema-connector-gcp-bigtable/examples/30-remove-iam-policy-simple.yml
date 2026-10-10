@@ -1,0 +1,10 @@
+# Revoke access from a user
+# Use case: Remove access for ex-employee or decommissioned service
+
+RemoveTableIamPolicy:
+  tableId: users
+  bindings:
+    - role: roles/bigtable.reader
+      members:
+        - user:ex-employee@company.com
+

@@ -1,0 +1,5 @@
+io.github.totalschema.connector.gcp.bigquery.BigQueryConnectorComponentFactory
+io.github.totalschema.connector.gcp.bigquery.BigQueryClientComponentFactory
+io.github.totalschema.connector.gcp.bigquery.DataTransferServiceClientComponentFactory
+io.github.totalschema.connector.gcp.bigquery.AnalyticsHubServiceClientComponentFactory
+io.github.totalschema.connector.gcp.bigquery.BigQuerySQLDatabaseComponentFactory

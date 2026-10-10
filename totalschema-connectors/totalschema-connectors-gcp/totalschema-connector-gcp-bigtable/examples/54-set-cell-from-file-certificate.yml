@@ -1,0 +1,17 @@
+# Set a cell value from a file - SSL Certificate Example
+#
+# Use Case: Store SSL certificates with variable substitution for environments
+#
+# Variable substitution works with valueFile paths
+
+SetCell:
+  tableId: certificates
+  rowKey: "cert#${ENVIRONMENT}"
+  familyName: ssl
+  columnQualifier: server_certificate
+  valueFile: ${CERT_DIR}/server.crt
+
+# Example variable values:
+# DEV: ENVIRONMENT=dev, CERT_DIR=/etc/ssl/dev
+# PROD: ENVIRONMENT=prod, CERT_DIR=/etc/ssl/prod
+

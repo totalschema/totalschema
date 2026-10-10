@@ -1,0 +1,26 @@
+# Disable replication for cost optimization
+#
+# Use Case: Reduce costs by switching to single-region operation
+#
+# Scenario:
+# - You previously enabled multi-region replication for global reach
+# - User base is now concentrated in one region
+# - Want to reduce latency and costs
+#
+# Steps to Fully Disable Replication:
+# 1. Use this action to switch to single-cluster routing
+# 2. Monitor traffic to ensure all apps use the new app profile
+# 3. Use GCP Console to remove unnecessary clusters (this deletes data)
+# 4. Storage and node costs reduced to single cluster
+#
+# Important:
+# - This action only changes routing, doesn't delete clusters
+# - Data remains in all clusters until you manually remove them
+# - Removing clusters is destructive and cannot be undone
+
+DisableTableReplication:
+  instanceId: my-instance
+  tableId: analytics
+  primaryClusterId: us-west1-b
+  description: "Cost optimization: switch to single-region for analytics table"
+

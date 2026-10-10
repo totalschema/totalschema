@@ -1,0 +1,10 @@
+# Modify Column Family - Max Age Update
+#
+# Updates an existing column family to change the age-based retention policy.
+# Use case: Extend retention period from 7 days to 90 days for auditing.
+
+ModifyColumnFamily:
+  tableId: users
+  familyName: audit
+  maxAge: 90d
+

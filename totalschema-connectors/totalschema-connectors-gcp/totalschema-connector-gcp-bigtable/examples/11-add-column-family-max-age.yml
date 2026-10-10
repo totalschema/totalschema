@@ -1,0 +1,7 @@
+# Example: Add column family with max age rule
+# Deletes data older than specified duration
+
+CreateColumnFamily:
+  tableId: user_profiles
+  familyName: temporary_cache
+  maxAge: 24h

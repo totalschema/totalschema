@@ -1,0 +1,6 @@
+# Example: Remove column family
+# WARNING: This permanently deletes the column family and all its data
+
+DeleteColumnFamily:
+  tableId: user_profiles
+  familyName: old_analytics

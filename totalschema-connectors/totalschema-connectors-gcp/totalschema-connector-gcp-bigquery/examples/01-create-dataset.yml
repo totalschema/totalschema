@@ -1,0 +1,6 @@
+# Example 1: Create a dataset
+CreateDataset:
+  datasetId: my_dataset
+  description: Example dataset for testing
+  location: US
+

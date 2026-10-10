@@ -1,0 +1,23 @@
+# Disable multi-cluster replication by switching to single-cluster routing
+#
+# Use Case: Reduce latency and cost by routing to a single region
+#
+# Important Notes:
+# - This action does NOT delete data from other clusters
+# - It only changes routing behavior to use a single cluster
+# - Data remains replicated in all clusters unless you remove them
+# - To completely remove replication, you must delete clusters from the instance
+#
+# What This Does:
+# - Creates an app profile for single-cluster routing
+# - Routes all reads and writes to the specified primary cluster
+# - Lower latency (no cross-cluster coordination)
+# - Data is still replicated to other clusters in the instance
+
+DisableTableReplication:
+  instanceId: my-instance
+  tableId: users
+  primaryClusterId: us-east1-b  # route all traffic to this cluster
+  appProfileId: users-single-cluster  # optional, defaults to {tableId}-single-cluster
+  description: "Single-cluster routing for users table"
+

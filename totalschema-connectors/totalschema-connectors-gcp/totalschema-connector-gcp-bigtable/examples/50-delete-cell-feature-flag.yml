@@ -1,0 +1,14 @@
+# Delete a cell - Feature Flag Cleanup (All Versions)
+#
+# Use Case: Disable and clean up an old feature flag
+#
+# This is useful when removing features completely from the system
+
+DeleteCell:
+  tableId: feature_flags
+  rowKey: feature#old_ui
+  familyName: flags
+  columnQualifier: enabled
+
+# This deletes ALL versions of the cell
+# DeleteCell is simpler and safer than DeleteCellVersions for complete removal

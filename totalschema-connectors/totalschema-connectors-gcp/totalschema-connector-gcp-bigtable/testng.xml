@@ -1,0 +1,11 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+<suite name="BigTable Actions Test Suite">
+    <test name="Actions Tests">
+        <classes>
+            <class name="io.github.totalschema.connector.gcp.bigtable.actions.ActionFactoryTest"/>
+            <class name="io.github.totalschema.connector.gcp.bigtable.actions.createtable.ColumnFamilyTest"/>
+            <class name="io.github.totalschema.connector.gcp.bigtable.actions.deletetable.DeleteTableTest"/>
+        </classes>
+    </test>
+</suite>
+

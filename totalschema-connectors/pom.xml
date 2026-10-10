@@ -29,6 +29,7 @@
         <module>totalschema-connector-ssh</module>
         <module>totalschema-connector-shell</module>
         <module>totalschema-connector-python</module>
+        <module>totalschema-connectors-gcp</module>
     </modules>
 
     <build>

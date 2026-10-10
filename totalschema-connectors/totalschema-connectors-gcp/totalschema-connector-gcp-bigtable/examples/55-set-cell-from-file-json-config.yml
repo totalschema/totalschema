@@ -1,0 +1,14 @@
+# Set a cell value from a file - JSON Configuration Example
+#
+# Use Case: Load a large JSON configuration file
+#
+# This keeps large configuration data in separate files
+# for better maintainability
+
+SetCell:
+  tableId: app_config
+  rowKey: config#service_mapping
+  familyName: configuration
+  columnQualifier: services
+  valueFile: ./config/service-mapping.json
+

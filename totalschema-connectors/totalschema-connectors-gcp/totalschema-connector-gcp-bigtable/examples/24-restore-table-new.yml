@@ -1,0 +1,33 @@
+# Example: Restore BigTable table from backup to a new table
+# Creates a new table with data from a backup - safe operation
+
+# Restore to a new table name (recommended approach)
+RestoreTable:
+  backupId: users_backup_20260720
+  tableId: users_restored
+  clusterId: prod-cluster-us-east1
+
+# Use cases for restoring to a new table:
+# 1. Disaster recovery - restore without affecting current table
+# 2. Testing - verify backup integrity before production restore
+# 3. Data analysis - create a snapshot for investigation
+# 4. Comparison - compare restored data with current data
+# 5. Staging sync - copy production data to staging
+
+# Important notes:
+# - The restored table will have the same schema as the backup
+# - Column families and GC rules are inherited from the backup
+# - Restore operations can take time for large tables
+# - The backup must exist in the specified cluster
+# - The cluster must have sufficient capacity
+
+# Workflow example (disaster recovery):
+# 1. Create backup: CreateBackup (before deployment)
+# 2. Deployment goes wrong, data corrupted
+# 3. Restore to new table: RestoreTable (to users_restored)
+# 4. Verify data integrity
+# 5. Delete corrupted table: DeleteTable (users)
+# 6. Restore in-place: RestoreTable (to users) or rename users_restored
+
+
+

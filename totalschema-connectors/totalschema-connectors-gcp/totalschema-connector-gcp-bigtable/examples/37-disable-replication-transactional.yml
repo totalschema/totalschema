@@ -1,0 +1,22 @@
+# Disable replication with transactional writes enabled
+#
+# Use Case: Single-cluster operation with strong consistency guarantees
+# 
+# Prerequisites:
+# - Understand that transactional writes only work with single-cluster routing
+# - Best for workloads requiring strong consistency without multi-region latency
+#
+# What This Does:
+# - Creates app profile with single-cluster routing
+# - Enables transactional write guarantees
+# - All operations go to the primary cluster only
+# - Ideal for transactional workloads in a single region
+
+DisableTableReplication:
+  instanceId: prod-instance
+  tableId: orders
+  primaryClusterId: us-central1-a
+  allowTransactionalWrites: true  # enable transactional guarantees
+  appProfileId: orders-transactional
+  description: "Single-cluster transactional routing for orders table"
+

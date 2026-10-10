@@ -1,0 +1,87 @@
+# Example: Create BigTable Instance
+#
+# ⚠️ IMPORTANT: Instance management should typically be done with infrastructure-as-code
+# tools like Terraform for production environments. Use TotalSchema instance management for:
+# - Ephemeral dev/test instances
+# - Automated testing pipelines
+# - SaaS per-customer instances
+# - Disaster recovery automation
+#
+# Cost Warning: BigTable instances incur hourly charges (~$0.65/hour per node with SSD)
+# Always delete unused instances to avoid unexpected bills!
+#
+# File naming convention: 0000.create_dev_instance.DEV.apply.mybigtable.yml
+
+---
+# Simple development instance with single cluster
+CreateInstance:
+  instanceId: dev-bigtable-instance
+  displayName: "Development BigTable Instance"
+  instanceType: DEVELOPMENT  # Lower cost tier for development
+  clusters:
+    - clusterId: dev-cluster-us-central1
+      zone: us-central1-b
+      nodes: 1  # Minimum for development
+      storageType: SSD
+  labels:
+    environment: development
+    managed-by: totalschema
+    team: engineering
+
+---
+# Production instance with multiple clusters (high availability)
+CreateInstance:
+  instanceId: prod-bigtable-instance
+  displayName: "Production BigTable Instance"
+  instanceType: PRODUCTION
+  clusters:
+    # Primary cluster in US
+    - clusterId: prod-cluster-us-east1
+      zone: us-east1-b
+      nodes: 5
+      storageType: SSD
+      autoscaling:
+        minNodes: 3
+        maxNodes: 10
+        cpuTargetPercent: 70
+
+    # Secondary cluster in Europe for global access
+    - clusterId: prod-cluster-europe-west1
+      zone: europe-west1-c
+      nodes: 5
+      storageType: SSD
+      autoscaling:
+        minNodes: 3
+        maxNodes: 10
+        cpuTargetPercent: 70
+
+  labels:
+    environment: production
+    criticality: high
+    managed-by: totalschema
+
+---
+# Testing instance for CI/CD pipelines
+CreateInstance:
+  instanceId: ci-test-instance-${BUILD_ID}  # Use variable substitution
+  displayName: "CI Test Instance ${BUILD_ID}"
+  instanceType: DEVELOPMENT
+  clusters:
+    - clusterId: test-cluster
+      zone: us-central1-b
+      nodes: 1
+      storageType: HDD  # Lower cost for temporary testing
+  labels:
+    environment: ci-test
+    build-id: ${BUILD_ID}
+    auto-cleanup: true  # Marker for cleanup scripts
+
+---
+# Delete instance (pairs with create for complete lifecycle)
+DeleteInstance:
+  instanceId: dev-bigtable-instance
+  # Safety check - require explicit confirmation
+  confirmDeletion: true
+  # Optional: require exact name match to prevent accidents
+  confirmInstanceName: dev-bigtable-instance
+

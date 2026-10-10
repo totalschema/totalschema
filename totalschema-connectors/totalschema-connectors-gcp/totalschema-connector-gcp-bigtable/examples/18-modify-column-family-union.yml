@@ -1,0 +1,13 @@
+# Modify Column Family - Union Rule
+#
+# Updates an existing column family with union GC rules.
+# Cells satisfy ANY rule: keep at least 5 versions OR data from last 30 days.
+# Use case: Flexible retention - recent data OR recent versions for analytics.
+
+ModifyColumnFamily:
+  tableId: users
+  familyName: analytics
+  union:
+    - maxVersions: 5
+    - maxAge: 30d
+

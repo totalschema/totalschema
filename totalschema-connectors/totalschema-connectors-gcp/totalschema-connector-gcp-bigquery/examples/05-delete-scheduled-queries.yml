@@ -1,0 +1,205 @@
+# BigQuery Delete Scheduled Queries - Examples
+#
+# Connector Configuration (totalschema.yml):
+#
+#   connectors:
+#     mybigquery:
+#       type: bigquery
+#       defaults:
+#         projectId: my-gcp-project  # Required for transferConfigId usage
+#         location: US               # Used if not specified per-action
+#
+# With connector defaults, you only need the transferConfigId.
+# Override location per-action for region-specific queries.
+
+# Example 1: Delete by Config ID (Simple)
+# Uses connector defaults for projectId and location
+DeleteScheduledQuery:
+  transferConfigId: 12345678-1234-1234-1234-123456789012
+
+---
+
+# Example 2: Delete by Full Resource Name
+# Use when you have the complete resource path
+DeleteScheduledQuery:
+  transferConfigName: projects/my-project/locations/us/transferConfigs/12345678-1234-1234-1234-123456789012
+
+---
+
+# Example 3: Delete EU Scheduled Query
+# Override connector default location for EU-specific query
+DeleteScheduledQuery:
+  transferConfigId: abcd-efgh-ijkl-mnop
+  location: EU  # Override connector default
+
+---
+
+# Example 4: Delete Regional Scheduled Query
+DeleteScheduledQuery:
+  transferConfigId: config-id-123
+  location: us-central1
+
+---
+
+# Example 5: Minimal Configuration (Defaults to US)
+DeleteScheduledQuery:
+  transferConfigId: my-scheduled-query-id
+
+---
+
+# Example 6: Using Variables for Dynamic Deletion
+# Useful for managing different environments
+DeleteScheduledQuery:
+  transferConfigId: ${scheduledQueryId}
+  location: ${region}
+
+---
+
+# Example 7: Cleanup Multiple Scheduled Queries
+# Use separate actions for each scheduled query to delete
+
+# Delete daily report
+DeleteScheduledQuery:
+  transferConfigId: daily-sales-report-id
+
+---
+
+# Delete hourly metrics
+DeleteScheduledQuery:
+  transferConfigId: hourly-metrics-id
+
+---
+
+# Delete weekly summary
+DeleteScheduledQuery:
+  transferConfigId: weekly-customer-summary-id
+
+---
+
+# Example 8: Delete Scheduled Query from Different Project
+# Using full resource name for cross-project deletion
+DeleteScheduledQuery:
+  transferConfigName: projects/analytics-project/locations/us/transferConfigs/cross-project-query-id
+
+---
+
+# Example 9: Delete Test Environment Scheduled Query
+DeleteScheduledQuery:
+  transferConfigId: test-env-daily-report
+  location: us-west1
+
+---
+
+# Example 10: Complete Lifecycle Example
+# Create, use, and delete a temporary scheduled query
+
+# Step 1: Create a temporary scheduled query
+CreateScheduledQuery:
+  displayName: Temporary Analysis Query
+  query: |
+    SELECT 
+      customer_id,
+      COUNT(*) as order_count,
+      SUM(amount) as total_spent
+    FROM `my-project.sales.orders`
+    WHERE DATE(order_date) = CURRENT_DATE()
+    GROUP BY customer_id
+  destinationDatasetId: temp_analytics
+  schedule: "every day 00:00"
+
+# Note: After creation, you'll get a transfer config ID like:
+# 12345678-1234-1234-1234-123456789012
+
+# Step 2: When analysis is complete, delete the scheduled query
+DeleteScheduledQuery:
+  transferConfigId: 12345678-1234-1234-1234-123456789012
+
+---
+
+# Example 11: Cleanup Old Scheduled Queries
+# Delete deprecated scheduled queries being replaced
+
+# Delete old version
+DeleteScheduledQuery:
+  transferConfigId: old-sales-report-v1
+
+---
+
+# Create new version (would be in a separate action)
+# CreateScheduledQuery:
+#   displayName: Sales Report v2
+#   ...
+
+---
+
+# Example 12: Environment-Specific Deletion
+# Different config IDs for different environments
+
+# Delete DEV scheduled query
+DeleteScheduledQuery:
+  transferConfigId: ${devScheduledQueryId}
+  location: ${devRegion}
+
+---
+
+# Delete STAGING scheduled query
+DeleteScheduledQuery:
+  transferConfigId: ${stagingScheduledQueryId}
+  location: ${stagingRegion}
+
+---
+
+# Delete PROD scheduled query (be careful!)
+DeleteScheduledQuery:
+  transferConfigId: ${prodScheduledQueryId}
+  location: ${prodRegion}
+
+---
+
+# Example 13: Delete with Explicit Project Override
+# Using full resource name to specify a different project
+DeleteScheduledQuery:
+  transferConfigName: projects/backup-project/locations/eu/transferConfigs/backup-query-id
+
+---
+
+# Example 14: Multi-Region Cleanup
+# Delete scheduled queries from multiple regions
+
+# US Region
+DeleteScheduledQuery:
+  transferConfigId: us-scheduled-query
+
+---
+
+# EU Region
+DeleteScheduledQuery:
+  transferConfigId: eu-scheduled-query
+  location: EU
+
+---
+
+# Asia Region
+DeleteScheduledQuery:
+  transferConfigId: asia-scheduled-query
+  location: asia-east1
+
+---
+
+# Example 15: Cost Optimization - Delete Unused Queries
+# Remove scheduled queries that are no longer needed to save costs
+
+DeleteScheduledQuery:
+  transferConfigId: unused-daily-report
+
+---
+
+DeleteScheduledQuery:
+  transferConfigId: deprecated-metrics-query
+
+---
+
+DeleteScheduledQuery:
+  transferConfigId: old-customer-analysis
+  location: EU
+

@@ -1,0 +1,14 @@
+# Example: Delete BigTable tables
+# WARNING: This action permanently deletes tables and all their data!
+# This operation cannot be undone.
+
+# Simple table deletion
+DeleteTable:
+  tableId: temporary_table
+
+# Use case examples:
+# 1. Clean up test tables
+# 2. Revert a CreateTable action
+# 3. Remove deprecated tables
+# 4. Part of data migration cleanup
+

@@ -1,0 +1,14 @@
+# Reset Column Family - Remove All GC Rules
+#
+# Resets a column family to default configuration (no GC rules).
+# After reset, BigTable will keep all versions indefinitely.
+#
+# ⚠️  WARNING: This can lead to increased storage costs and slower queries.
+#             Use carefully and consider ModifyColumnFamily instead.
+#
+# Use case: Remove unwanted GC policies or prepare for applying new rules.
+
+ResetColumnFamily:
+  tableId: users
+  familyName: profile
+

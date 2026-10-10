@@ -1,0 +1,10 @@
+# Example 1: Simple table with basic families
+# No GC rules - BigTable default behavior (keep all versions)
+
+CreateTable:
+  tableId: user_profiles
+  families:
+    - name: profile
+    - name: settings
+    - name: preferences
+

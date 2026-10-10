@@ -1,0 +1,207 @@
+# BigQuery Enable/Disable Scheduled Queries - Examples
+#
+# Connector Configuration (totalschema.yml):
+#
+#   connectors:
+#     mybigquery:
+#       type: bigquery
+#       defaults:
+#         projectId: my-gcp-project  # Required for transferConfigId usage
+#         location: US               # Used if not specified per-action
+#
+# With connector defaults, you only need the transferConfigId.
+# Override location per-action for region-specific queries.
+
+# Example 1: Enable a Scheduled Query
+# Re-activate a previously disabled query - uses connector defaults
+EnableScheduledQuery:
+  transferConfigId: 12345678-1234-1234-1234-123456789012
+
+---
+
+# Example 2: Disable a Scheduled Query (Simple)
+# Temporarily pause a scheduled query without deleting it
+DisableScheduledQuery:
+  transferConfigId: 12345678-1234-1234-1234-123456789012
+
+---
+
+# Example 3: Enable by Full Resource Name
+EnableScheduledQuery:
+  transferConfigName: projects/my-project/locations/us/transferConfigs/12345678-1234-1234-1234-123456789012
+
+---
+
+# Example 4: Disable by Full Resource Name
+DisableScheduledQuery:
+  transferConfigName: projects/my-project/locations/us/transferConfigs/12345678-1234-1234-1234-123456789012
+
+---
+
+# Example 5: Enable EU Scheduled Query
+EnableScheduledQuery:
+  transferConfigId: eu-daily-report
+  location: EU
+
+---
+
+# Example 6: Disable EU Scheduled Query
+DisableScheduledQuery:
+  transferConfigId: eu-daily-report
+  location: EU
+
+---
+
+# Example 7: Seasonal Enable/Disable
+# Enable queries during high season, disable during low season
+
+# Enable for holiday season
+EnableScheduledQuery:
+  transferConfigId: holiday-sales-analysis
+
+---
+
+# Disable after holiday season
+DisableScheduledQuery:
+  transferConfigId: holiday-sales-analysis
+
+---
+
+# Example 8: Maintenance Window
+# Disable queries during maintenance, re-enable after
+
+# Before maintenance
+DisableScheduledQuery:
+  transferConfigId: hourly-metrics-update
+
+---
+
+# After maintenance
+EnableScheduledQuery:
+  transferConfigId: hourly-metrics-update
+
+---
+
+# Example 9: Environment-Specific Control
+# Using variables for different environments
+
+# Enable in PROD
+EnableScheduledQuery:
+  transferConfigId: ${prodScheduledQueryId}
+  location: ${prodRegion}
+
+---
+
+# Disable in DEV (save costs)
+DisableScheduledQuery:
+  transferConfigId: ${devScheduledQueryId}
+  location: ${devRegion}
+
+---
+
+# Example 10: Cost Optimization - Disable Expensive Queries
+# Temporarily disable resource-intensive queries during peak hours
+
+DisableScheduledQuery:
+  transferConfigId: expensive-aggregation-query
+
+---
+
+# Example 11: Complete Lifecycle with Enable/Disable
+# Create, disable for configuration, enable when ready
+
+# Step 1: Create a new scheduled query
+CreateScheduledQuery:
+  displayName: New Monthly Report
+  query: "SELECT ..."
+  schedule: "1 of month 00:00"
+  disabled: true  # Create in disabled state
+
+# Step 2: After testing, enable it
+EnableScheduledQuery:
+  transferConfigId: new-monthly-report-id
+
+# Step 3: Later, if needed, disable temporarily
+DisableScheduledQuery:
+  transferConfigId: new-monthly-report-id
+
+---
+
+# Example 12: Batch Enable Multiple Queries
+# Enable multiple scheduled queries at once
+
+EnableScheduledQuery:
+  transferConfigId: daily-sales-report
+
+---
+
+EnableScheduledQuery:
+  transferConfigId: daily-customer-metrics
+
+---
+
+EnableScheduledQuery:
+  transferConfigId: daily-inventory-check
+
+---
+
+# Example 13: Batch Disable Multiple Queries
+# Disable multiple scheduled queries for weekend maintenance
+
+DisableScheduledQuery:
+  transferConfigId: weekday-report-1
+
+---
+
+DisableScheduledQuery:
+  transferConfigId: weekday-report-2
+
+---
+
+DisableScheduledQuery:
+  transferConfigId: weekday-report-3
+
+---
+
+# Example 14: Regional Control
+# Enable/Disable queries in specific regions
+
+# Enable US region queries
+EnableScheduledQuery:
+  transferConfigId: us-regional-analytics
+  location: us-central1
+
+---
+
+# Disable Asia region queries (maintenance)
+DisableScheduledQuery:
+  transferConfigId: asia-regional-analytics
+  location: asia-east1
+
+---
+
+# Example 15: Testing Workflow
+# Disable prod query, enable test query, then swap back
+
+# Disable production query
+DisableScheduledQuery:
+  transferConfigId: prod-customer-report
+
+---
+
+# Enable test version
+EnableScheduledQuery:
+  transferConfigId: test-customer-report-v2
+
+# ... after testing ...
+
+# Re-enable production query
+EnableScheduledQuery:
+  transferConfigId: prod-customer-report
+
+---
+
+# Disable test version
+DisableScheduledQuery:
+  transferConfigId: test-customer-report-v2
+

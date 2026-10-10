@@ -1,0 +1,10 @@
+# Multi-tenancy access control
+# Use case: Give each customer's service account access to their own table
+
+SetTableIamPolicy:
+  tableId: tenant_${TENANT_ID}_data
+  bindings:
+    - role: roles/bigtable.user
+      members:
+        - serviceAccount:tenant-${TENANT_ID}@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+

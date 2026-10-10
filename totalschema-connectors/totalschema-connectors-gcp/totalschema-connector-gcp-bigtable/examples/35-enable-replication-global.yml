@@ -1,0 +1,28 @@
+# Enable multi-region replication for global application
+#
+# Use Case: Serve users globally with low latency from nearest region
+# 
+# Prerequisites:
+# - Instance must have clusters in each target region
+# - Best practice: Use one cluster per major market (US, EU, APAC)
+#
+# Architecture:
+# - Users in US-East → routed to us-east1-b cluster
+# - Users in EU → routed to europe-west1-c cluster
+# - Users in Asia → routed to asia-east1-a cluster
+#
+# Failover:
+# - If one cluster is unavailable, traffic automatically routes to others
+# - Eventual consistency ensures all regions eventually see all writes
+
+EnableTableReplication:
+  instanceId: global-app
+  tableId: user_profiles
+  clusters:
+    - us-east1-b
+    - europe-west1-c
+    - asia-east1-a
+  consistency: EVENTUAL
+  appProfileId: global-profiles
+  description: "Global multi-region replication for user profiles"
+

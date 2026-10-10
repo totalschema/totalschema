@@ -1,0 +1,7 @@
+# Example: Add column family with max versions rule
+# Limits the retention to most recent N versions
+
+CreateColumnFamily:
+  tableId: user_profiles
+  familyName: audit_log
+  maxVersions: 100

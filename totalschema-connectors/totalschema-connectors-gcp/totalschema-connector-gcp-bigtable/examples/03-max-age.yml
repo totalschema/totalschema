@@ -1,0 +1,22 @@
+# Example 3: Families with max age rule
+# Keep versions newer than specified duration
+
+CreateTable:
+  tableId: event_logs
+  families:
+    # Keep recent activity for 7 days
+    - name: user_activity
+      maxAge: 7d
+    
+    # Keep temporary cache for 24 hours
+    - name: session_cache
+      maxAge: 24h
+    
+    # Keep short-term metrics for 1 hour
+    - name: realtime_metrics
+      maxAge: 1h
+    
+    # Keep debug logs for 30 minutes
+    - name: debug_logs
+      maxAge: 30m
+

@@ -1,0 +1,9 @@
+# Enable autoscaling for a development environment
+# Minimal cost during idle periods, scales up for testing
+SetTableAutoscaling:
+  instanceId: dev-instance
+  clusterId: dev-cluster-us-central1
+  minNodes: 1
+  maxNodes: 5
+  cpuTargetPercent: 80
+

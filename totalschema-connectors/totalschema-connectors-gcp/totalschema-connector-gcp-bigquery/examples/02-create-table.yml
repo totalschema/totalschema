@@ -1,0 +1,12 @@
+# Example 2: Execute a SQL statement to create a table
+ExecuteStatement:
+  defaultDataset: my_dataset
+  useLegacySql: false
+  query: |
+    CREATE TABLE users (
+      id INT64 NOT NULL,
+      name STRING,
+      email STRING,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+    )
+

@@ -1,0 +1,27 @@
+# Enable multi-cluster replication with strong consistency
+#
+# Use Case: Enable replication with guaranteed consistency for critical data
+# 
+# Prerequisites:
+# - The instance must already have the specified clusters
+# - The table must exist in the instance
+#
+# What This Does:
+# - Creates an app profile for multi-cluster routing
+# - Sets consistency level to STRONG (guaranteed consistency, higher latency)
+# - Best for transactional workloads requiring strong guarantees
+#
+# Performance Note:
+# - Strong consistency adds latency for cross-region coordination
+# - Use EVENTUAL for read-heavy workloads where slight staleness is acceptable
+
+EnableTableReplication:
+  instanceId: prod-instance
+  tableId: transactions
+  clusters:
+    - us-central1-a
+    - us-central1-b
+    - us-east1-b
+  consistency: STRONG  # guaranteed consistency, higher latency
+  description: "Strong consistency multi-cluster routing for transactions"
+

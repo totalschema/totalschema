@@ -1,0 +1,10 @@
+# Modify Column Family - Simple Max Versions Update
+#
+# Updates an existing column family to change the version retention policy.
+# Use case: Extend version retention for compliance or rollback requirements.
+
+ModifyColumnFamily:
+  tableId: users
+  familyName: profile
+  maxVersions: 10
+

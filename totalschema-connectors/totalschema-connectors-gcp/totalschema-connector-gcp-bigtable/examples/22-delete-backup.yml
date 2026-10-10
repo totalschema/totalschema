@@ -1,0 +1,22 @@
+# Example: Delete BigTable backup to free storage
+# WARNING: This permanently deletes backups - cannot be undone!
+
+# Delete backup (requires clusterId for backup location)
+DeleteBackup:
+  backupId: users_backup_20260701
+  clusterId: prod-cluster-us-east1
+
+# Use case examples:
+# 1. Clean up old/expired backups for cost savings
+# 2. Revert an accidental backup creation
+# 3. Remove backups after successful restoration
+# 4. Comply with data retention policies
+
+# Note: Backups are cluster-scoped, so clusterId is required
+# If you don't know the cluster, list backups using gcloud CLI:
+#   gcloud bigtable backups list --instances=YOUR_INSTANCE
+
+# Cost savings: Deleting unused backups immediately frees storage costs
+
+
+

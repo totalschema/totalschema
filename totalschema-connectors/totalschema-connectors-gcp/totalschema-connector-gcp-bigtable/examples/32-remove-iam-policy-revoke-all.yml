@@ -1,0 +1,16 @@
+# Remove all access for a service account
+# Use case: Security incident - immediately revoke all permissions
+
+RemoveTableIamPolicy:
+  tableId: sensitive_data
+  bindings:
+    - role: roles/bigtable.reader
+      members:
+        - serviceAccount:compromised-service@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+    - role: roles/bigtable.user
+      members:
+        - serviceAccount:compromised-service@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+    - role: roles/bigtable.admin
+      members:
+        - serviceAccount:compromised-service@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+

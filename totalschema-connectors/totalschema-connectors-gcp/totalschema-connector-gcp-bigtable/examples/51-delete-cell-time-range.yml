@@ -1,0 +1,21 @@
+# Delete specific cell versions - Time Range Deletion
+#
+# Use Case: Delete cell versions within a specific time range (e.g., GDPR data cleanup)
+#
+# This example removes audit log entries for a specific time period
+# Using DeleteCellVersions ensures you must specify at least one timestamp filter
+
+DeleteCellVersions:
+  tableId: audit_log
+  rowKey: "log#${LOG_ID}"
+  familyName: events
+  columnQualifier: details
+  startTimestampMicros: 1692201600000000  # Aug 17, 2026 00:00:00 UTC
+  endTimestampMicros: 1692288000000000    # Aug 18, 2026 00:00:00 UTC
+
+# This deletes only cell versions between the start and end timestamps
+# Versions outside this range are preserved
+#
+# Note: DeleteCellVersions requires at least one timestamp parameter
+# To delete ALL versions, use DeleteCell instead
+

@@ -1,0 +1,7 @@
+# Disable autoscaling for development environment
+# Fixed single node for minimal cost
+DisableTableAutoscaling:
+  instanceId: dev-instance
+  clusterId: dev-cluster-us-central1
+  fixedNodes: 1
+

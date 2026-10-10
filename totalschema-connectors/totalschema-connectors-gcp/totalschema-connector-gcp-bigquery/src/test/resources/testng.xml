@@ -1,0 +1,24 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+<suite name="BigQuery Connector Test Suite" verbose="1">
+    <test name="Unit Tests">
+        <classes>
+            <class name="io.github.totalschema.connector.gcp.bigquery.actions.ActionFactoryTest"/>
+            <class name="io.github.totalschema.connector.gcp.bigquery.actions.dataset.create.CreateDatasetTest"/>
+            <class name="io.github.totalschema.connector.gcp.bigquery.actions.statement.execute.ExecuteStatementTest"/>
+            <class name="io.github.totalschema.connector.gcp.bigquery.BigQueryConnectorTest"/>
+            <class name="io.github.totalschema.connector.gcp.bigquery.SqlBigQueryChangeExecutorTest"/>
+        </classes>
+    </test>
+    <test name="Integration Tests (Mock-based)">
+        <classes>
+            <class name="io.github.totalschema.connector.gcp.bigquery.BigQueryConnectorIntegrationTest"/>
+        </classes>
+    </test>
+    <test name="Integration Tests (Emulator-based)">
+        <classes>
+            <class name="io.github.totalschema.connector.gcp.bigquery.actions.dataset.create.CreateDatasetIntegrationTest"/>
+            <class name="io.github.totalschema.connector.gcp.bigquery.actions.statement.execute.ExecuteStatementIntegrationTest"/>
+        </classes>
+    </test>
+</suite>
+

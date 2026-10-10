@@ -1,0 +1,17 @@
+# Delete specific cell versions - Delete After Timestamp
+#
+# Use Case: Delete all cell versions after a specific point in time
+#
+# Useful for reverting bad data or cleaning up after a certain date
+
+DeleteCellVersions:
+  tableId: user_sessions
+  rowKey: "session#user-123"
+  familyName: data
+  columnQualifier: session_data
+  startTimestampMicros: 1692288000000000  # Delete versions from this time forward
+  # endTimestampMicros is omitted - means delete to the end of time
+
+# Note: DeleteCellVersions ensures you can't accidentally delete all versions
+# You must specify at least startTimestampMicros OR endTimestampMicros
+

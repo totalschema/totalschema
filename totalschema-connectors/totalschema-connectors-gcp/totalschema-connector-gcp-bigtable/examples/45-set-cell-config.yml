@@ -1,0 +1,18 @@
+# Set a single cell value - Configuration Example
+#
+# Use Case: Setting a system configuration value that controls application behavior
+#
+# This action is ideal for:
+# - Configuration values
+# - Feature flags
+# - System settings
+# - Reference data
+# - Environment-specific values
+
+SetCell:
+  tableId: system_config
+  rowKey: config#database_version
+  familyName: metadata
+  columnQualifier: version
+  value: "2.5.0"
+

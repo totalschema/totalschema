@@ -1,0 +1,17 @@
+# Set a single cell value - API Endpoint Configuration
+#
+# Use Case: Configure environment-specific API endpoints
+#
+# This example demonstrates using multiple variables for complete configuration
+
+SetCell:
+  tableId: env_config
+  rowKey: "config#${ENVIRONMENT}"
+  familyName: settings
+  columnQualifier: api_endpoint
+  value: "${API_ENDPOINT_URL}"
+
+# Example variable values:
+# DEV: ENVIRONMENT=dev, API_ENDPOINT_URL=https://api-dev.example.com
+# PROD: ENVIRONMENT=prod, API_ENDPOINT_URL=https://api.example.com
+

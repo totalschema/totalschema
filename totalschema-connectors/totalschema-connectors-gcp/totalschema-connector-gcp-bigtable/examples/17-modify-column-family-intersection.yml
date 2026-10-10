@@ -1,0 +1,12 @@
+# Modify Column Family - Intersection Rule
+#
+# Updates an existing column family with multiple GC rules (intersection).
+# Cells must satisfy ALL rules: keep up to 100 versions AND within 1 year.
+# Use case: Compliance requirement - keep last year's data with version history.
+
+ModifyColumnFamily:
+  tableId: users
+  familyName: sensitive
+  maxVersions: 100
+  maxAge: 365d
+

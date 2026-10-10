@@ -1,0 +1,17 @@
+# Set a cell value from a file - Binary Data Example
+#
+# Use Case: Store binary data like images or encoded data
+#
+# valueFile can handle any file type - text or binary
+# The entire file content is stored as-is in the cell
+
+SetCell:
+  tableId: media_assets
+  rowKey: "logo#${BRAND}"
+  familyName: images
+  columnQualifier: logo_png
+  valueFile: ${ASSET_DIR}/logo.png
+
+# This stores the raw PNG file bytes in BigTable
+# Useful for small assets, thumbnails, icons, etc.
+

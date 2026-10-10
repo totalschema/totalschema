@@ -1,0 +1,248 @@
+# BigQuery Scheduled Queries - Examples
+#
+# Connector Configuration (totalschema.yml):
+#
+#   connectors:
+#     mybigquery:
+#       type: bigquery
+#       defaults:
+#         projectId: my-gcp-project  # Used if not specified per-action
+#         location: US               # Used if not specified per-action
+#
+# With connector defaults configured, you can omit projectId and location.
+# Override per-action when needed (e.g., for EU queries).
+
+# Example 1: Daily Sales Report
+# Runs daily at midnight UTC - appends results to destination table
+CreateScheduledQuery:
+  displayName: Daily Sales Report
+  query: |
+    SELECT 
+      DATE(order_date) as sales_date,
+      COUNT(DISTINCT customer_id) as unique_customers,
+      COUNT(*) as total_orders,
+      SUM(amount) as total_revenue,
+      AVG(amount) as average_order_value
+    FROM `my-project.sales.orders`
+    WHERE DATE(order_date) = CURRENT_DATE()
+    GROUP BY sales_date
+  destination:
+    datasetId: analytics
+    tableId: daily_sales_report
+    writeDisposition: WRITE_APPEND  # Default behavior - appends to table
+  schedule: "every day 00:00"
+  disabled: false
+
+---
+
+# Example 2: Hourly Active Users
+# Tracks active users every hour for real-time monitoring
+CreateScheduledQuery:
+  displayName: Hourly Active Users
+  query: |
+    SELECT
+      TIMESTAMP_TRUNC(event_timestamp, HOUR) as hour,
+      COUNT(DISTINCT user_id) as active_users,
+      COUNT(*) as total_events
+    FROM `my-project.analytics.events`
+    WHERE event_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)
+      AND event_timestamp < CURRENT_TIMESTAMP()
+    GROUP BY hour
+  destination:
+    datasetId: realtime_metrics
+    tableId: hourly_active_users
+  schedule: "every 1 hours"
+
+---
+
+# Example 3: Weekly Customer Cohort Analysis
+# Runs every Monday to analyze customer cohorts from the previous week
+# Truncates before each run to maintain current cohort analysis
+CreateScheduledQuery:
+  displayName: Weekly Customer Cohort Analysis
+  query: |
+    WITH cohorts AS (
+      SELECT
+        customer_id,
+        MIN(DATE(order_date)) as cohort_date,
+        DATE_DIFF(DATE(order_date), MIN(DATE(order_date)) OVER (PARTITION BY customer_id), WEEK) as weeks_since_first_order
+      FROM `my-project.sales.orders`
+      WHERE DATE(order_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 8 WEEK)
+      GROUP BY customer_id, order_date
+    )
+    SELECT
+      cohort_date,
+      weeks_since_first_order,
+      COUNT(DISTINCT customer_id) as customers,
+      AVG(weeks_since_first_order) as avg_weeks_active
+    FROM cohorts
+    GROUP BY cohort_date, weeks_since_first_order
+    ORDER BY cohort_date, weeks_since_first_order
+  destination:
+    datasetId: analytics
+    tableId: customer_cohort_analysis
+    writeDisposition: WRITE_TRUNCATE  # Replace analysis each week
+  schedule: "every monday 09:00"
+
+---
+
+# Example 4: Quarterly Financial Summary (Disabled)
+# Pre-configured but disabled - can be enabled manually when needed
+# Truncates results each quarter for clean quarterly reports
+CreateScheduledQuery:
+  displayName: Quarterly Financial Summary
+  query: |
+    SELECT
+      EXTRACT(YEAR FROM order_date) as year,
+      EXTRACT(QUARTER FROM order_date) as quarter,
+      SUM(amount) as total_revenue,
+      COUNT(*) as total_orders,
+      COUNT(DISTINCT customer_id) as unique_customers,
+      SUM(amount) / COUNT(DISTINCT customer_id) as revenue_per_customer
+    FROM `my-project.sales.orders`
+    WHERE DATE(order_date) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 1 QUARTER), QUARTER)
+      AND DATE(order_date) < DATE_TRUNC(CURRENT_DATE(), QUARTER)
+    GROUP BY year, quarter
+  destination:
+    datasetId: financial_reports
+    tableId: quarterly_summary
+    writeDisposition: WRITE_TRUNCATE
+  schedule: "first day of quarter 00:00"
+  disabled: true
+
+---
+
+# Example 5: Data Quality Check (Every 15 Minutes)
+# Monitors data quality metrics frequently - appends results for audit trail
+CreateScheduledQuery:
+  displayName: Data Quality Monitor
+  query: |
+    SELECT
+      CURRENT_TIMESTAMP() as check_time,
+      table_name,
+      COUNT(*) as row_count,
+      COUNTIF(id IS NULL) as null_ids,
+      COUNTIF(created_at > CURRENT_TIMESTAMP()) as future_dates,
+      COUNTIF(amount < 0) as negative_amounts
+    FROM (
+      SELECT 'orders' as table_name, id, created_at, amount FROM `my-project.sales.orders`
+      UNION ALL
+      SELECT 'customers' as table_name, id, created_at, NULL as amount FROM `my-project.sales.customers`
+    )
+    GROUP BY table_name
+  destination:
+    datasetId: data_quality
+    tableId: quality_checks
+    partitioningField: check_time
+  schedule: "every 15 minutes"
+
+---
+
+# Example 6: Monthly User Retention
+# Calculates monthly retention metrics on the first of each month
+CreateScheduledQuery:
+  displayName: Monthly User Retention
+  query: |
+    WITH monthly_active AS (
+      SELECT
+        user_id,
+        DATE_TRUNC(DATE(event_timestamp), MONTH) as month
+      FROM `my-project.analytics.events`
+      WHERE event_timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 13 MONTH)
+      GROUP BY user_id, month
+    ),
+    retention AS (
+      SELECT
+        a.month as cohort_month,
+        b.month as active_month,
+        DATE_DIFF(b.month, a.month, MONTH) as months_since_first,
+        COUNT(DISTINCT a.user_id) as cohort_size,
+        COUNT(DISTINCT b.user_id) as retained_users
+      FROM monthly_active a
+      LEFT JOIN monthly_active b ON a.user_id = b.user_id AND b.month >= a.month
+      WHERE a.month = (SELECT MIN(month) FROM monthly_active WHERE user_id = a.user_id)
+      GROUP BY cohort_month, active_month, months_since_first
+    )
+    SELECT
+      cohort_month,
+      months_since_first,
+      cohort_size,
+      retained_users,
+      SAFE_DIVIDE(retained_users, cohort_size) * 100 as retention_rate
+    FROM retention
+    ORDER BY cohort_month, months_since_first
+  destination:
+    datasetId: analytics
+    tableId: user_retention_monthly
+    partitioningField: cohort_month
+  schedule: "1 of month 00:00"
+
+---
+
+# Example 7: Parameterized Query with Custom Parameters
+# Uses custom parameters for flexible filtering
+CreateScheduledQuery:
+  displayName: Regional Sales Report
+  query: |
+    SELECT
+      region,
+      product_category,
+      SUM(amount) as total_sales,
+      COUNT(*) as order_count
+    FROM `my-project.sales.orders`
+    WHERE region = @region
+      AND DATE(order_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL @days_back DAY)
+    GROUP BY region, product_category
+    ORDER BY total_sales DESC
+  destination:
+    datasetId: regional_analytics
+    tableId: regional_sales_report
+  schedule: "every day 08:00"
+  parameters:
+    region: "US-WEST"
+    days_back: "30"
+
+---
+
+# Example 8: Multi-Region Setup (Europe)
+# Scheduled query for European data with EU location
+CreateScheduledQuery:
+  displayName: EU Daily Summary
+  query: |
+    SELECT
+      DATE(order_date) as date,
+      country,
+      SUM(amount_eur) as total_revenue_eur,
+      COUNT(*) as order_count
+    FROM `my-project.sales_eu.orders`
+    WHERE DATE(order_date) = CURRENT_DATE()
+      AND country IN ('DE', 'FR', 'UK', 'ES', 'IT')
+    GROUP BY date, country
+  destination:
+    datasetId: eu_analytics
+    tableId: eu_daily_summary
+    partitioningField: date
+  schedule: "every day 00:00"
+  disabled: false
+
+---
+
+# Example 9: Replace Existing Query
+# Using replaceIfExists to update/replace a previously scheduled query with the same name
+CreateScheduledQuery:
+  displayName: Updated Customer Metrics
+  query: |
+    SELECT
+      DATE(created_at) as signup_date,
+      country,
+      COUNT(DISTINCT customer_id) as new_customers,
+      SUM(lifetime_value) as total_ltv,
+      AVG(lifetime_value) as avg_ltv
+    FROM `my-project.sales.customers`
+    WHERE DATE(created_at) = CURRENT_DATE()
+    GROUP BY signup_date, country
+  destination:
+    datasetId: analytics
+    tableId: customer_metrics_daily
+  schedule: "every day 01:00"
+  replaceIfExists: true  # Replaces any existing scheduled query with this display name

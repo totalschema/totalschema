@@ -1,0 +1,6 @@
+# Example: Add column family to existing table
+# Demonstrates schema evolution without downtime
+
+CreateColumnFamily:
+  tableId: user_profiles
+  familyName: analytics

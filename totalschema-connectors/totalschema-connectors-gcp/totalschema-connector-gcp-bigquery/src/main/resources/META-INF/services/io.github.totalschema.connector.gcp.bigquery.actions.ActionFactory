@@ -1,0 +1,16 @@
+io.github.totalschema.connector.gcp.bigquery.actions.dataset.create.CreateDatasetActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.exchange.create.CreateExchangeActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.exchange.delete.DeleteExchangeActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.exchange.iam.add.AddExchangeIamPolicyBindingsActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.exchange.iam.remove.RemoveExchangeIamPolicyBindingsActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.exchange.iam.set.SetExchangeIamPolicyActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.listing.create.CreateListingActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.listing.delete.DeleteListingActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.scheduledquery.create.CreateScheduledQueryActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.scheduledquery.delete.DeleteScheduledQueryActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.scheduledquery.disable.DisableScheduledQueryActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.dataset.drop.DropDatasetActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.scheduledquery.enable.EnableScheduledQueryActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.statement.execute.ExecuteStatementActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.subscription.create.CreateSubscriptionActionFactory
+io.github.totalschema.connector.gcp.bigquery.actions.subscription.delete.DeleteSubscriptionActionFactory

@@ -1,0 +1,13 @@
+# Set a single cell value - Feature Flag Example
+#
+# Use Case: Enable or disable a feature flag across environments
+#
+# This example shows how to use variable substitution for environment-specific values
+
+SetCell:
+  tableId: feature_flags
+  rowKey: "feature#new_dashboard"
+  familyName: flags
+  columnQualifier: enabled
+  value: "${FEATURE_ENABLED}"  # true or false from environment variables
+

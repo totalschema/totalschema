@@ -1,0 +1,9 @@
+# Example: Add column family with union rule
+# Either condition can be met for data retention (keep data if ANY rule applies)
+
+CreateColumnFamily:
+  tableId: user_profiles
+  familyName: flexible_retention
+  union:
+    - maxVersions: 3
+    - maxAge: 24h

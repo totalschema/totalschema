@@ -1,0 +1,28 @@
+# Enable multi-cluster replication with eventual consistency
+#
+# Use Case: Enable table replication across multiple regions for high availability
+#
+# Prerequisites:
+# - The instance must already have the specified clusters
+# - The table must exist in the instance
+# - Use 00-create-instance.yml to set up clusters if needed
+#
+# What This Does:
+# - Creates an app profile for multi-cluster routing
+# - Sets consistency level to EVENTUAL (lower latency, may be slightly stale)
+# - All reads/writes use this app profile to distribute across clusters
+#
+# Cost Implications:
+# - Data is replicated to all clusters (storage cost multiplied by cluster count)
+# - Network egress costs for cross-region replication
+
+EnableTableReplication:
+  instanceId: my-instance
+  tableId: users
+  clusters:
+    - us-east1-b
+    - europe-west1-c
+  consistency: EVENTUAL  # default - lower latency, eventual consistency
+  appProfileId: users-multi-cluster  # optional, defaults to {tableId}-replication
+  description: "Multi-cluster routing for users table"
+

@@ -1,0 +1,17 @@
+# Revoke multiple roles and members
+# Use case: Cleanup access for multiple decommissioned services
+
+RemoveTableIamPolicy:
+  tableId: customer_data
+  bindings:
+    # Remove old analytics service
+    - role: roles/bigtable.reader
+      members:
+        - serviceAccount:old-analytics@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+        - user:contractor@company.com
+    
+    # Remove decommissioned application
+    - role: roles/bigtable.user
+      members:
+        - serviceAccount:decommissioned-app@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+

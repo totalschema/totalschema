@@ -1,0 +1,4 @@
+io.github.totalschema.connector.gcp.bigtable.BigTableConnectorComponentFactory
+io.github.totalschema.connector.gcp.bigtable.BigtableDataClientComponentFactory
+io.github.totalschema.connector.gcp.bigtable.BigtableInstanceAdminClientComponentFactory
+io.github.totalschema.connector.gcp.bigtable.BigtableTableAdminClientComponentFactory

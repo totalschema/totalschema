@@ -1,0 +1,35 @@
+# Example: Create HOT backup for faster restore operations
+# HOT backups are optimized for quick restore times
+
+# Create HOT backup with 7-day retention
+CreateBackup:
+  sourceTableId: critical_data
+  backupId: critical_data_backup_hot_20260731
+  expireTime: 7d
+  clusterId: prod-cluster-us-east1
+  backupType: HOT
+
+# Use cases for HOT backups:
+# 1. Critical production data requiring fast recovery
+# 2. High-priority tables with strict RTO requirements
+# 3. Frequently restored tables (testing, staging sync)
+# 4. Compliance-critical data with rapid access needs
+
+# Performance characteristics:
+# - Faster restore operations compared to STANDARD backups
+# - May have different pricing structure
+# - Ideal for business-critical tables
+
+# Note: If backupType is not specified, STANDARD is used by default
+# Note: Verify HOT backup pricing in your GCP billing console
+
+# Alternative: STANDARD backup type (default)
+# CreateBackup:
+#   sourceTableId: users
+#   backupId: users_backup_standard
+#   expireTime: 30d
+#   clusterId: prod-cluster-us-east1
+#   backupType: STANDARD
+
+
+

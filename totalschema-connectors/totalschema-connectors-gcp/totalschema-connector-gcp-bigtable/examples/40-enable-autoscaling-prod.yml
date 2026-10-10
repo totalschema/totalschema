@@ -1,0 +1,9 @@
+# Enable autoscaling for production with conservative settings
+# Ensures performance headroom with lower CPU target
+SetTableAutoscaling:
+  instanceId: prod-instance
+  clusterId: prod-cluster-us-east1
+  minNodes: 10
+  maxNodes: 30
+  cpuTargetPercent: 60
+

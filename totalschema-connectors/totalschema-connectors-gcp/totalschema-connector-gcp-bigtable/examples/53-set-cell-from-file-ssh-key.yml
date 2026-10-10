@@ -1,0 +1,16 @@
+# Set a cell value from a file - SSH Public Key Example
+#
+# Use Case: Store an SSH public key from a file
+#
+# This is ideal for:
+# - Large text files (certificates, keys, configurations)
+# - Binary data (images, documents)
+# - Keeping sensitive data out of YAML files
+
+SetCell:
+  tableId: system_keys
+  rowKey: key#deploy_key
+  familyName: ssh
+  columnQualifier: public_key
+  valueFile: /path/to/keys/id_rsa.pub
+

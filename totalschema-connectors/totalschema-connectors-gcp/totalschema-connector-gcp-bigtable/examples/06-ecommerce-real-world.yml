@@ -1,0 +1,40 @@
+# Example 6: Real-world e-commerce application
+# Mix of different retention policies based on data importance
+
+CreateTable:
+  tableId: ecommerce_data
+  families:
+    # User profile - keep only current version
+    - name: profile
+      maxVersions: 1
+    
+    # Shopping cart - temporary, 24 hour expiration
+    - name: cart
+      maxAge: 24h
+    
+    # Order history - keep all versions for 2 years (compliance)
+    - name: orders
+      maxAge: 730d
+    
+    # Product views - keep recent activity (7 days) or last 10 versions
+    - name: browsing_history
+      union:
+        - maxVersions: 10
+        - maxAge: 7d
+    
+    # Payment history - strict retention (100 versions, 7 years max)
+    - name: payment_records
+      intersection:
+        - maxVersions: 100
+        - maxAge: 2555d  # 7 years
+    
+    # Session data - very short-lived
+    - name: sessions
+      maxAge: 1h
+    
+    # Recommendations cache - 3 versions or 12 hours
+    - name: recommendations
+      union:
+        - maxVersions: 3
+        - maxAge: 12h
+

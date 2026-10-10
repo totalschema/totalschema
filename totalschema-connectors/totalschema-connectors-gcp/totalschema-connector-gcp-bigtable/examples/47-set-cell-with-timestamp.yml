@@ -1,0 +1,14 @@
+# Set a single cell value - With Custom Timestamp
+#
+# Use Case: Set a value with a specific timestamp (e.g., backdating a configuration change)
+#
+# Note: timestampMicros is in microseconds since epoch
+
+SetCell:
+  tableId: settings
+  rowKey: setting#max_connections
+  familyName: config
+  columnQualifier: value
+  value: "100"
+  timestampMicros: 1692288000000000  # Specific point in time
+

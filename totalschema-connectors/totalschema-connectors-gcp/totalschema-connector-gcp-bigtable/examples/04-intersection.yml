@@ -1,0 +1,23 @@
+# Example 4: Intersection rules (both conditions must be satisfied)
+# Keep data only if it meets ALL criteria
+
+CreateTable:
+  tableId: compliance_data
+  families:
+    # Keep up to 100 versions, but only if less than 1 year old
+    # Useful for regulatory compliance with storage limits
+    - name: financial_records
+      maxVersions: 100
+      maxAge: 365d
+    
+    # Keep up to 50 versions, but only if less than 90 days old
+    - name: transaction_history
+      maxVersions: 50
+      maxAge: 90d
+    
+    # Explicit intersection syntax (equivalent to above)
+    - name: audit_trail
+      intersection:
+        - maxVersions: 200
+        - maxAge: 730d  # 2 years
+

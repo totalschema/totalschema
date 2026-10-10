@@ -1,0 +1,15 @@
+# Delete a cell - Simple Example (All Versions)
+#
+# Use Case: Remove a deprecated configuration value
+#
+# This deletes ALL versions of the cell
+
+DeleteCell:
+  tableId: system_config
+  rowKey: config#deprecated_setting
+  familyName: metadata
+  columnQualifier: old_value
+
+# WARNING: This deletes ALL versions of the cell
+# For granular control over which versions to delete, use DeleteCellVersions instead
+

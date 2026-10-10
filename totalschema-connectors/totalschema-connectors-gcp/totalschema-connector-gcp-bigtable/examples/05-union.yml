@@ -1,0 +1,27 @@
+# Example 5: Union rules (at least one condition must be satisfied)
+# Keep data if it meets ANY of the criteria
+
+CreateTable:
+  tableId: flexible_retention
+  families:
+    # Keep either the 5 most recent versions OR anything less than 7 days old
+    # Ensures recent changes are preserved even with many updates
+    - name: frequently_updated
+      union:
+        - maxVersions: 5
+        - maxAge: 7d
+
+    # Keep either the 3 most recent versions OR anything less than 24 hours old
+    # Good for caching with fallback to recent versions
+    - name: cache_with_history
+      union:
+        - maxVersions: 3
+        - maxAge: 24h
+
+    # Keep either the latest version OR anything less than 30 days old
+    # Balances storage with historical data retention
+    - name: optimized_storage
+      union:
+        - maxVersions: 1
+        - maxAge: 30d
+

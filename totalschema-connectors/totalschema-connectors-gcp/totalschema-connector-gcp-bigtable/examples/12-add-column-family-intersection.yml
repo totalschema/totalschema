@@ -1,0 +1,8 @@
+# Example: Add column family with intersection rule
+# Both conditions must be met for data retention
+
+CreateColumnFamily:
+  tableId: user_profiles
+  familyName: important_data
+  maxVersions: 50
+  maxAge: 365d

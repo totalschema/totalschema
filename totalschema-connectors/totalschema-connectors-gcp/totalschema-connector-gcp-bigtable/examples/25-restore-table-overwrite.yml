@@ -1,0 +1,46 @@
+# Example: Restore BigTable table in-place (overwrite existing table)
+# WARNING: This permanently deletes the existing table before restoring!
+
+# Restore in-place with overwrite flag (DANGEROUS - use with caution!)
+RestoreTable:
+  backupId: users_backup_20260720
+  tableId: users
+  clusterId: prod-cluster-us-east1
+  overwrite: true
+
+# ⚠️  CRITICAL WARNINGS:
+# - This PERMANENTLY DELETES the existing 'users' table
+# - All data in the current table will be LOST
+# - This operation CANNOT BE UNDONE
+# - Make sure you have a recent backup before proceeding
+# - Consider restoring to a new table first for verification
+
+# When to use in-place restore with overwrite:
+# ✅ SAFE scenarios:
+#    - Restoring to a temporary/test environment
+#    - You've verified the backup contains correct data
+#    - You have another backup of the current table
+#    - This is part of a tested disaster recovery procedure
+
+# ❌ AVOID in these scenarios:
+#    - Production restoration without verification
+#    - You haven't tested the backup
+#    - No additional backup exists
+#    - Uncertainty about backup contents
+
+# Recommended workflow (safer approach):
+# 1. Restore to new table: RestoreTable (tableId: users_temp)
+# 2. Verify restored data is correct
+# 3. Delete old table: DeleteTable (tableId: users)
+# 4. Restore again: RestoreTable (tableId: users)
+#    OR rename users_temp to users (via manual operation)
+
+# Alternative: Restore to new table WITHOUT overwrite
+# RestoreTable:
+#   backupId: users_backup_20260720
+#   tableId: users_verified
+#   clusterId: prod-cluster-us-east1
+#   # No overwrite flag - will fail if table exists (safety feature)
+
+
+

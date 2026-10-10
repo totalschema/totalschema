@@ -1,0 +1,18 @@
+# Example 2: Families with max versions rule
+# Keep only the N most recent versions of each cell
+
+CreateTable:
+  tableId: user_settings
+  families:
+    # Keep only latest version (most common for configuration)
+    - name: current_config
+      maxVersions: 1
+
+    # Keep last 3 versions (allows undo/redo)
+    - name: editable_fields
+      maxVersions: 3
+
+    # Keep last 10 versions (audit trail with version history)
+    - name: audit_data
+      maxVersions: 10
+

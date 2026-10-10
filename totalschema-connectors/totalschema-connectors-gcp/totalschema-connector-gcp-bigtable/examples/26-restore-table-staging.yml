@@ -1,0 +1,49 @@
+# Example: Clone production data to staging environment
+# Restore backup from production to a staging cluster
+
+# Clone production table to staging
+RestoreTable:
+  backupId: users_prod_backup_daily
+  tableId: users_staging
+  clusterId: staging-cluster-us-central1
+
+# Use cases for cross-environment cloning:
+# 1. Testing with production-like data
+# 2. Development environment refresh
+# 3. QA validation with real data structure
+# 4. Performance testing with realistic data volumes
+# 5. Training environments with anonymized data
+
+# Workflow for staging refresh:
+# Step 1: Create backup in production
+# CreateBackup:
+#   sourceTableId: users
+#   backupId: users_prod_backup_daily
+#   expireTime: 7d
+#   clusterId: prod-cluster-us-east1
+
+# Step 2: (Optional) Delete old staging table
+# DeleteTable:
+#   tableId: users_staging
+
+# Step 3: Restore to staging (this file)
+# RestoreTable:
+#   backupId: users_prod_backup_daily
+#   tableId: users_staging
+#   clusterId: staging-cluster-us-central1
+
+# Important considerations:
+# - Backup must be accessible from the staging cluster
+# - Cross-cluster restore may not be supported (check GCP docs)
+# - Consider data residency and compliance requirements
+# - Ensure staging cluster has sufficient capacity
+# - May need to export/import for cross-region restore
+
+# Alternative approach (if cross-cluster restore not supported):
+# 1. Create snapshot in production cluster
+# 2. Export snapshot to Cloud Storage
+# 3. Import into staging cluster
+# 4. Restore from imported snapshot
+
+
+

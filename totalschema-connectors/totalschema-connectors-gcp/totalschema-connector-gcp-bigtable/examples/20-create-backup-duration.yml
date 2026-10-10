@@ -1,0 +1,44 @@
+# Example: Create BigTable backup with duration-based expiration
+# Creates a point-in-time backup of a table for disaster recovery
+
+# Simple backup with 30-day retention (clusterId is required)
+CreateBackup:
+  sourceTableId: users
+  backupId: users_backup_20260731
+  expireTime: 30d
+  clusterId: prod-cluster-us-east1
+
+# Backup with HOT type for faster restore (optional)
+# CreateBackup:
+#   sourceTableId: users
+#   backupId: users_backup_hot
+#   expireTime: 7d
+#   clusterId: prod-cluster-us-east1
+#   backupType: HOT
+
+# Supported duration formats:
+# - Days: 7d, 30days, 90d
+# - Hours: 24h, 48hours
+# - Minutes: 60m, 120min
+# - Seconds: 3600s
+
+# Supported backup types (optional, defaults to STANDARD):
+# - STANDARD: Regular backup (default)
+# - HOT: Faster restore operations, may have different pricing
+
+# Use case examples:
+# 1. Pre-deployment safety backup
+# 2. Compliance archival (e.g., 90d retention)
+# 3. Disaster recovery preparation
+# 4. Before schema changes
+
+# Note: Backup creation is asynchronous but this action waits for completion
+# Note: clusterId is required - backups are cluster-scoped
+#       Use: gcloud bigtable clusters list --instances=YOUR_INSTANCE
+# Cost: Backups incur storage costs based on table size and retention period
+#       HOT backups may have different pricing than STANDARD backups
+
+
+
+
+

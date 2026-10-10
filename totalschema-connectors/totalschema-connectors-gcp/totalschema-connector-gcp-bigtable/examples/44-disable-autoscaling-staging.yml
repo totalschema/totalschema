@@ -1,0 +1,7 @@
+# Disable autoscaling for staging environment
+# Mid-sized fixed capacity for production-like testing
+DisableTableAutoscaling:
+  instanceId: staging-instance
+  clusterId: staging-cluster-us-central1
+  fixedNodes: 5
+

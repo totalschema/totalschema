@@ -1,0 +1,7 @@
+# Disable autoscaling for production with fixed capacity
+# Guaranteed performance with predictable costs
+DisableTableAutoscaling:
+  instanceId: prod-instance
+  clusterId: prod-cluster-us-east1
+  fixedNodes: 20
+

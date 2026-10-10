@@ -1,0 +1,29 @@
+# Example: Create BigTable backup with explicit timestamp expiration
+# Creates a backup that expires at a specific date/time
+
+# Backup with ISO-8601 timestamp expiration (clusterId is required)
+CreateBackup:
+  sourceTableId: users
+  backupId: users_backup_20260731
+  expireTime: "2026-08-31T00:00:00Z"
+  clusterId: prod-cluster-us-east1
+
+# Backup with duration in a different cluster
+# CreateBackup:
+#   sourceTableId: users
+#   backupId: users_backup_cluster2
+#   expireTime: 30d
+#   clusterId: prod-cluster-europe-west1
+
+# Use cases for explicit timestamps:
+# 1. Align with compliance audit dates
+# 2. Synchronize with billing cycles
+# 3. Match business quarter boundaries
+# 4. Coordinate with scheduled maintenance windows
+
+# Note: clusterId is required - backups are cluster-scoped
+#       Use: gcloud bigtable clusters list --instances=YOUR_INSTANCE
+
+
+
+

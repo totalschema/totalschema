@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Class name="io.github.totalschema.connector.gcp.bigquery.actions.ActionFactory" />
+        <Method name="getAction" />
+        <Bug pattern="WMI_WRONG_MAP_ITERATOR" />
+        <!-- We use the iterator to fetch the single key -->
+    </Match>
+
+    <Match>
+        <Class name="~io.github.totalschema.connector.gcp.bigquery.actions..*" />
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+        </Or>
+        <!-- Actions encapsulate change logic and parameters, bound by the configuration -->
+    </Match>
+</FindBugsFilter>
+

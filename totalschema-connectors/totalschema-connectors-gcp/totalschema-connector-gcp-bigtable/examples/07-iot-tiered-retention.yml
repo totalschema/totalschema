@@ -1,0 +1,38 @@
+# Example 7: IoT sensor data with tiered retention
+# Different retention for different sensor types
+
+CreateTable:
+  tableId: iot_sensors
+  families:
+    # Critical sensors - keep 1 year of data
+    - name: critical_sensors
+      maxAge: 365d
+
+    # High-frequency sensors - keep 1000 recent readings or 7 days
+    - name: high_frequency
+      union:
+        - maxVersions: 1000
+        - maxAge: 7d
+
+    # Low-frequency sensors - keep 100 readings or 30 days
+    - name: low_frequency
+      union:
+        - maxVersions: 100
+        - maxAge: 30d
+
+    # Aggregated metrics - keep 500 versions and 90 days max
+    - name: aggregated
+      intersection:
+        - maxVersions: 500
+        - maxAge: 90d
+
+    # Raw debug data - only 1 day
+    - name: debug
+      maxAge: 1d
+
+    # Alerts - keep last 50 or 30 days
+    - name: alerts
+      union:
+        - maxVersions: 50
+        - maxAge: 30d
+

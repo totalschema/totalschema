@@ -1,0 +1,19 @@
+# Grant multiple roles and members
+# Use case: Set up access control for different teams and services
+
+SetTableIamPolicy:
+  tableId: customer_data
+  bindings:
+    # Analytics team - read-only access
+    - role: roles/bigtable.reader
+      members:
+        - serviceAccount:analytics@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+        - user:data-analyst@company.com
+        - group:data-team@company.com
+    
+    # Application backend - read/write access
+    - role: roles/bigtable.user
+      members:
+        - serviceAccount:app-backend@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+        - serviceAccount:batch-processor@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+

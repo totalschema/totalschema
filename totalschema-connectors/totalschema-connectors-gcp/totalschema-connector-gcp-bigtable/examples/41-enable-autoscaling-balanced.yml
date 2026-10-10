@@ -1,0 +1,9 @@
+# Enable autoscaling for cost optimization
+# Balanced settings for variable workloads
+SetTableAutoscaling:
+  instanceId: my-instance
+  clusterId: my-cluster
+  minNodes: 3
+  maxNodes: 10
+  cpuTargetPercent: 70
+

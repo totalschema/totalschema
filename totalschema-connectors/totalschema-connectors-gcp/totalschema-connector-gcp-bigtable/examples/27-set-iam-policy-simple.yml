@@ -1,0 +1,10 @@
+# Grant read access to a service account
+# Use case: Allow analytics service to query table data
+
+SetTableIamPolicy:
+  tableId: users
+  bindings:
+    - role: roles/bigtable.reader
+      members:
+        - serviceAccount:analytics@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+
