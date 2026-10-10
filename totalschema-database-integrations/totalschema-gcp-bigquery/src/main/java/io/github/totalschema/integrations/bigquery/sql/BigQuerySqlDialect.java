@@ -19,12 +19,23 @@
 package io.github.totalschema.integrations.bigquery.sql;
 
 import io.github.totalschema.engine.internal.sql.DefaultSqlDialect;
+import io.github.totalschema.spi.sql.SqlBuilder;
 
 final class BigQuerySqlDialect extends DefaultSqlDialect {
 
     @Override
     public String varchar(int length) {
         return "STRING";
+    }
+
+    @Override
+    public String formatTableName(String tableNameExpression) {
+        return String.format("`%s`", tableNameExpression);
+    }
+
+    @Override
+    public SqlBuilder getSqlBuilder() {
+        return new BigQuerySqlBuilder(this);
     }
 
     @Override

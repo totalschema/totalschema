@@ -9,6 +9,17 @@
     </Match>
 
     <Match>
+        <Class name="io.github.totalschema.jdbc.JdbcResultRow" />
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP2" />
+        </Or>
+        <!--
+        Desired behavior: class wraps the result set and allows
+        retrievals after cursor is moved
+        -->
+    </Match>
+
+    <Match>
         <Class name="io.github.totalschema.engine.internal.secrets.SecretPayload" />
         <Method name="nullSafeCopyOf" />
         <Bug pattern="PZLA_PREFER_ZERO_LENGTH_ARRAYS" />

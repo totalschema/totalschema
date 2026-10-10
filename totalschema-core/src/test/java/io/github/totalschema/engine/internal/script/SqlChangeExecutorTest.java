@@ -29,7 +29,7 @@ import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.engine.internal.expression.evaluator.DefaultExpressionEvaluatorFactory;
 import io.github.totalschema.engine.internal.secrets.DefaultSecretManagerFactory;
 import io.github.totalschema.engine.internal.variables.DefaultVariableServiceFactory;
-import io.github.totalschema.jdbc.JdbcDatabase;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.variables.VariableService;
 import java.io.ByteArrayInputStream;
@@ -51,7 +51,7 @@ import org.testng.annotations.Test;
  * Unit tests for {@link SqlChangeExecutor}.
  *
  * <p>Covers variable substitution (on/off), statement splitting, blank-statement filtering, and
- * error propagation. Each test provides the {@link JdbcDatabase} via the context for SQL statement
+ * error propagation. Each test provides the {@link SQLDatabase} via the context for SQL statement
  * execution (matching the runtime setup performed by {@link
  * io.github.totalschema.connector.jdbc.JdbcConnector}). The bindings map is used for script-visible
  * variables (empty for SQL executor since SQL doesn't support script variables). The context is
@@ -60,13 +60,13 @@ import org.testng.annotations.Test;
  */
 public class SqlChangeExecutorTest {
 
-    private JdbcDatabase mockDatabase;
+    private SQLDatabase mockDatabase;
     private ExpressionEvaluator expressionEvaluator;
     private Path tempDir;
 
     @BeforeMethod
     public void setUp() throws IOException {
-        mockDatabase = createMock(JdbcDatabase.class);
+        mockDatabase = createMock(SQLDatabase.class);
         expressionEvaluator =
                 new DefaultExpressionEvaluatorFactory()
                         .getExpressionEvaluator(
@@ -312,7 +312,7 @@ public class SqlChangeExecutorTest {
     }
 
     private ObjectsContext buildContext(
-            Configuration fullConfig, Environment environment, JdbcDatabase jdbcDatabase) {
+            Configuration fullConfig, Environment environment, SQLDatabase sqlDatabase) {
         VariableService variableService =
                 new DefaultVariableServiceFactory()
                         .getVariableService(fullConfig, expressionEvaluator);
@@ -324,8 +324,8 @@ public class SqlChangeExecutorTest {
         if (environment != null) {
             context.setValue(Environment.class, environment);
         }
-        if (jdbcDatabase != null) {
-            context.setValue(JdbcDatabase.class, jdbcDatabase);
+        if (sqlDatabase != null) {
+            context.setValue(SQLDatabase.class, sqlDatabase);
         }
         return context;
     }

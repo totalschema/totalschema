@@ -168,7 +168,7 @@ ps.close()
 ### Query Data
 ```kotlin
 val stmt = connection.createStatement()
-val rs = stmt.executeQuery("SELECT * FROM products")
+val rs = stmt.executeStatement("SELECT * FROM products")
 
 while (rs.next()) {
     println("Product: ${rs.getString("name")} - $${rs.getBigDecimal("price")}")

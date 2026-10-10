@@ -16,10 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.jdbc;
+package io.github.totalschema.engine.internal.state.database;
 
-import java.sql.SQLException;
+import static io.github.totalschema.ProjectConventions.PROJECT_SYSTEM_NAME;
 
-public interface RowMapper<R> {
-    R mapResultRow(ResultRow resultRow) throws SQLException;
+final class SqlDatabaseStateRecordRepositoryDefaultValues {
+
+    public static final String STATE_TABLE_NAME = String.format("%s_state_v1", PROJECT_SYSTEM_NAME);
+
+    public static final int HASH_COLUMN_LENGTH = 255;
+    public static final int APPLIED_BY_COLUMN_LENGTH = 255;
 }

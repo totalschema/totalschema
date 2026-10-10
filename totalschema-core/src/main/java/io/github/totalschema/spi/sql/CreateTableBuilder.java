@@ -16,10 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.engine.internal.sql;
+package io.github.totalschema.spi.sql;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
@@ -29,10 +28,13 @@ import java.util.function.Function;
  * overrides. This builder integrates with {@link SqlDialect} for database-specific type expressions
  * and supports the project's configuration system for column type and SQL overrides.
  *
+ * <p>Instances are normally obtained via {@link SqlBuilder#createTable(String, Configuration)},
+ * which in turn is obtained via {@link SqlDialect#getSqlBuilder()}.
+ *
  * <p>Example usage:
  *
  * <pre>{@code
- * String sql = CreateTableBuilder.create(sqlDialect, "my_table", configuration)
+ * String sql = sqlDialect.getSqlBuilder().createTable("my_table", configuration)
  *     .column("id", d -> d.varchar(255))
  *     .column("timestamp", SqlDialect::timestamp)
  *     .primaryKey("id")
@@ -48,6 +50,16 @@ import java.util.function.Function;
  * </ul>
  */
 public final class CreateTableBuilder {
+
+    public static final class ConfigKeys {
+
+        private ConfigKeys() {
+            throw new IllegalStateException("Constants class");
+        }
+
+        public static final String TABLE_PRIMARY_KEY_CLAUSE_OMIT = "table.primaryKeyClause.omit";
+    }
+
     private final SqlDialect sqlDialect;
     private final String tableNameExpression;
     private final Configuration configuration;
@@ -155,8 +167,10 @@ public final class CreateTableBuilder {
             throw new IllegalStateException("Cannot build CREATE TABLE without columns");
         }
 
+        String formattedTableName = sqlDialect.formatTableName(tableNameExpression);
+
         StringBuilder sql = new StringBuilder("CREATE TABLE ");
-        sql.append(tableNameExpression).append(" (");
+        sql.append(formattedTableName).append(" (");
 
         // Add columns
         final int numberOfColumns = columns.size();
@@ -210,7 +224,7 @@ public final class CreateTableBuilder {
             return false;
         }
         boolean omitFromConfig =
-                configuration.getBoolean("table.primaryKeyClause.omit").orElse(false);
+                configuration.getBoolean(ConfigKeys.TABLE_PRIMARY_KEY_CLAUSE_OMIT).orElse(false);
         return !omitFromConfig && !omitPrimaryKey;
     }
 

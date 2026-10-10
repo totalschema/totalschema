@@ -24,6 +24,7 @@ import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.ObjectsContext;
 import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.model.ChangeFile;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
@@ -55,7 +56,9 @@ public class JdbcConnector extends ChangeExecutorConnector {
         logger.info("[{}] Verifying JDBC connectivity", name);
         try {
 
-            context.get(JdbcDatabase.class, null, name, connectorConfiguration);
+            SQLDatabase sqlDatabase =
+                    context.get(SQLDatabase.class, CONNECTOR_TYPE, name, connectorConfiguration);
+            requireJdbcDatabase(sqlDatabase);
 
         } catch (RuntimeException ex) {
             logger.error("[{}] JDBC connectivity check FAILED", name, ex);
@@ -68,14 +71,17 @@ public class JdbcConnector extends ChangeExecutorConnector {
     @Override
     protected Context getExecutionContext(Context parentContext) {
 
-        JdbcDatabase jdbcDatabase =
-                parentContext.get(JdbcDatabase.class, null, name, connectorConfiguration);
+        SQLDatabase sqlDatabase =
+                parentContext.get(SQLDatabase.class, CONNECTOR_TYPE, name, connectorConfiguration);
+
+        JdbcDatabase jdbcDatabase = requireJdbcDatabase(sqlDatabase);
 
         DataSource dataSource = jdbcDatabase.getDataSource();
 
         return ObjectsContext.builder()
                 .parentContext(parentContext)
                 .setValue(JdbcDatabase.class, jdbcDatabase)
+                .setValue(SQLDatabase.class, jdbcDatabase)
                 .setValue(DataSource.class, dataSource)
                 .build();
     }
@@ -87,9 +93,10 @@ public class JdbcConnector extends ChangeExecutorConnector {
         Map<String, Object> bindings = super.getBindings(changeFile, context);
 
         // Acquire the JdbcDatabase (cached by context so subsequent calls reuse it)
-        JdbcDatabase jdbcDatabase =
-                context.get(JdbcDatabase.class, null, name, connectorConfiguration);
+        SQLDatabase sqlDatabase =
+                context.get(SQLDatabase.class, CONNECTOR_TYPE, name, connectorConfiguration);
 
+        JdbcDatabase jdbcDatabase = requireJdbcDatabase(sqlDatabase);
         DataSource dataSource = jdbcDatabase.getDataSource();
 
         // Add JDBC-specific bindings
@@ -97,6 +104,15 @@ public class JdbcConnector extends ChangeExecutorConnector {
         bindings.put("dataSource", dataSource);
 
         return bindings;
+    }
+
+    private static JdbcDatabase requireJdbcDatabase(SQLDatabase sqlDatabase) {
+        if (!(sqlDatabase instanceof JdbcDatabase)) {
+            throw new IllegalStateException(
+                    "This connector requires a JdbcDatabase SQLDatabase to be configured");
+        }
+
+        return (JdbcDatabase) sqlDatabase;
     }
 
     @Override

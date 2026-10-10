@@ -29,12 +29,20 @@ import java.util.Objects;
 /**
  * Base class for all change file executors.
  *
- * <p>Provides shared file reading functionality. Subclasses implement specific execution logic for
- * different executor types (simple vs object-binding).
+ * <p>A ChangeExecutor is a component that encapsulates the logic for executing one particular type
+ * of change file. For example, an executor might handle .sql files, .py files, or other change file
+ * formats.
  *
- * <p>This class uses the Template Method pattern: concrete executors receive an {@link InputStream}
- * for flexible content reading (with control over encoding, buffering, etc.), while the base class
- * handles file opening and resource cleanup.
+ * <p><strong>Direct subclasses:</strong>
+ *
+ * <ul>
+ *   <li>{@link SimpleChangeExecutor} - For simple text substitution-based executors
+ *   <li>{@link ObjectBindingChangeExecutor} - For script executors that inject runtime objects
+ * </ul>
+ *
+ * <p>Provides shared file reading functionality through a Template Method pattern: concrete
+ * executors receive an {@link InputStream} for flexible content reading (with control over
+ * encoding, buffering, etc.), while the base class handles file opening and resource cleanup.
  */
 public abstract class ChangeExecutor {
 

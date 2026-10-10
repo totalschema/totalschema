@@ -18,15 +18,16 @@
 
 package io.github.totalschema.engine.internal.state.database;
 
+import static io.github.totalschema.engine.internal.state.database.StateTableColumns.*;
+
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
-import io.github.totalschema.engine.internal.common.repository.AbstractJdbcTableRepository;
-import io.github.totalschema.engine.internal.sql.CreateTableBuilder;
+import io.github.totalschema.engine.internal.common.repository.AbstractSqlTableRepository;
 import io.github.totalschema.jdbc.JdbcDatabase;
-import io.github.totalschema.jdbc.Parameter;
-import io.github.totalschema.jdbc.TypeConversions;
 import io.github.totalschema.model.ChangeFile;
 import io.github.totalschema.model.StateRecord;
+import io.github.totalschema.spi.database.sql.Parameter;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import io.github.totalschema.spi.sql.SqlDialect;
 import io.github.totalschema.spi.state.StateRepository;
 import java.sql.*;
@@ -62,28 +63,28 @@ import java.util.*;
  *
  * <h2>Initialization</h2>
  *
- * <p>The {@link #init()} method (inherited from {@link AbstractJdbcTableRepository}) performs lazy
+ * <p>The {@link #init()} method (inherited from {@link AbstractSqlTableRepository}) performs lazy
  * table creation with a check-then-act pattern. While this pattern has an inherent race condition,
- * it is mitigated by the fact that a singleton instance of {@code
- * JdbcDatabaseStateRecordRepository} exists per {@code ComponentContainer}/{@code ChangeEngine}.
- * The container ensures that initialization occurs exactly once during component creation, before
- * the repository is exposed to concurrent access.
+ * it is mitigated by the fact that a singleton instance of {@code SqlDatabaseStateRecordRepository}
+ * exists per {@code ComponentContainer}/{@code ChangeEngine}. The container ensures that
+ * initialization occurs exactly once during component creation, before the repository is exposed to
+ * concurrent access.
  *
  * <p><b>Note:</b> This implementation assumes that the {@link JdbcDatabase} instance provided to
  * the constructor is fully initialized and thread-safe.
  *
  * @see StateRepository
- * @see AbstractJdbcTableRepository
+ * @see AbstractSqlTableRepository
  * @see JdbcDatabase
  */
-public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableRepository
+public class SqlDatabaseStateRecordRepository extends AbstractSqlTableRepository
         implements StateRepository {
 
     private static final String STATE_DATABASE_NAME = "state";
 
     /** Static SQL configuration for state record repository. */
     private static class StateRecordSqlConfiguration
-            implements AbstractJdbcTableRepository.SqlConfiguration {
+            implements AbstractSqlTableRepository.SqlConfiguration {
 
         private final int changeFileNameMaxLength;
 
@@ -93,28 +94,30 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
 
         @Override
         public String getDefaultTableName() {
-            return JdbcDatabaseStateRecordRepositoryDefaultValues.STATE_TABLE_NAME;
+            return SqlDatabaseStateRecordRepositoryDefaultValues.STATE_TABLE_NAME;
         }
 
         @Override
         public String getDefaultCreateSql(
                 Configuration configuration, SqlDialect sqlDialect, String tableNameExpression) {
-            return CreateTableBuilder.create(sqlDialect, tableNameExpression, configuration)
-                    .column("change_file_id", dialect -> dialect.varchar(changeFileNameMaxLength))
+            return sqlDialect
+                    .getSqlBuilder()
+                    .createTable(tableNameExpression, configuration)
+                    .column(CHANGE_FILE_ID, dialect -> dialect.varchar(changeFileNameMaxLength))
                     .column(
-                            "file_hash",
+                            FILE_HASH,
                             d ->
                                     d.varchar(
-                                            JdbcDatabaseStateRecordRepositoryDefaultValues
+                                            SqlDatabaseStateRecordRepositoryDefaultValues
                                                     .HASH_COLUMN_LENGTH))
-                    .column("apply_timestamp", SqlDialect::timestamp)
+                    .column(APPLY_TIMESTAMP, SqlDialect::timestamp)
                     .column(
-                            "applied_by",
+                            APPLIED_BY,
                             dialect ->
                                     dialect.varchar(
-                                            JdbcDatabaseStateRecordRepositoryDefaultValues
+                                            SqlDatabaseStateRecordRepositoryDefaultValues
                                                     .APPLIED_BY_COLUMN_LENGTH))
-                    .primaryKey("change_file_id")
+                    .primaryKey(CHANGE_FILE_ID)
                     .build();
         }
     }
@@ -123,49 +126,78 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
 
     private final String insertSql;
 
-    private final ChangeFileFactory changeFileFactory;
+    private final StateRecordMapper stateRecordMapper;
 
-    public JdbcDatabaseStateRecordRepository(
+    public SqlDatabaseStateRecordRepository(
             SqlDialect sqlDialect,
-            JdbcDatabase jdbcDatabase,
+            SQLDatabase sqlDatabase,
             ChangeFileFactory changeFileFactory,
             int changeFileNameMaxLength,
             Configuration configuration) {
 
         super(
                 sqlDialect,
-                jdbcDatabase,
+                sqlDatabase,
                 STATE_DATABASE_NAME,
                 new StateRecordSqlConfiguration(changeFileNameMaxLength),
                 configuration);
 
-        this.changeFileFactory = changeFileFactory;
+        this.stateRecordMapper = new StateRecordMapper(changeFileFactory);
 
-        querySql =
-                configuration
-                        .getString("table.query.sql")
-                        .orElseGet(() -> getQuerySql(configuration));
-
-        insertSql =
-                configuration
-                        .getString("table.insert.sql")
-                        .orElseGet(() -> getInsertSql(configuration));
+        querySql = buildQuerySql(sqlDialect, configuration);
+        insertSql = buildInsertSql(sqlDialect, configuration);
     }
 
-    private String getQuerySql(Configuration configuration) {
-        return String.format(
-                configuration
-                        .getString("table.sql.query")
-                        .orElse(JdbcDatabaseStateRecordRepositoryDefaultValues.QUERY_RECORDS_SQL),
-                tableNameExpression);
+    /**
+     * Builds the SQL statement used to query all state records. Uses the {@code table.sql.query}
+     * configuration override if present (as a template containing a {@code %s} placeholder for the
+     * table name expression), otherwise generates the default SQL via the dialect's {@link
+     * io.github.totalschema.spi.sql.SqlBuilder}.
+     *
+     * @param sqlDialect the SQL dialect used to build the default SQL
+     * @param configuration the configuration used to look up an override
+     * @return the SQL statement used to query all state records
+     */
+    private String buildQuerySql(SqlDialect sqlDialect, Configuration configuration) {
+        return configuration
+                .getString("table.sql.query")
+                .map(this::formatSqlWithTableName)
+                .orElseGet(
+                        () ->
+                                sqlDialect
+                                        .getSqlBuilder()
+                                        .select(tableNameExpression)
+                                        .column(CHANGE_FILE_ID)
+                                        .column(FILE_HASH)
+                                        .column(APPLY_TIMESTAMP)
+                                        .column(APPLIED_BY)
+                                        .build());
     }
 
-    protected String getInsertSql(Configuration configuration) {
-        return String.format(
-                configuration
-                        .getString("table.sql.insert")
-                        .orElse(JdbcDatabaseStateRecordRepositoryDefaultValues.INSERT_RECORDS_SQL),
-                tableNameExpression);
+    /**
+     * Builds the SQL statement used to insert a new state record. Uses the {@code table.sql.insert}
+     * configuration override if present (as a template containing a {@code %s} placeholder for the
+     * table name expression), otherwise generates the default SQL via the dialect's {@link
+     * io.github.totalschema.spi.sql.SqlBuilder}.
+     *
+     * @param sqlDialect the SQL dialect used to build the default SQL
+     * @param configuration the configuration used to look up an override
+     * @return the SQL statement used to insert a new state record
+     */
+    private String buildInsertSql(SqlDialect sqlDialect, Configuration configuration) {
+        return configuration
+                .getString("table.sql.insert")
+                .map(this::formatSqlWithTableName)
+                .orElseGet(
+                        () ->
+                                sqlDialect
+                                        .getSqlBuilder()
+                                        .insertInto(tableNameExpression)
+                                        .column(CHANGE_FILE_ID)
+                                        .column(FILE_HASH)
+                                        .column(APPLY_TIMESTAMP)
+                                        .column(APPLIED_BY)
+                                        .build());
     }
 
     @Override
@@ -175,7 +207,7 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
 
             ZonedDateTime applyTimeStamp = stateRecord.getApplyTimeStamp();
 
-            jdbcDatabase.executeUpdate(
+            sqlDatabase.executeUpdate(
                     insertSql,
                     Parameter.string(stateRecord.getChangeFileId().toStringRepresentation()),
                     Parameter.string(stateRecord.getFileHash()),
@@ -196,26 +228,7 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
     public List<StateRecord> getAllStateRecords() {
 
         try {
-            return jdbcDatabase.query(
-                    querySql,
-                    resultRow -> {
-                        StateRecord stateRecord = new StateRecord();
-
-                        stateRecord.setChangeFileId(
-                                changeFileFactory.getIdFromString(
-                                        resultRow.getString("change_file_id")));
-
-                        stateRecord.setFileHash(resultRow.getString("file_hash"));
-
-                        Timestamp applyTimestamp = resultRow.getTimestamp("apply_timestamp");
-                        ZonedDateTime applyZonedDateTime =
-                                TypeConversions.getInstance().toZonedDateTime(applyTimestamp);
-                        stateRecord.setApplyTimeStamp(applyZonedDateTime);
-
-                        stateRecord.setAppliedBy(resultRow.getString("applied_by"));
-
-                        return stateRecord;
-                    });
+            return sqlDatabase.query(querySql, stateRecordMapper);
 
         } catch (SQLException e) {
             throw new RuntimeException("Failure querying for StateRecords", e);
@@ -229,9 +242,6 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
     public int deleteStateRecordByIds(Set<ChangeFile.Id> changeFileMetadata) {
 
         try {
-            // Generating SQL dynamically is not great, but should be more portable than a
-            // SQL IN expression, where drivers might have quirks around parameter binding
-
             String deleteSql = getDeleteSql(changeFileMetadata.size());
 
             Parameter<?>[] parameters =
@@ -240,7 +250,7 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
                             .map(Parameter::string)
                             .toArray(Parameter[]::new);
 
-            return jdbcDatabase.executeUpdate(deleteSql, parameters);
+            return sqlDatabase.executeUpdate(deleteSql, parameters);
 
         } catch (SQLException e) {
             throw new RuntimeException("Failure deleting StateRecords", e);
@@ -253,18 +263,12 @@ public class JdbcDatabaseStateRecordRepository extends AbstractJdbcTableReposito
     }
 
     protected String getDeleteSql(int parameterCount) {
-        var deleteSqlBuilder =
-                new StringBuilder("DELETE FROM ").append(tableNameExpression).append(" WHERE ");
-
-        for (int i = 0; i < parameterCount; i++) {
-
-            if (i != 0) {
-                deleteSqlBuilder.append(" OR ");
-            }
-
-            deleteSqlBuilder.append("change_file_id").append(" = ").append("?");
-        }
-
-        return deleteSqlBuilder.toString();
+        // Generating SQL dynamically via the SqlBuilder is not great, but should be more portable
+        // than a SQL IN expression, where drivers might have quirks around parameter binding
+        return sqlDialect
+                .getSqlBuilder()
+                .delete(tableNameExpression)
+                .whereEqualsAny(CHANGE_FILE_ID, parameterCount)
+                .build();
     }
 }

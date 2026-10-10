@@ -88,19 +88,26 @@ public class DefaultConnectorManager implements ConnectorManager {
         boolean connectionCheckEnabled =
                 configurationOfTheConnector.getBoolean("connectionCheck.enabled").orElse(true);
 
-        // Always load and validate the connector — this confirms the config is correct and the
-        // factory exists for the declared type.
-        Connector connector = getConnectorByName(connectorName, context);
+        try {
+            // Always load and validate the connector — this confirms the config is correct and the
+            // factory exists for the declared type.
+            Connector connector = getConnectorByName(connectorName, context);
 
-        if (!connectionCheckEnabled) {
-            logger.info(
-                    "Connection check is disabled for connector '{}', skipping.", connectorName);
-            return;
+            if (!connectionCheckEnabled) {
+                logger.info(
+                        "Connection check is disabled for connector '{}', skipping.",
+                        connectorName);
+                return;
+            }
+
+            logger.info("Checking connection for connector '{}'", connectorName);
+            connector.checkConnection(context, plannedChangeFileIds);
+            logger.info("Connection check passed for connector '{}'", connectorName);
+
+        } catch (RuntimeException ex) {
+            throw new RuntimeException(
+                    "Connection check failed for connector '" + connectorName + "'", ex);
         }
-
-        logger.info("Checking connection for connector '{}'", connectorName);
-        connector.checkConnection(context, plannedChangeFileIds);
-        logger.info("Connection check passed for connector '{}'", connectorName);
     }
 
     private Configuration getConfigurationOfTheConnector(String connectorName, Context context) {

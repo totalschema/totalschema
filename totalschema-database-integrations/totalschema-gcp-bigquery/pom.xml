@@ -46,17 +46,12 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>io.github.totalschema</groupId>
             <artifactId>totalschema-cli</artifactId>
             <version>1.4.0-SNAPSHOT</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>provided</scope>
         </dependency>
 
     </dependencies>

@@ -20,7 +20,7 @@ package io.github.totalschema.engine.sql;
 
 import static org.testng.Assert.*;
 
-import io.github.totalschema.engine.internal.sql.TableColumn;
+import io.github.totalschema.spi.sql.TableColumn;
 import org.testng.annotations.Test;
 
 public class TableColumnTest {

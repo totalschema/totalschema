@@ -18,14 +18,13 @@
 
 package io.github.totalschema.spi.sql;
 
-import io.github.totalschema.engine.internal.sql.CreateTableBuilder;
-
 /**
  * SQL dialect interface for database-specific SQL syntax. Provides methods for generating
- * database-specific column type definitions.
+ * database-specific column type definitions, as well as a {@link SqlBuilder} factory for
+ * constructing full SQL statements (CREATE TABLE, INSERT, SELECT, UPDATE, DELETE, DROP TABLE) in a
+ * database-specific, portable way.
  *
- * <p>This interface is focused solely on SQL type mappings and does not handle SQL statement
- * construction. For building CREATE TABLE statements, use {@link CreateTableBuilder}.
+ * @see SqlBuilder
  */
 public interface SqlDialect {
     /**
@@ -42,4 +41,36 @@ public interface SqlDialect {
      * @return the TIMESTAMP type definition (e.g., "TIMESTAMP")
      */
     String timestamp();
+
+    /**
+     * Formats a table name expression according to the SQL dialect conventions.
+     *
+     * <p>This method applies dialect-specific formatting rules to table name expressions, such as
+     * quoting identifiers or applying schema prefixes. The default implementation returns the table
+     * name expression unmodified. Implementations should override this method if the dialect
+     * requires custom formatting for table identifiers.
+     *
+     * @param tableNameExpression the table name expression to format (e.g., "schema.table",
+     *     "table", or quoted identifiers)
+     * @return the formatted table name expression suitable for use in SQL statements
+     */
+    default String formatTableName(String tableNameExpression) {
+        return tableNameExpression;
+    }
+
+    /**
+     * Returns a {@link SqlBuilder} bound to this dialect, providing factory methods for
+     * constructing database-specific SQL statements (CREATE TABLE, INSERT, SELECT, UPDATE, DELETE,
+     * DROP TABLE).
+     *
+     * <p>The default implementation returns a builder that delegates to this dialect's {@link
+     * #varchar(int)}, {@link #timestamp()} and {@link #formatTableName(String)} methods.
+     * Implementations may override this method to return a custom {@link SqlBuilder} if the dialect
+     * requires statement-level customizations beyond type mappings and table name formatting.
+     *
+     * @return a {@link SqlBuilder} bound to this dialect
+     */
+    default SqlBuilder getSqlBuilder() {
+        return new DefaultSqlBuilder(this);
+    }
 }

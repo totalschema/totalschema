@@ -154,13 +154,22 @@ public abstract class AbstractConfiguration implements Configuration {
     @Override
     public final Configuration addAll(Configuration otherConfiguration) {
 
-        Map<String, String> thisMap = this.asMap().orElseGet(HashMap::new);
+        if (!Boolean.getBoolean(
+                "io.github.totalschema.config.Configuration.addAll.useLegacyImplementation")) {
 
-        Map<String, String> thatMap = otherConfiguration.asMap().orElseGet(HashMap::new);
+            // new, default behavior is using the builder
+            return this.toBuilder().setAll(otherConfiguration).build();
 
-        thisMap.putAll(thatMap);
+        } else {
 
-        return new MapConfiguration(thisMap);
+            Map<String, String> thisMap = this.asMap().orElseGet(HashMap::new);
+
+            Map<String, String> thatMap = otherConfiguration.asMap().orElseGet(HashMap::new);
+
+            thisMap.putAll(thatMap);
+
+            return new MapConfiguration(thisMap);
+        }
     }
 
     @Override

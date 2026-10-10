@@ -22,17 +22,17 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.config.MisconfigurationException;
+import io.github.totalschema.spi.database.sql.AbstractSQLDatabase;
+import io.github.totalschema.spi.database.sql.Parameter;
+import io.github.totalschema.spi.database.sql.ResultRow;
+import io.github.totalschema.spi.database.sql.RowMapper;
 import io.github.totalschema.util.StringUtils;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.sql.DataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of {@link JdbcDatabase} providing connection pooling and SQL execution
@@ -193,9 +193,7 @@ import org.slf4j.LoggerFactory;
  * @see Parameter
  * @see RowMapper
  */
-final class DefaultJdbcDatabase implements JdbcDatabase {
-
-    private static final Logger log = LoggerFactory.getLogger(DefaultJdbcDatabase.class);
+final class DefaultJdbcDatabase extends AbstractSQLDatabase implements JdbcDatabase {
 
     private static final class DefaultValues {
         private static final boolean AUTO_COMMIT = true;
@@ -215,14 +213,10 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
         private static final long LEAK_DETECTION_THRESHOLD = 0;
     }
 
-    private final String name;
-
     private final String driverClass;
     private final String jdbcUrl;
     private final String username;
     private final String password;
-
-    private final boolean logSql;
 
     private final Properties properties;
 
@@ -253,7 +247,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
     }
 
     private DefaultJdbcDatabase(String name, Configuration connectorConfiguration) {
-        this.name = name;
+        super(name, connectorConfiguration);
 
         this.jdbcUrl =
                 connectorConfiguration
@@ -268,8 +262,6 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
 
         this.username = connectorConfiguration.getString("username").orElse(null);
         this.password = connectorConfiguration.getString("password").orElse(null);
-
-        this.logSql = connectorConfiguration.getBoolean("logSql").orElse(true);
 
         this.autoCommit =
                 connectorConfiguration.getBoolean("autoCommit").orElse(DefaultValues.AUTO_COMMIT);
@@ -410,7 +402,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
             log.info(
                     "[{}] database: SQL statement logging has been {}.",
                     name,
-                    logSql ? "enabled" : "disabled");
+                    isLogSqlEnabled() ? "enabled" : "disabled");
 
         } catch (SQLException | IllegalStateException ex) {
             if (dataSource != null) {
@@ -425,7 +417,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
     public int executeUpdate(String sql, Parameter<?>... parameters)
             throws SQLException, InterruptedException {
 
-        logSql("executeUpdate", sql, parameters);
+        logStatement("executeUpdate", sql, parameters);
 
         return withConnection(
                 connection -> {
@@ -448,7 +440,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
     public void execute(String sql, Parameter<?>... parameters)
             throws SQLException, InterruptedException {
 
-        logSql("execute", sql, parameters);
+        logStatement("execute", sql, parameters);
 
         withConnection(
                 connection -> {
@@ -482,7 +474,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
     public <R> List<R> query(String sql, RowMapper<R> rowMapper, Parameter<?>... parameters)
             throws SQLException, InterruptedException {
 
-        logSql("query", sql, parameters);
+        logStatement("query", sql, parameters);
 
         return withConnection(
                 connection -> {
@@ -495,7 +487,7 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
                         try (ResultSet resultSet = ps.executeQuery()) {
                             // we create one ResultRow instance as the cursor
                             // of the underlying ResultSet is moved forward
-                            ResultRow resultRow = new ResultRow(resultSet);
+                            ResultRow resultRow = new JdbcResultRow(resultSet);
 
                             while (resultSet.next()) {
                                 if (Thread.currentThread().isInterrupted()) {
@@ -511,24 +503,6 @@ final class DefaultJdbcDatabase implements JdbcDatabase {
 
                     return Collections.unmodifiableList(resultList);
                 });
-    }
-
-    private void logSql(String operationType, String sql, Parameter<?>[] parameters) {
-
-        if (logSql && log.isInfoEnabled()) {
-
-            log.info("[{}] database: {} SQL: {}", name, operationType, sql);
-
-            if (parameters != null && parameters.length > 0) {
-
-                String parameterString =
-                        Stream.of(parameters)
-                                .map(Parameter::toString)
-                                .collect(Collectors.joining(", "));
-
-                log.info("[{}] database: {} parameters: {}", name, operationType, parameterString);
-            }
-        }
     }
 
     private void setPreparedStatementParameters(PreparedStatement ps, Parameter<?>[] parameters)

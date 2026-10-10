@@ -22,7 +22,7 @@ import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.lock.database.LockingComponentFactory;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
-import io.github.totalschema.jdbc.JdbcDatabase;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import io.github.totalschema.spi.factory.ArgumentSpecification;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.List;
@@ -70,11 +70,13 @@ public final class DefaultLockStateRepositoryFactory
         Configuration configWithLogSqlSet =
                 configuration.toBuilder().setIfAbsent("logSql", false).build();
 
-        JdbcDatabase jdbcDatabase =
-                context.get(JdbcDatabase.class, null, "lock", configWithLogSqlSet);
+        String databaseType = configWithLogSqlSet.getString("type").orElse("jdbc");
+
+        SQLDatabase database =
+                context.get(SQLDatabase.class, databaseType, "lock", configWithLogSqlSet);
 
         DefaultLockStateRepository repository =
-                new DefaultLockStateRepository(sqlDialect, jdbcDatabase, configuration);
+                new DefaultLockStateRepository(sqlDialect, database, configuration);
 
         repository.init();
 

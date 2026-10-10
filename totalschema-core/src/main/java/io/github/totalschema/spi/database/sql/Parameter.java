@@ -16,8 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.github.totalschema.jdbc;
+package io.github.totalschema.spi.database.sql;
 
+import io.github.totalschema.jdbc.TypeConversions;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -25,7 +26,8 @@ import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-public abstract class Parameter<T> {
+public abstract sealed class Parameter<T>
+        permits Parameter.StringParameter, Parameter.TimestampParameter {
 
     private final T value;
 

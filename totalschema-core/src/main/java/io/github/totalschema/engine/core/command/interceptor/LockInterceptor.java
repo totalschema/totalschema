@@ -18,10 +18,12 @@
 
 package io.github.totalschema.engine.core.command.interceptor;
 
+import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.core.command.api.*;
 import io.github.totalschema.model.LockRecord;
 import io.github.totalschema.spi.lock.LockService;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +32,8 @@ public final class LockInterceptor extends CommandInterceptor {
 
     private static final Logger logger = LoggerFactory.getLogger(LockInterceptor.class);
 
-    private static final long TIMEOUT = 2;
-    private static final TimeUnit TIMEOUT_TIME_UNIT = TimeUnit.MINUTES;
+    private static final long DEFAULT_TIMEOUT = 2;
+    private static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.MINUTES;
 
     public LockInterceptor(CommandExecutor next) {
         super(next);
@@ -67,24 +69,54 @@ public final class LockInterceptor extends CommandInterceptor {
 
         R result;
 
-        boolean couldLock = lockService.tryLock(TIMEOUT, TIMEOUT_TIME_UNIT);
+        Configuration lockConfig = context.get(Configuration.class).getPrefixNamespace("lock");
+
+        long lockTimeout = lockConfig.getLong("timeout").orElse(DEFAULT_TIMEOUT);
+        TimeUnit lockTimeoutTimeUnit =
+                lockConfig.getEnumValue(TimeUnit.class, "timeUnit").orElse(DEFAULT_TIME_UNIT);
+
+        logger.info(
+                "Attempting to acquire change lock for command '{}' with {} {} timeout",
+                command.getClass().getSimpleName(),
+                lockTimeout,
+                lockTimeoutTimeUnit.name().toLowerCase(Locale.ENGLISH));
+
+        long lockAcquisitionStart = System.currentTimeMillis();
+        boolean couldLock = lockService.tryLock(lockTimeout, lockTimeoutTimeUnit);
 
         if (couldLock) {
+            long lockAcquisitionTime = System.currentTimeMillis() - lockAcquisitionStart;
+            logger.info("Change lock acquired successfully in {} ms", lockAcquisitionTime);
+
             try {
                 result = next.execute(context, command);
+                logger.debug("Command execution completed successfully under lock");
 
             } finally {
                 lockService.unlock();
+                logger.info("Change lock released");
             }
 
         } else {
-            logger.error("Could not acquire lock to perform operation");
+            logger.warn(
+                    "Failed to acquire change lock within {} {}", lockTimeout, lockTimeoutTimeUnit);
 
             LockRecord lockRecord = lockService.getLock();
-            logger.error("Could not acquire lock. Lock currently held: {}", lockRecord);
+            logger.warn(
+                    "Lock is currently held by user '{}' with lock ID '{}' and will expire at {}",
+                    lockRecord.getLockedByUserId(),
+                    lockRecord.getLockId(),
+                    lockRecord.getLockExpiration());
 
             throw new IllegalStateException(
-                    "Could not acquire lock: retry later or manually release the stale lock");
+                    String.format(
+                            "Could not acquire change lock within %d %s. "
+                                    + "Lock is held by user '%s' (ID: '%s') and expires at '%s'. Please retry later or manually release the stale lock.",
+                            lockTimeout,
+                            lockTimeoutTimeUnit,
+                            lockRecord.getLockedByUserId(),
+                            lockRecord.getLockId(),
+                            lockRecord.getLockExpiration()));
         }
 
         return result;

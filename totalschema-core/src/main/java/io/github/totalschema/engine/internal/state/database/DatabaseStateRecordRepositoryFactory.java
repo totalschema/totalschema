@@ -21,7 +21,7 @@ package io.github.totalschema.engine.internal.state.database;
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
 import io.github.totalschema.engine.internal.changefile.ChangeFileFactory;
-import io.github.totalschema.jdbc.JdbcDatabase;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import io.github.totalschema.spi.factory.ArgumentSpecification;
 import io.github.totalschema.spi.factory.ComponentFactory;
 import io.github.totalschema.spi.sql.SqlDialect;
@@ -77,16 +77,14 @@ public class DatabaseStateRecordRepositoryFactory extends ComponentFactory<State
         Configuration configWithLogSqlSet =
                 dbConfig.toBuilder().setIfAbsent("logSql", false).build();
 
-        JdbcDatabase jdbcDatabase =
-                context.get(JdbcDatabase.class, null, "state", configWithLogSqlSet);
+        String databaseType = dbConfig.getString("type").orElse("jdbc");
 
-        JdbcDatabaseStateRecordRepository repository =
-                new JdbcDatabaseStateRecordRepository(
-                        sqlDialect,
-                        jdbcDatabase,
-                        changeFileFactory,
-                        changeFileNameMaxLength,
-                        dbConfig);
+        SQLDatabase database =
+                context.get(SQLDatabase.class, databaseType, "state", configWithLogSqlSet);
+
+        SqlDatabaseStateRecordRepository repository =
+                new SqlDatabaseStateRecordRepository(
+                        sqlDialect, database, changeFileFactory, changeFileNameMaxLength, dbConfig);
 
         repository.init();
 

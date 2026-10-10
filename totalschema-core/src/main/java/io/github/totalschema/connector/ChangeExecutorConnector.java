@@ -85,7 +85,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class ChangeExecutorConnector extends Connector {
 
-    private static final Logger logger = LoggerFactory.getLogger(ChangeExecutorConnector.class);
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final String name;
     protected final Configuration connectorConfiguration;
@@ -130,29 +130,21 @@ public abstract class ChangeExecutorConnector extends Connector {
 
         ChangeExecutor changeExecutor = getChangeExecutor(changeFile, context);
 
-        logger.info("[{}] Executing with: {}", name, changeExecutor);
+        logger.info("[{}] {} executing '{}'", name, changeExecutor, changeFile.getRelativePath());
 
         Context executionContext = getExecutionContext(context);
         logger.debug("[{}] Created execution Context: {}", name, executionContext);
 
         // Type-based dispatch: only build bindings for script executors that need them
         if (changeExecutor instanceof SimpleChangeExecutor) {
-            logger.debug("[{}] ChangeExecutor is a SimpleChangeExecutor: {}", name, changeExecutor);
-
-            ((SimpleChangeExecutor) changeExecutor).execute(changeFile, executionContext);
+            execute((SimpleChangeExecutor) changeExecutor, changeFile, executionContext);
 
         } else if (changeExecutor instanceof ObjectBindingChangeExecutor) {
-            logger.debug(
-                    "[{}] ChangeExecutor is an ObjectBindingChangeExecutor: {}",
-                    name,
-                    changeExecutor);
-
-            Map<String, Object> bindings = getBindings(changeFile, context);
-
-            logger.debug("[{}] Created bindings: {} for: {}", name, bindings, changeExecutor);
-
-            ((ObjectBindingChangeExecutor) changeExecutor)
-                    .execute(changeFile, executionContext, bindings);
+            execute(
+                    (ObjectBindingChangeExecutor) changeExecutor,
+                    changeFile,
+                    context,
+                    executionContext);
 
         } else {
             throw new IllegalStateException(
@@ -160,6 +152,30 @@ public abstract class ChangeExecutorConnector extends Connector {
                             + " SimpleChangeExecutor: "
                             + changeExecutor.getClass().getName());
         }
+    }
+
+    protected void execute(
+            SimpleChangeExecutor changeExecutor, ChangeFile changeFile, Context executionContext)
+            throws InterruptedException {
+        logger.debug("[{}] ChangeExecutor is a SimpleChangeExecutor: {}", name, changeExecutor);
+
+        changeExecutor.execute(changeFile, executionContext);
+    }
+
+    private void execute(
+            ObjectBindingChangeExecutor changeExecutor,
+            ChangeFile changeFile,
+            Context context,
+            Context executionContext)
+            throws InterruptedException {
+        logger.debug(
+                "[{}] ChangeExecutor is an ObjectBindingChangeExecutor: {}", name, changeExecutor);
+
+        Map<String, Object> bindings = getBindings(changeFile, context);
+
+        logger.debug("[{}] Created bindings: {} for: {}", name, bindings, changeExecutor);
+
+        changeExecutor.execute(changeFile, executionContext, bindings);
     }
 
     private ChangeExecutor getChangeExecutor(ChangeFile changeFile, Context context) {

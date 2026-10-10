@@ -22,7 +22,7 @@ import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.internal.sql.CreateTableBuilder;
+import io.github.totalschema.spi.sql.CreateTableBuilder;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.util.Optional;
 import org.testng.annotations.BeforeMethod;
@@ -51,6 +51,7 @@ public class CreateTableBuilderTest {
                 .andReturn(Optional.empty());
         expect(mockConfiguration.getString("table.primaryKeyClause.definition"))
                 .andReturn(Optional.empty());
+        expect(mockDialect.formatTableName("users")).andReturn("users");
         replay(mockDialect, mockConfiguration);
 
         // When
@@ -84,6 +85,7 @@ public class CreateTableBuilderTest {
                 .andReturn(Optional.empty());
         expect(mockConfiguration.getString("table.primaryKeyClause.definition"))
                 .andReturn(Optional.empty());
+        expect(mockDialect.formatTableName("users")).andReturn("users");
         replay(mockDialect, mockConfiguration);
 
         // When
@@ -114,6 +116,7 @@ public class CreateTableBuilderTest {
                 .andReturn(Optional.empty());
         expect(mockConfiguration.getString("table.primaryKeyClause.definition"))
                 .andReturn(Optional.empty());
+        expect(mockDialect.formatTableName("items")).andReturn("items");
         replay(mockDialect, mockConfiguration);
 
         // When
@@ -138,6 +141,7 @@ public class CreateTableBuilderTest {
                 .andReturn(Optional.empty());
         expect(mockConfiguration.getString("table.primaryKeyClause.definition"))
                 .andReturn(Optional.of("CONSTRAINT pk_custom PRIMARY KEY (id)"));
+        expect(mockDialect.formatTableName("products")).andReturn("products");
         replay(mockDialect, mockConfiguration);
 
         // When
@@ -161,6 +165,7 @@ public class CreateTableBuilderTest {
         expect(mockConfiguration.getString("table.columns.id.type")).andReturn(Optional.empty());
         expect(mockConfiguration.getBoolean("table.primaryKeyClause.omit"))
                 .andReturn(Optional.of(true));
+        expect(mockDialect.formatTableName("logs")).andReturn("logs");
         replay(mockDialect, mockConfiguration);
 
         // When
@@ -184,6 +189,7 @@ public class CreateTableBuilderTest {
                 .andReturn(Optional.empty());
         expect(mockConfiguration.getString("table.columns.timestamp.type"))
                 .andReturn(Optional.empty());
+        expect(mockDialect.formatTableName("audit_log")).andReturn("audit_log");
         replay(mockDialect, mockConfiguration);
 
         // When
@@ -207,6 +213,7 @@ public class CreateTableBuilderTest {
                 .andReturn(Optional.empty());
         expect(mockConfiguration.getString("table.primaryKeyClause.definition"))
                 .andReturn(Optional.empty());
+        expect(mockDialect.formatTableName("myschema.mytable")).andReturn("myschema.mytable");
         replay(mockDialect, mockConfiguration);
 
         // When
@@ -230,6 +237,7 @@ public class CreateTableBuilderTest {
                 .andReturn(Optional.empty());
         expect(mockConfiguration.getString("table.primaryKeyClause.definition"))
                 .andReturn(Optional.empty());
+        expect(mockDialect.formatTableName("custom")).andReturn("custom");
         replay(mockDialect, mockConfiguration);
 
         // When
@@ -273,6 +281,7 @@ public class CreateTableBuilderTest {
                 .andReturn(Optional.empty());
         expect(mockConfiguration.getString("table.primaryKeyClause.definition"))
                 .andReturn(Optional.empty());
+        expect(mockDialect.formatTableName("test_table")).andReturn("test_table");
         replay(mockDialect, mockConfiguration);
 
         // When

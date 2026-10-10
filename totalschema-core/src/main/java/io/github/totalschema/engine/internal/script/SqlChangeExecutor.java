@@ -20,8 +20,8 @@ package io.github.totalschema.engine.internal.script;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
-import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.spi.change.executor.SimpleChangeExecutor;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import io.github.totalschema.spi.expression.evaluator.ExpressionEvaluator;
 import io.github.totalschema.spi.variables.VariableService;
 import java.io.InputStream;
@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * Executes SQL scripts against a JDBC database.
+ * Executes SQL scripts against a {@link SQLDatabase}.
  *
  * <p>Responsibilities:
  *
@@ -44,8 +44,7 @@ import java.util.stream.Collectors;
  *       {@code ";"}) and executes each non-blank statement via JDBC.
  * </ul>
  *
- * <p>The {@link io.github.totalschema.jdbc.JdbcDatabase} is retrieved from the context at execution
- * time.
+ * <p>The target {@link SQLDatabase} is retrieved from the context at execution time.
  */
 final class SqlChangeExecutor extends SimpleChangeExecutor {
 
@@ -85,14 +84,14 @@ final class SqlChangeExecutor extends SimpleChangeExecutor {
             script = substituteVariables(script);
         }
 
-        JdbcDatabase jdbcDatabase = context.get(JdbcDatabase.class);
+        SQLDatabase sqlDatabase = context.get(SQLDatabase.class);
 
         List<String> statements = getStatements(script);
 
         for (String statement : statements) {
 
             try {
-                jdbcDatabase.execute(statement);
+                sqlDatabase.execute(statement);
 
             } catch (SQLException e) {
                 throw new RuntimeException("Statement failed: " + statement, e);

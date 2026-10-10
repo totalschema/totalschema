@@ -18,19 +18,30 @@
 
 package io.github.totalschema.jdbc;
 
+import io.github.totalschema.spi.database.sql.ResultRow;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
 
-public final class ResultRow {
+/**
+ * JDBC-based implementation of ResultRow backed by a java.sql.ResultSet.
+ *
+ * <p>Provides access to result row values by column name with case-insensitive column name lookup.
+ */
+public final class JdbcResultRow implements ResultRow {
 
     private final ResultSet resultSet;
-
     private final Map<String, Integer> indexMap;
 
-    ResultRow(ResultSet resultSet) throws SQLException {
+    /**
+     * Constructs a JdbcResultRow from a ResultSet positioned on a valid row.
+     *
+     * @param resultSet the result set positioned on the desired row
+     * @throws SQLException if a database error occurs while reading metadata
+     */
+    public JdbcResultRow(ResultSet resultSet) throws SQLException {
         this.resultSet = Objects.requireNonNull(resultSet);
         this.indexMap = getIndexMap(resultSet);
     }
@@ -59,21 +70,21 @@ public final class ResultRow {
         return Collections.unmodifiableMap(columnNameToIndex);
     }
 
+    @Override
     public String getString(String columnName) throws SQLException {
-
         return resultSet.getString(getColumnIndex(columnName));
     }
 
+    @Override
     public Timestamp getTimestamp(String columnName) throws SQLException {
-
         return resultSet.getTimestamp(
                 getColumnIndex(columnName), Calendar.getInstance(TimeZone.getTimeZone("UTC")));
     }
 
-    private Integer getColumnIndex(String columnName) {
+    private Integer getColumnIndex(String columnName) throws SQLException {
         Integer columnIndex = indexMap.get(normalizeColumnName(columnName));
         if (columnIndex == null) {
-            throw new IllegalStateException(
+            throw new SQLException(
                     "The column "
                             + columnName
                             + " is unknown in this ResultRow; "

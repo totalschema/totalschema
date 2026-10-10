@@ -19,16 +19,16 @@
 package io.github.totalschema.engine.internal.common.repository;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.jdbc.JdbcDatabase;
 import io.github.totalschema.jdbc.JdbcUtils;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Abstract base class for JDBC-based table repositories. Provides common functionality for managing
- * database tables including table creation, existence checking, and lifecycle management.
+ * Abstract base class for SQL database based table repositories. Provides common functionality for
+ * managing database tables including table creation, existence checking, and lifecycle management.
  *
  * <p>Subclasses must implement template methods to customize table-specific behavior while
  * inheriting common table management logic.
@@ -54,9 +54,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p><b>Thread Safety of Repository Operations:</b> Subclasses must ensure that their repository
  * operations (after initialization) are thread-safe, typically by delegating to a thread-safe
- * {@link JdbcDatabase} instance.
+ * {@link SQLDatabase} instance.
  */
-public abstract class AbstractJdbcTableRepository {
+public abstract class AbstractSqlTableRepository {
 
     /**
      * Interface for providing SQL configuration specific to each repository implementation.
@@ -93,26 +93,28 @@ public abstract class AbstractJdbcTableRepository {
     protected final String tableNameExpression;
     protected final String tableNameQuote;
     protected final String createSql;
-    protected final JdbcDatabase jdbcDatabase;
+    protected final SQLDatabase sqlDatabase;
+    protected final SqlDialect sqlDialect;
 
     /**
-     * Constructs an AbstractJdbcTableRepository with the specified dependencies.
+     * Constructs an AbstractSqlTableRepository with the specified dependencies.
      *
      * @param sqlDialect the SQL dialect for database-specific operations
-     * @param jdbcDatabase the JDBC database connection instance
+     * @param sqlDatabase the SQL database connection instance
      * @param databaseName the database name used for logging and identification
      * @param sqlConfiguration provides SQL-specific configuration and creation logic
      * @param configuration configuration containing table and connection settings
      */
-    protected AbstractJdbcTableRepository(
+    protected AbstractSqlTableRepository(
             SqlDialect sqlDialect,
-            JdbcDatabase jdbcDatabase,
+            SQLDatabase sqlDatabase,
             String databaseName,
             SqlConfiguration sqlConfiguration,
             Configuration configuration) {
 
         this.databaseName = databaseName;
-        this.jdbcDatabase = jdbcDatabase;
+        this.sqlDatabase = sqlDatabase;
+        this.sqlDialect = sqlDialect;
 
         // Read common table configuration
         tableCatalog = configuration.getString("table.catalog").orElse(null);
@@ -190,7 +192,7 @@ public abstract class AbstractJdbcTableRepository {
 
             executeBeforeCreateHooks();
 
-            jdbcDatabase.execute(createSql);
+            sqlDatabase.execute(createSql);
 
             executeAfterCreateHooks();
 
@@ -216,7 +218,7 @@ public abstract class AbstractJdbcTableRepository {
      * @throws InterruptedException if the thread is interrupted
      */
     protected final boolean isTableNotFound() throws SQLException, InterruptedException {
-        return !jdbcDatabase.isTableFound(tableCatalog, tableSchema, tableName);
+        return !sqlDatabase.isTableFound(tableCatalog, tableSchema, tableName);
     }
 
     /**
@@ -228,7 +230,7 @@ public abstract class AbstractJdbcTableRepository {
      */
     protected void executeBeforeCreateHooks() throws SQLException, InterruptedException {
         if (beforeCreateInitSql != null) {
-            jdbcDatabase.execute(beforeCreateInitSql);
+            sqlDatabase.execute(beforeCreateInitSql);
         }
     }
 
@@ -241,7 +243,7 @@ public abstract class AbstractJdbcTableRepository {
      */
     protected void executeAfterCreateHooks() throws SQLException, InterruptedException {
         if (afterCreateInitSql != null) {
-            jdbcDatabase.execute(afterCreateInitSql);
+            sqlDatabase.execute(afterCreateInitSql);
         }
     }
 

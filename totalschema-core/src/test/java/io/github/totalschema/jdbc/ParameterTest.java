@@ -21,6 +21,7 @@ package io.github.totalschema.jdbc;
 import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
+import io.github.totalschema.spi.database.sql.Parameter;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;

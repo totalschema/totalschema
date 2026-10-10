@@ -33,6 +33,7 @@ import io.github.totalschema.model.ChangeType;
 import io.github.totalschema.spi.change.executor.ChangeExecutor;
 import io.github.totalschema.spi.change.executor.ObjectBindingChangeExecutor;
 import io.github.totalschema.spi.change.executor.SimpleChangeExecutor;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import io.github.totalschema.spi.storage.StorageService;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -69,7 +70,6 @@ public class JdbcConnectorTest {
     private ObjectBindingChangeExecutor testScriptExecutor;
     private JdbcDatabase mockJdbcDatabase;
     private Context mockParentContext;
-    private Context mockExecutorContext;
     private DataSource mockDataSource;
     private StorageService mockStorageService;
     private Path tempFile;
@@ -82,7 +82,7 @@ public class JdbcConnectorTest {
     public void setUp() throws Exception {
         mockJdbcDatabase = createMock(JdbcDatabase.class);
         mockParentContext = createMock(Context.class);
-        mockExecutorContext = createMock(Context.class);
+        Context mockExecutorContext = createMock(Context.class);
         mockDataSource = createMock(DataSource.class);
         mockStorageService = createMock(StorageService.class);
 
@@ -189,6 +189,7 @@ public class JdbcConnectorTest {
         Context executionContext = capturedSqlContext.getValue();
         assertNotNull(executionContext);
         assertSame(executionContext.get(JdbcDatabase.class), mockJdbcDatabase);
+        assertSame(executionContext.get(SQLDatabase.class), mockJdbcDatabase);
     }
 
     @Test
@@ -285,18 +286,20 @@ public class JdbcConnectorTest {
      * Sets up mock expectations for SQL executors (SimpleChangeExecutor):
      *
      * <ol>
-     *   <li>JdbcDatabase lookup from the parent context.
+     *   <li>SQLDatabase lookup from the parent context with "jdbc" qualifier.
      *   <li>ChangeExecutor lookup with the given extension qualifier (returns testSqlExecutor).
      *   <li>JdbcDatabase.getDataSource() invocation that returns mockDataSource.
      * </ol>
      */
     private void expectSqlExecutorMocks(String extension, Configuration connectorConfig)
             throws SQLException, InterruptedException {
-        // Expect JdbcDatabase lookup with ObjectSpecification
-        ObjectSpecification jdbcDatabaseSpec =
+        // Expect SQLDatabase lookup with ObjectSpecification and "jdbc" qualifier
+        ObjectSpecification sqlDatabaseSpec =
                 ObjectSpecification.from(
-                        JdbcDatabase.class, null, new Object[] {CONNECTOR_NAME, connectorConfig});
-        expect(mockParentContext.get(eq(jdbcDatabaseSpec))).andReturn(mockJdbcDatabase);
+                        SQLDatabase.class,
+                        JdbcConnector.CONNECTOR_TYPE,
+                        new Object[] {CONNECTOR_NAME, connectorConfig});
+        expect(mockParentContext.get(eq(sqlDatabaseSpec))).andReturn(mockJdbcDatabase);
 
         // Expect ChangeExecutor lookup with extension as qualifier
         ObjectSpecification changeExecutorSpec =
@@ -312,8 +315,8 @@ public class JdbcConnectorTest {
      * Sets up mock expectations for script executors (ObjectBindingChangeExecutor):
      *
      * <ol>
-     *   <li>JdbcDatabase lookup from the parent context (called twice: once in getExecutionContext,
-     *       once in getBindings).
+     *   <li>SQLDatabase lookup from the parent context with "jdbc" qualifier (called twice: once in
+     *       getExecutionContext, once in getBindings).
      *   <li>ChangeExecutor lookup with the given extension qualifier (returns testScriptExecutor).
      *   <li>Environment.class presence check (for script bindings).
      *   <li>JdbcDatabase.getDataSource() invocation that returns mockDataSource (called twice).
@@ -321,11 +324,13 @@ public class JdbcConnectorTest {
      */
     private void expectScriptExecutorMocks(String extension, Configuration connectorConfig)
             throws SQLException, InterruptedException {
-        // Expect JdbcDatabase lookup with ObjectSpecification (called twice)
-        ObjectSpecification jdbcDatabaseSpec =
+        // Expect SQLDatabase lookup with ObjectSpecification and "jdbc" qualifier (called twice)
+        ObjectSpecification sqlDatabaseSpec =
                 ObjectSpecification.from(
-                        JdbcDatabase.class, null, new Object[] {CONNECTOR_NAME, connectorConfig});
-        expect(mockParentContext.get(eq(jdbcDatabaseSpec))).andReturn(mockJdbcDatabase).times(2);
+                        SQLDatabase.class,
+                        JdbcConnector.CONNECTOR_TYPE,
+                        new Object[] {CONNECTOR_NAME, connectorConfig});
+        expect(mockParentContext.get(eq(sqlDatabaseSpec))).andReturn(mockJdbcDatabase).times(2);
 
         // Expect ChangeExecutor lookup with extension as qualifier
         ObjectSpecification changeExecutorSpec =

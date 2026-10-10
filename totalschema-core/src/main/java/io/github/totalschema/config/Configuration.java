@@ -148,7 +148,10 @@ public interface Configuration {
      *     this
      * @return a new Configuration instance, with the merged configuration, with values of the
      *     specified configuration overriding values from this configuration.
+     * @deprecated Use {@link #toBuilder()} and {@link ConfigurationBuilder#setAll(Configuration)}
+     *     instead.
      */
+    @Deprecated
     Configuration addAll(Configuration otherConfiguration);
 
     /**

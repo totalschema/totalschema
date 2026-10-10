@@ -22,13 +22,16 @@ import static io.github.totalschema.spi.factory.ArgumentSpecification.*;
 
 import io.github.totalschema.config.Configuration;
 import io.github.totalschema.engine.api.Context;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import io.github.totalschema.spi.factory.ArgumentHandler;
 import io.github.totalschema.spi.factory.ArgumentSpecification;
 import io.github.totalschema.spi.factory.ComponentFactory;
 import java.util.List;
 import java.util.Optional;
 
-public class JdbcDatabaseComponentFactory extends ComponentFactory<JdbcDatabase> {
+public class JdbcDatabaseComponentFactory extends ComponentFactory<SQLDatabase> {
+
+    private static final String QUALIFIER = "jdbc";
 
     private static final ArgumentSpecification<String> NAME =
             string("name").withConstraint(notBlank());
@@ -45,13 +48,13 @@ public class JdbcDatabaseComponentFactory extends ComponentFactory<JdbcDatabase>
     }
 
     @Override
-    public Class<JdbcDatabase> getComponentType() {
-        return JdbcDatabase.class;
+    public Class<SQLDatabase> getComponentType() {
+        return SQLDatabase.class;
     }
 
     @Override
     public Optional<String> getQualifier() {
-        return Optional.empty();
+        return Optional.of(QUALIFIER);
     }
 
     @Override

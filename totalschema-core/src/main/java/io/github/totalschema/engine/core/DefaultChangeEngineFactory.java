@@ -110,7 +110,13 @@ public class DefaultChangeEngineFactory implements ChangeEngineFactory {
                 commandExecutor = new LockInterceptor(commandExecutor);
             }
 
-            return new DefaultChangeEngine(commandExecutor, componentContainer, eventDispatcher);
+            ChangeEngine changeEngine =
+                    new DefaultChangeEngine(commandExecutor, componentContainer, eventDispatcher);
+
+            logger.info(
+                    "{} engine initialized successfully", ProjectConventions.PROJECT_DISPLAY_NAME);
+
+            return changeEngine;
 
         } catch (RuntimeException e) {
             throw new ChangeEngineException("Failed to create ChangeEngine: " + e.getMessage(), e);

@@ -132,7 +132,7 @@ users.forEach { (name, email) ->
 stmt.close()
 
 val queryStmt = connection.createStatement()
-val rs = queryStmt.executeQuery("SELECT * FROM users")
+val rs = queryStmt.executeStatement("SELECT * FROM users")
 while (rs.next()) {
     println("${rs.getString("name")} - ${rs.getString("email")}")
 }

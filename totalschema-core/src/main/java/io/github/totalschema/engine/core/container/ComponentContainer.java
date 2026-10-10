@@ -213,7 +213,9 @@ public final class ComponentContainer implements Closeable, Context {
         ComponentFactory<?> factory = factories.get(factorySpecification);
         if (factory == null) {
             throw new FactoryNotFoundException(
-                    "No factory found for specification: " + factorySpecification);
+                    String.format(
+                            "No factory found for specification: %s, that can construct the desired object: %s",
+                            factorySpecification, objectSpecification));
         }
 
         R newComponent;

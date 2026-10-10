@@ -19,27 +19,27 @@
 package io.github.totalschema.engine.internal.lock.database.repository.impl;
 
 import io.github.totalschema.config.Configuration;
-import io.github.totalschema.engine.internal.common.repository.AbstractJdbcTableRepository;
+import io.github.totalschema.engine.internal.common.repository.AbstractSqlTableRepository;
 import io.github.totalschema.engine.internal.lock.database.repository.spi.LockStateRepository;
-import io.github.totalschema.engine.internal.sql.CreateTableBuilder;
 import io.github.totalschema.jdbc.*;
 import io.github.totalschema.model.LockRecord;
+import io.github.totalschema.spi.database.sql.Parameter;
+import io.github.totalschema.spi.database.sql.SQLDatabase;
 import io.github.totalschema.spi.sql.SqlDialect;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 
-final class DefaultLockStateRepository extends AbstractJdbcTableRepository
+final class DefaultLockStateRepository extends AbstractSqlTableRepository
         implements LockStateRepository {
 
     private static final String LOCK_DATABASE_NAME = "lock";
 
     /** Static SQL configuration for lock state repository. */
     private static class LockStateSqlConfiguration
-            implements AbstractJdbcTableRepository.SqlConfiguration {
+            implements AbstractSqlTableRepository.SqlConfiguration {
 
         @Override
         public String getDefaultTableName() {
@@ -55,11 +55,13 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
                         configuration.getString("table.sql.create").get(), tableNameExpression);
             }
 
-            // Use builder for default SQL generation
-            return CreateTableBuilder.create(sqlDialect, tableNameExpression, configuration)
-                    .column("lock_id", dialect -> dialect.varchar(255))
-                    .column("lock_expiration", SqlDialect::timestamp)
-                    .column("locked_by", dialect -> dialect.varchar(255))
+            // Use the SqlBuilder for default SQL generation
+            return sqlDialect
+                    .getSqlBuilder()
+                    .createTable(tableNameExpression, configuration)
+                    .column(LockTableColumns.LOCK_ID, dialect -> dialect.varchar(255))
+                    .column(LockTableColumns.LOCK_EXPIRATION, SqlDialect::timestamp)
+                    .column(LockTableColumns.LOCKED_BY, dialect -> dialect.varchar(255))
                     .build();
         }
     }
@@ -72,7 +74,7 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
     private final String releaseSql;
 
     DefaultLockStateRepository(
-            SqlDialect sqlDialect, JdbcDatabase jdbcDatabase, Configuration configuration) {
+            SqlDialect sqlDialect, SQLDatabase jdbcDatabase, Configuration configuration) {
         super(
                 sqlDialect,
                 jdbcDatabase,
@@ -80,46 +82,162 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
                 new LockStateSqlConfiguration(),
                 configuration);
 
-        dropSql =
-                formatSqlWithTableName(
-                        configuration
-                                .getString("table.sql.drop")
-                                .orElse(DefaultValues.DROP_TABLE_SQL));
+        dropSql = buildDropSql(sqlDialect, configuration);
+        insertSql = buildInsertSql(sqlDialect, configuration);
+        acquireSql = buildAcquireSql(sqlDialect, configuration);
+        renewSql = buildRenewSql(sqlDialect, configuration);
+        querySql = buildQuerySql(sqlDialect, configuration);
+        releaseSql = buildReleaseSql(sqlDialect, configuration);
+    }
 
-        insertSql =
-                formatSqlWithTableName(
-                        configuration
-                                .getString("table.sql.insert")
-                                .orElse(DefaultValues.INSERT_RECORD_SQL));
+    /**
+     * Builds the SQL statement used to drop the lock table. Uses the {@code table.sql.drop}
+     * configuration override if present (as a template containing a {@code %s} placeholder for the
+     * table name expression), otherwise generates the default SQL via the dialect's {@link
+     * io.github.totalschema.spi.sql.SqlBuilder}.
+     *
+     * @param sqlDialect the SQL dialect used to build the default SQL
+     * @param configuration the configuration used to look up an override
+     * @return the SQL statement used to drop the lock table
+     */
+    private String buildDropSql(SqlDialect sqlDialect, Configuration configuration) {
+        return configuration
+                .getString("table.sql.drop")
+                .map(this::formatSqlWithTableName)
+                .orElseGet(() -> sqlDialect.getSqlBuilder().dropTable(tableNameExpression).build());
+    }
 
-        acquireSql =
-                formatSqlWithTableName(
-                        configuration
-                                .getString("table.sql.acquire")
-                                .orElse(DefaultValues.ACQUIRE_LOCK_SQL));
+    /**
+     * Builds the SQL statement used to insert the single lock record. Uses the {@code
+     * table.sql.insert} configuration override if present (as a template containing a {@code %s}
+     * placeholder for the table name expression), otherwise generates the default SQL via the
+     * dialect's {@link io.github.totalschema.spi.sql.SqlBuilder}.
+     *
+     * @param sqlDialect the SQL dialect used to build the default SQL
+     * @param configuration the configuration used to look up an override
+     * @return the SQL statement used to insert the single lock record
+     */
+    private String buildInsertSql(SqlDialect sqlDialect, Configuration configuration) {
+        return configuration
+                .getString("table.sql.insert")
+                .map(this::formatSqlWithTableName)
+                .orElseGet(
+                        () ->
+                                sqlDialect
+                                        .getSqlBuilder()
+                                        .insertInto(tableNameExpression)
+                                        .columnWithValue(LockTableColumns.LOCK_ID, "NULL")
+                                        .columnWithValue(LockTableColumns.LOCK_EXPIRATION, "NULL")
+                                        .columnWithValue(LockTableColumns.LOCKED_BY, "NULL")
+                                        .build());
+    }
 
-        renewSql =
-                formatSqlWithTableName(
-                        configuration
-                                .getString("table.sql.renewSql")
-                                .orElse(DefaultValues.RENEW_LOCK_SQL));
+    /**
+     * Builds the SQL statement used to acquire the lock. Uses the {@code table.sql.acquire}
+     * configuration override if present (as a template containing a {@code %s} placeholder for the
+     * table name expression), otherwise generates the default SQL via the dialect's {@link
+     * io.github.totalschema.spi.sql.SqlBuilder}.
+     *
+     * @param sqlDialect the SQL dialect used to build the default SQL
+     * @param configuration the configuration used to look up an override
+     * @return the SQL statement used to acquire the lock
+     */
+    private String buildAcquireSql(SqlDialect sqlDialect, Configuration configuration) {
+        return configuration
+                .getString("table.sql.acquire")
+                .map(this::formatSqlWithTableName)
+                .orElseGet(
+                        () ->
+                                sqlDialect
+                                        .getSqlBuilder()
+                                        .update(tableNameExpression)
+                                        .set(LockTableColumns.LOCK_ID, "?")
+                                        .set(LockTableColumns.LOCK_EXPIRATION, "?")
+                                        .set(LockTableColumns.LOCKED_BY, "?")
+                                        .where(
+                                                LockTableColumns.LOCK_ID
+                                                        + " IS NULL OR "
+                                                        + LockTableColumns.LOCK_EXPIRATION
+                                                        + " < ?")
+                                        .build());
+    }
 
-        querySql =
-                formatSqlWithTableName(
-                        configuration
-                                .getString("table.sql.query")
-                                .orElse(DefaultValues.QUERY_RECORD_SQL));
+    /**
+     * Builds the SQL statement used to renew the lock expiration. Uses the {@code
+     * table.sql.renewSql} configuration override if present (as a template containing a {@code %s}
+     * placeholder for the table name expression), otherwise generates the default SQL via the
+     * dialect's {@link io.github.totalschema.spi.sql.SqlBuilder}.
+     *
+     * @param sqlDialect the SQL dialect used to build the default SQL
+     * @param configuration the configuration used to look up an override
+     * @return the SQL statement used to renew the lock expiration
+     */
+    private String buildRenewSql(SqlDialect sqlDialect, Configuration configuration) {
+        return configuration
+                .getString("table.sql.renewSql")
+                .map(this::formatSqlWithTableName)
+                .orElseGet(
+                        () ->
+                                sqlDialect
+                                        .getSqlBuilder()
+                                        .update(tableNameExpression)
+                                        .set(LockTableColumns.LOCK_EXPIRATION, "?")
+                                        .where(LockTableColumns.LOCK_ID + " = ?")
+                                        .build());
+    }
 
-        releaseSql =
-                formatSqlWithTableName(
-                        configuration
-                                .getString("table.sql.release")
-                                .orElse(DefaultValues.RELEASE_LOCK_SQL));
+    /**
+     * Builds the SQL statement used to query the current lock record. Uses the {@code
+     * table.sql.query} configuration override if present (as a template containing a {@code %s}
+     * placeholder for the table name expression), otherwise generates the default SQL via the
+     * dialect's {@link io.github.totalschema.spi.sql.SqlBuilder}.
+     *
+     * @param sqlDialect the SQL dialect used to build the default SQL
+     * @param configuration the configuration used to look up an override
+     * @return the SQL statement used to query the current lock record
+     */
+    private String buildQuerySql(SqlDialect sqlDialect, Configuration configuration) {
+        return configuration
+                .getString("table.sql.query")
+                .map(this::formatSqlWithTableName)
+                .orElseGet(
+                        () ->
+                                sqlDialect
+                                        .getSqlBuilder()
+                                        .select(tableNameExpression)
+                                        .column(LockTableColumns.LOCK_ID)
+                                        .column(LockTableColumns.LOCK_EXPIRATION)
+                                        .column(LockTableColumns.LOCKED_BY)
+                                        .build());
+    }
+
+    /**
+     * Builds the SQL statement used to release the lock. Uses the {@code table.sql.release}
+     * configuration override if present (as a template containing a {@code %s} placeholder for the
+     * table name expression), otherwise generates the default SQL via the dialect's {@link
+     * io.github.totalschema.spi.sql.SqlBuilder}.
+     *
+     * @param sqlDialect the SQL dialect used to build the default SQL
+     * @param configuration the configuration used to look up an override
+     * @return the SQL statement used to release the lock
+     */
+    private String buildReleaseSql(SqlDialect sqlDialect, Configuration configuration) {
+        return configuration
+                .getString("table.sql.release")
+                .map(this::formatSqlWithTableName)
+                .orElseGet(
+                        () ->
+                                sqlDialect
+                                        .getSqlBuilder()
+                                        .update(tableNameExpression)
+                                        .set(LockTableColumns.LOCK_ID, "NULL")
+                                        .where(LockTableColumns.LOCK_ID + " = ?")
+                                        .build());
     }
 
     @Override
     protected void performPostCreationSteps() throws SQLException, InterruptedException {
-        jdbcDatabase.execute(insertSql);
+        sqlDatabase.execute(insertSql);
         logger.info(
                 "[{}] database: The single record used for locking is inserted to {}",
                 LOCK_DATABASE_NAME,
@@ -131,7 +249,7 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
     @Override
     protected void handleCreationFailure(RuntimeException e) {
         try {
-            jdbcDatabase.execute(dropSql);
+            sqlDatabase.execute(dropSql);
         } catch (RuntimeException | SQLException | InterruptedException dropException) {
             logger.error("Failure cleaning up lock table created with incorrect configuration");
             e.addSuppressed(dropException);
@@ -156,7 +274,7 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
         String userName = System.getProperty("user.name");
 
         int changedRows =
-                jdbcDatabase.executeUpdate(
+                sqlDatabase.executeUpdate(
                         acquireSql,
                         Parameter.string(lockId),
                         Parameter.timestamp(lockExpiration),
@@ -182,7 +300,7 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
         Objects.requireNonNull(lockExpiration);
 
         int changedRows =
-                jdbcDatabase.executeUpdate(
+                sqlDatabase.executeUpdate(
                         renewSql, Parameter.timestamp(lockExpiration), Parameter.string(lockId));
 
         switch (changedRows) {
@@ -200,24 +318,7 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
     public LockRecord getLockRecord() {
         try {
             List<LockRecord> lockRecords =
-                    jdbcDatabase.query(
-                            querySql,
-                            resultRow -> {
-                                LockRecord lockRecord = new LockRecord();
-
-                                lockRecord.setLockId(resultRow.getString("lock_id"));
-
-                                Timestamp expirationTimestamp =
-                                        resultRow.getTimestamp("lock_expiration");
-                                ZonedDateTime expirationZonedDateTime =
-                                        TypeConversions.getInstance()
-                                                .toZonedDateTime(expirationTimestamp);
-                                lockRecord.setLockExpiration(expirationZonedDateTime);
-
-                                lockRecord.setLockedByUserId(resultRow.getString("locked_by"));
-
-                                return lockRecord;
-                            });
+                    sqlDatabase.query(querySql, LockRecordRowMapper.INSTANCE);
 
             if (lockRecords.size() == 1) {
                 logger.info("Lock record found: {}", lockRecords.get(0));
@@ -247,7 +348,7 @@ final class DefaultLockStateRepository extends AbstractJdbcTableRepository
     @Override
     public void updateIdToNull(String lockId) throws SQLException, InterruptedException {
 
-        int changedRows = jdbcDatabase.executeUpdate(releaseSql, Parameter.string(lockId));
+        int changedRows = sqlDatabase.executeUpdate(releaseSql, Parameter.string(lockId));
 
         if (changedRows != 1) {
             throw new IllegalStateException("Unexpected number of rows changed: " + changedRows);

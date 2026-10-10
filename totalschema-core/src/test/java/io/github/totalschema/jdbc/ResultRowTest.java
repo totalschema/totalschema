@@ -21,6 +21,7 @@ package io.github.totalschema.jdbc;
 import static org.easymock.EasyMock.*;
 import static org.testng.Assert.*;
 
+import io.github.totalschema.spi.database.sql.ResultRow;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -50,7 +51,7 @@ public class ResultRowTest {
 
         replay(mockResultSet, mockMetaData);
 
-        ResultRow row = new ResultRow(mockResultSet);
+        ResultRow row = new JdbcResultRow(mockResultSet);
         String result = row.getString("NAME");
 
         assertEquals(result, "test");
@@ -66,7 +67,7 @@ public class ResultRowTest {
 
         replay(mockResultSet, mockMetaData);
 
-        ResultRow row = new ResultRow(mockResultSet);
+        ResultRow row = new JdbcResultRow(mockResultSet);
         // Should work regardless of case
         String result = row.getString("mycolumn");
 
@@ -86,7 +87,7 @@ public class ResultRowTest {
 
         replay(mockResultSet, mockMetaData);
 
-        ResultRow row = new ResultRow(mockResultSet);
+        ResultRow row = new JdbcResultRow(mockResultSet);
         Timestamp result = row.getTimestamp("CREATED_AT");
 
         assertEquals(result, expectedTimestamp);
@@ -94,7 +95,7 @@ public class ResultRowTest {
     }
 
     @Test(
-            expectedExceptions = IllegalStateException.class,
+            expectedExceptions = SQLException.class,
             expectedExceptionsMessageRegExp = ".*unknown in this ResultRow.*")
     public void testGetStringWithInvalidColumn() throws SQLException {
         expect(mockResultSet.getMetaData()).andReturn(mockMetaData);
@@ -103,14 +104,14 @@ public class ResultRowTest {
 
         replay(mockResultSet, mockMetaData);
 
-        ResultRow row = new ResultRow(mockResultSet);
+        ResultRow row = new JdbcResultRow(mockResultSet);
         row.getString("INVALID_COLUMN");
 
         verify(mockResultSet, mockMetaData);
     }
 
     @Test(
-            expectedExceptions = IllegalStateException.class,
+            expectedExceptions = SQLException.class,
             expectedExceptionsMessageRegExp = ".*unknown in this ResultRow.*")
     public void testGetTimestampWithInvalidColumn() throws SQLException {
         expect(mockResultSet.getMetaData()).andReturn(mockMetaData);
@@ -119,7 +120,7 @@ public class ResultRowTest {
 
         replay(mockResultSet, mockMetaData);
 
-        ResultRow row = new ResultRow(mockResultSet);
+        ResultRow row = new JdbcResultRow(mockResultSet);
         row.getTimestamp("INVALID_COLUMN");
 
         verify(mockResultSet, mockMetaData);
@@ -135,7 +136,7 @@ public class ResultRowTest {
 
         replay(mockResultSet, mockMetaData);
 
-        ResultRow row = new ResultRow(mockResultSet);
+        ResultRow row = new JdbcResultRow(mockResultSet);
         String result = row.getString("FALLBACK_NAME");
 
         assertEquals(result, "value");
@@ -153,7 +154,7 @@ public class ResultRowTest {
 
         replay(mockResultSet, mockMetaData);
 
-        new ResultRow(mockResultSet);
+        new JdbcResultRow(mockResultSet);
 
         verify(mockResultSet, mockMetaData);
     }
@@ -171,7 +172,7 @@ public class ResultRowTest {
 
         replay(mockResultSet, mockMetaData);
 
-        ResultRow row = new ResultRow(mockResultSet);
+        ResultRow row = new JdbcResultRow(mockResultSet);
 
         assertEquals(row.getString("ID"), "123");
         assertEquals(row.getString("NAME"), "John");
@@ -182,7 +183,7 @@ public class ResultRowTest {
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testConstructorWithNullResultSet() throws SQLException {
-        new ResultRow(null);
+        new JdbcResultRow(null);
     }
 
     @Test
@@ -196,7 +197,7 @@ public class ResultRowTest {
 
         replay(mockResultSet, mockMetaData);
 
-        ResultRow row = new ResultRow(mockResultSet);
+        ResultRow row = new JdbcResultRow(mockResultSet);
 
         // All these should access the same column
         assertEquals(row.getString("MixedCase"), "value1");
