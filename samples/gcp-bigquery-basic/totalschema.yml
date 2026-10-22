@@ -1,0 +1,75 @@
+version: 1
+
+stateRepository:
+  type: database
+  database:
+    type: bigquery
+    logSql: ${logEngineInternalSql}
+    dialect: bigquery
+    projectId: ${gcpProjectId}
+    defaultDataset: ${bqDataset}
+    location: ${gcpLocation}
+    table:
+      catalog: ${gcpProjectId}
+      schema: ${bqDataset}
+
+validation:
+  type: contentHash
+
+lock:
+  type: database
+  database:
+    type: bigquery
+    logSql: ${logEngineInternalSql}
+    dialect: bigquery
+    projectId: ${gcpProjectId}
+    defaultDataset: ${bqDataset}
+    location: ${gcpLocation}
+    table:
+      catalog: ${gcpProjectId}
+      schema: ${bqDataset}
+
+variables:
+  logEngineInternalSql: true
+  gcpLocation: us-east1
+  bqDataset: phonebook
+
+
+connectors:
+  bq:
+    type: bigquery
+    projectId: ${gcpProjectId}
+    defaultDataset: ${bqDataset}
+    location: ${gcpLocation}
+    defaults:
+      projectId: ${gcpProjectId}
+    scriptExecutors:
+      sql:
+        ## Enables variable substitution (e.g. ${gcpProjectId}) in .sql scripts
+        variableSubstitution: true
+    ## Uncomment to allow custom API endpoints when using
+    ## BigQuery Data Transfer Service
+    ##
+    # dataTransferService:
+    #  endpoint: bigquerydatatransfer-acmecorp.p.googleapis.com:443
+
+    ## Uncomment to allow custom API endpoints when using
+    ## BigQuery AnalyticsHub
+    ##
+    # analyticsHub:
+    #   endpoint: analyticshub-acmecorp.p.googleapis.com:443
+
+
+environments:
+  dev:
+    variables:
+      gcpProjectId: sample-project-dev
+
+  qa:
+    variables:
+      gcpProjectId: sample-project-qa
+
+  prod:
+    variables:
+      gcpProjectId: sample-project-prod
+
