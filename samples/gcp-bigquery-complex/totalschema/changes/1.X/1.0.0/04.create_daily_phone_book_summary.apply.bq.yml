@@ -1,0 +1,16 @@
+CreateScheduledQuery:
+  displayName: Daily Phone Book Count Summary
+  query: |
+    SELECT 
+      CURRENT_DATE() as summary_date,
+      COUNT(*) as total_contacts
+    FROM `${gcpProjectId}.${bqDataset}.phone_book`
+  destination:
+    datasetId: ${bqDataset}
+  serviceAccount: ${scheduledQueryServiceAccount}
+  schedule: "every day 00:00"
+  projectId: ${gcpProjectId}
+  location: ${gcpLocation}
+  replaceIfExists: true
+
+

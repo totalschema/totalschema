@@ -1,0 +1,77 @@
+version: 1
+
+stateRepository:
+  type: database
+  database:
+    type: bigquery
+    logSql: true
+    dialect: bigquery
+    projectId: ${gcpProjectId}
+    defaultDataset: ${bqDataset}
+    location: ${gcpLocation}
+    table:
+      catalog: ${gcpProjectId}
+      schema: ${bqDataset}
+
+validation:
+  type: contentHash
+
+lock:
+  type: database
+  database:
+    type: bigquery
+    logSql: true
+    dialect: bigquery
+    projectId: ${gcpProjectId}
+    defaultDataset: ${bqDataset}
+    location: ${gcpLocation}
+    table:
+      catalog: ${gcpProjectId}
+      schema: ${bqDataset}
+
+variables:
+  logEngineInternalSql: true
+  # Separate GCP project used as the subscriber when subscribing to the Analytics Hub listing.
+  gcpLocation: us-east1
+  gcpListingAdmins: group:bigquery-admins@acmecorp.com
+  gcpListingSubscribers: group:bigquery-users@acmecorp.com
+  bqDataset: phonebook
+  bqDataExchangeId: phonebook_exchange
+
+connectors:
+  bq:
+    type: bigquery
+    projectId: ${gcpProjectId}
+    defaultDataset: ${bqDataset}
+    location: ${gcpLocation}
+    defaults:
+      projectId: ${gcpProjectId}
+    scriptExecutors:
+      sql:
+        variableSubstitution: true
+    dataTransferService:
+      endpoint: bigquerydatatransfer-acmecorp.p.googleapis.com:443
+    analyticsHub:
+      endpoint: analyticshub-acmecorp.p.googleapis.com:443
+
+
+environments:
+  dev:
+    variables:
+      gcpProjectId: main-sample-project-dev
+      gcpSubscriberProjectId: subscriber-sample-project-dev
+      scheduledQueryServiceAccount: "scheduledqueries-sa@main-sample-project-dev.iam.gserviceaccount.com"
+
+
+  qa:
+    variables:
+      gcpProjectId: main-sample-project-qa
+      gcpSubscriberProjectId: subscriber-sample-project-qa
+      scheduledQueryServiceAccount: "scheduledqueries-sa@main-sample-project-qa.iam.gserviceaccount.com"
+
+  prod:
+    variables:
+      gcpProjectId: main-sample-project-prod
+      gcpSubscriberProjectId: subscriber-sample-project-prod
+      scheduledQueryServiceAccount: "scheduledqueries-sa@main-sample-project-prod.iam.gserviceaccount.com"
+

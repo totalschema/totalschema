@@ -1,0 +1,5 @@
+DeleteScheduledQuery:
+  displayName: Daily Phone Book Count Summary
+  projectId: ${gcpProjectId}
+  location: ${gcpLocation}
+

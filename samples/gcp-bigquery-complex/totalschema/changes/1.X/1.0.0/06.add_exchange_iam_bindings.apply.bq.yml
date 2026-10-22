@@ -1,0 +1,13 @@
+AddExchangeIamPolicyBindings:
+  project: ${gcpProjectId}
+  location: ${gcpLocation}
+  dataExchangeId: ${bqDataExchangeId}
+  bindings:
+    - role: roles/analyticshub.admin
+      members:
+        - ${gcpListingAdmins}
+    - role: roles/analyticshub.subscriber
+      members:
+        - ${gcpListingSubscribers}
+        - ${gcpListingAdmins}
+

@@ -1,0 +1,6 @@
+DeleteExchange:
+  project: ${gcpProjectId}
+  location: ${gcpLocation}
+  dataExchangeId: ${bqDataExchangeId}
+
+

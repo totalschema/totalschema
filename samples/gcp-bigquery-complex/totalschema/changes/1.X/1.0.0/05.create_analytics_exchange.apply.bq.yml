@@ -1,0 +1,10 @@
+CreateExchange:
+  project: ${gcpProjectId}
+  location: ${gcpLocation}
+  dataExchangeId: ${bqDataExchangeId}
+  displayName: FOOBAR Sample Exchange
+  documentation: This is a sample for documentation
+  description: |
+    Sample Analytics Hub data exchange used by the gcp-bigquery TotalSchema sample.
+
+

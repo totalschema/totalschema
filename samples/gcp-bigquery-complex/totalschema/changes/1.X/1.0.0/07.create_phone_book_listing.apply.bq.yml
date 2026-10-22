@@ -1,0 +1,16 @@
+CreateListing:
+  project: ${gcpProjectId}
+  location: ${gcpLocation}
+  dataExchangeId: ${bqDataExchangeId}
+  listingId: phone_book_listing
+  displayName: Phone Book Dataset
+  description: |
+    Sample phone book dataset.
+  documentation: |
+    Sample phone book documentation.
+  categories:
+    - CATEGORY_OTHERS
+  sourceDataset:
+    project: ${gcpProjectId}
+    dataset: ${bqDataset}
+

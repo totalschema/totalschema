@@ -1,0 +1,6 @@
+DeleteSubscription:
+  project: ${gcpSubscriberProjectId}
+  datasetId: phone_book_subscription
+  deleteContents: true
+
+

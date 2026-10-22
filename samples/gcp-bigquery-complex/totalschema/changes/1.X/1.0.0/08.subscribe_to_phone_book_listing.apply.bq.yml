@@ -1,0 +1,14 @@
+CreateSubscription:
+  project: ${gcpProjectId}
+  location: ${gcpLocation}
+  dataExchangeId: ${bqDataExchangeId}
+  listingId: phone_book_listing
+  destinationDataset:
+    project: ${gcpSubscriberProjectId}
+    datasetId: phone_book_subscription
+    location: ${gcpLocation}
+    friendlyName: Phone Book Subscription
+    description: |
+      Sample linked dataset created by subscribing to the phone book listing.
+
+

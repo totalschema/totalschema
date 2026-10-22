@@ -1,0 +1,7 @@
+DeleteListing:
+  project: ${gcpProjectId}
+  location: ${gcpLocation}
+  dataExchangeId: ${bqDataExchangeId}
+  listingId: phone_book_listing
+
+
